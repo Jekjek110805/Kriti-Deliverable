@@ -99,15 +99,20 @@
   .stat-high { color: var(--yellow); }
   .stat-approved { color: var(--green); }
 
-  /* Table */
-  .table-wrap { border-radius: 10px; border: 1px solid var(--border); }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
-  th { text-align: left; padding: 10px 8px; background: var(--surface2); color: var(--text-dim); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); }
-  td { padding: 10px 8px; border-bottom: 1px solid rgba(30,22,64,0.5); word-break: break-word; overflow-wrap: break-word; }
-  tr:hover td { background: var(--accent-glow); }
-  tr:last-child td { border-bottom: none; }
-  td:nth-child(3) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
-  td:nth-child(4) { white-space: nowrap; font-size: 12px; color: var(--text-muted); }
+  /* Card list (opportunities) */
+  .opp-list { display: flex; flex-direction: column; gap: 10px; }
+  .opp-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; display: grid; grid-template-columns: 32px 1fr auto; gap: 12px; align-items: start; transition: border-color 0.2s, box-shadow 0.2s; }
+  .opp-card:hover { border-color: var(--accent); box-shadow: 0 0 16px var(--accent-glow); }
+  .opp-num { font-size: 14px; font-weight: 700; color: var(--text-dim); padding-top: 2px; }
+  .opp-main { min-width: 0; }
+  .opp-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .opp-keyword { font-size: 15px; font-weight: 700; color: var(--text); }
+  .opp-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--text-dim); }
+  .opp-meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .opp-meta .label { color: var(--text-muted); }
+  .opp-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .opp-score { font-size: 18px; font-weight: 800; color: var(--accent); }
+  .opp-badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 
   /* Badges */
   .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
@@ -305,30 +310,10 @@
         <!-- Stats -->
         <div class="stats-grid" id="statsGrid"></div>
 
-        <!-- Opportunities table -->
+        <!-- Opportunities -->
         <div class="card">
           <div class="card-title">Ranked Opportunities</div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Priority</th>
-                  <th>Keyword</th>
-                  <th>Page</th>
-                  <th>Position</th>
-                  <th>Impressions</th>
-                  <th>Clicks</th>
-                  <th>Intent</th>
-                  <th>Score</th>
-                  <th>Recommendation</th>
-                  <th>Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="oppsTable"></tbody>
-            </table>
-          </div>
+          <div class="opp-list" id="oppsTable"></div>
         </div>
       </div>
     </div>
@@ -794,7 +779,7 @@ function showQueuedStatus(d) {
     <div class="stat-card"><div class="stat-value">${d.rows_received}</div><div class="stat-label">Rows received</div></div>
     <div class="stat-card"><div class="stat-value" style="font-size:13px">${d.job_id}</div><div class="stat-label">Job ID</div></div>
   `;
-  document.getElementById('oppsTable').innerHTML = `<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted);">Hermes is analyzing your data. This may take 1-2 minutes...</td></tr>`;
+  document.getElementById('oppsTable').innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);">Hermes is analyzing your data...</div>`;
 }
 
 function pollJob(jobId) {
@@ -833,22 +818,32 @@ function renderResults(d) {
     <div class="stat-card"><div class="stat-value" style="color:var(--text-muted)">${d.excluded}</div><div class="stat-label">Excluded</div></div>
   `;
 
-  const tbody = document.getElementById('oppsTable');
-  tbody.innerHTML = d.opportunities.map((o, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td><span class="badge badge-${o.priority.toLowerCase()}">${o.priority}</span></td>
-      <td><strong>${o.keyword}</strong></td>
-      <td style="font-size:12px;color:var(--text-muted)">${o.page}</td>
-      <td>${o.position}</td>
-      <td>${o.impressions.toLocaleString()}</td>
-      <td>${o.clicks}</td>
-      <td><span class="badge badge-${o.intent.toLowerCase()}">${o.intent}</span></td>
-      <td><strong>${o.total_score}</strong></td>
-      <td><span class="badge badge-${o.recommendation === 'Improve Existing' ? 'optimize' : o.recommendation === 'Expand Existing' ? 'maybe' : 'skip'}">${o.recommendation}</span></td>
-      <td><span class="badge badge-needs_review">needs_review</span></td>
-      <td><button class="btn btn-sm btn-secondary" onclick="quickDecision('${o.keyword.replace(/'/g, "\\'")}', '${o.page.replace(/'/g, "\\'")}', ${o.position}, ${o.impressions}, ${o.clicks})">Decide</button></td>
-    </tr>
+  const list = document.getElementById('oppsTable');
+  list.innerHTML = d.opportunities.map((o, i) => `
+    <div class="opp-card">
+      <div class="opp-num">${i + 1}</div>
+      <div class="opp-main">
+        <div class="opp-header">
+          <span class="opp-keyword">${o.keyword}</span>
+          <span class="badge badge-${o.priority.toLowerCase()}">${o.priority}</span>
+        </div>
+        <div class="opp-meta">
+          <span><span class="label">Page:</span> ${o.page}</span>
+          <span><span class="label">Pos:</span> ${o.position}</span>
+          <span><span class="label">Imp:</span> ${o.impressions.toLocaleString()}</span>
+          <span><span class="label">Clicks:</span> ${o.clicks}</span>
+          <span class="badge badge-${o.intent.toLowerCase()}">${o.intent}</span>
+        </div>
+        <div class="opp-meta" style="margin-top:6px">
+          <span class="badge badge-${o.recommendation === 'Improve Existing' ? 'optimize' : o.recommendation === 'Expand Existing' ? 'maybe' : 'skip'}">${o.recommendation}</span>
+          <span class="badge badge-needs_review">needs_review</span>
+        </div>
+      </div>
+      <div class="opp-right">
+        <div class="opp-score">${o.total_score}</div>
+        <button class="btn btn-sm btn-secondary" onclick="quickDecision('${o.keyword.replace(/'/g, "\\\\'")}', '${o.page.replace(/'/g, "\\\\'")}', ${o.position}, ${o.impressions}, ${o.clicks})">Decide</button>
+      </div>
+    </div>
   `).join('');
 }
 
