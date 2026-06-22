@@ -6,10 +6,13 @@ import csv
 import io
 import json
 import os
+import posixpath
 import re
 import sys
 import asyncio
+import zipfile
 import yaml
+import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
@@ -463,6 +466,214 @@ def generate_yaml_approval_queue(opportunities: List[Dict]) -> str:
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
+GSC_HEADER_ALIASES = {
+    "query": "query",
+    "queries": "query",
+    "top queries": "query",
+    "search query": "query",
+    "keyword": "query",
+    "term": "query",
+    "page": "page",
+    "pages": "page",
+    "top pages": "page",
+    "url": "page",
+    "landing page": "page",
+    "address": "page",
+    "click": "clicks",
+    "clicks": "clicks",
+    "impression": "impressions",
+    "impressions": "impressions",
+    "imps": "impressions",
+    "ctr": "ctr",
+    "click-through rate": "ctr",
+    "click through rate": "ctr",
+    "position": "position",
+    "pos": "position",
+    "avg position": "position",
+    "average position": "position",
+}
+
+XLSX_MAIN_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+XLSX_REL_NS = "{http://schemas.openxmlformats.org/package/2006/relationships}"
+XLSX_DOC_REL_NS = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+
+
+def normalize_gsc_header(header: Any) -> str:
+    clean = str(header or "").replace("\ufeff", "").strip().lower()
+    clean = re.sub(r"\s+", " ", clean)
+    return GSC_HEADER_ALIASES.get(clean, clean)
+
+
+def normalize_gsc_row(row: Dict[Any, Any]) -> Dict[str, str]:
+    normalized = {}
+    for key, value in row.items():
+        header = normalize_gsc_header(key)
+        if not header:
+            continue
+        normalized[header] = "" if value is None else str(value).strip()
+    return normalized
+
+
+def gsc_headers_are_usable(headers: List[str]) -> bool:
+    header_set = {normalize_gsc_header(h) for h in headers if h}
+    has_query = "query" in header_set
+    has_metrics = bool(header_set & {"clicks", "impressions", "position"})
+    return has_query and has_metrics
+
+
+def parse_gsc_csv_upload(content: bytes) -> List[Dict[str, str]]:
+    csv_text = None
+    for encoding in ("utf-8-sig", "utf-8", "latin-1"):
+        try:
+            csv_text = content.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    if csv_text is None:
+        raise ValueError("Could not decode CSV file. Please export it as UTF-8 CSV or upload .xlsx.")
+
+    csv_text = csv_text.replace("\r\n", "\n").replace("\r", "\n")
+    sections = re.split(r"\n\s*\n", csv_text.strip())
+    all_rows = []
+
+    for section in sections:
+        lines = [line for line in section.split("\n") if line.strip()]
+        if not lines:
+            continue
+        header_line = lines[0]
+        delimiter = "\t" if "\t" in header_line and header_line.count("\t") >= header_line.count(",") else ","
+        reader = csv.DictReader(io.StringIO("\n".join(lines)), delimiter=delimiter)
+        if not reader.fieldnames or not gsc_headers_are_usable(reader.fieldnames):
+            continue
+        for row in reader:
+            normalized = normalize_gsc_row(row)
+            if normalized.get("query") and any(v for v in normalized.values()):
+                all_rows.append(normalized)
+
+    return all_rows
+
+
+def xlsx_column_index(cell_ref: str) -> int:
+    match = re.match(r"([A-Z]+)", cell_ref.upper())
+    if not match:
+        return 0
+    index = 0
+    for char in match.group(1):
+        index = index * 26 + (ord(char) - ord("A") + 1)
+    return index - 1
+
+
+def read_xlsx_shared_strings(workbook: zipfile.ZipFile) -> List[str]:
+    if "xl/sharedStrings.xml" not in workbook.namelist():
+        return []
+    root = ET.fromstring(workbook.read("xl/sharedStrings.xml"))
+    strings = []
+    for item in root.findall(f"{XLSX_MAIN_NS}si"):
+        strings.append("".join(node.text or "" for node in item.findall(f".//{XLSX_MAIN_NS}t")))
+    return strings
+
+
+def read_xlsx_cell(cell: ET.Element, shared_strings: List[str]) -> str:
+    cell_type = cell.attrib.get("t")
+    if cell_type == "inlineStr":
+        return "".join(node.text or "" for node in cell.findall(f".//{XLSX_MAIN_NS}t")).strip()
+
+    value = cell.find(f"{XLSX_MAIN_NS}v")
+    raw_value = value.text if value is not None and value.text is not None else ""
+    if cell_type == "s" and raw_value:
+        try:
+            return shared_strings[int(raw_value)].strip()
+        except (IndexError, ValueError):
+            return ""
+    return raw_value.strip()
+
+
+def read_xlsx_sheet_paths(workbook: zipfile.ZipFile) -> List[Dict[str, str]]:
+    workbook_root = ET.fromstring(workbook.read("xl/workbook.xml"))
+    relationships_root = ET.fromstring(workbook.read("xl/_rels/workbook.xml.rels"))
+    relationships = {}
+    for rel in relationships_root.findall(f"{XLSX_REL_NS}Relationship"):
+        target = rel.attrib.get("Target", "")
+        if target.startswith("/"):
+            path = target.lstrip("/")
+        else:
+            path = posixpath.normpath(posixpath.join("xl", target))
+        relationships[rel.attrib.get("Id")] = path
+
+    sheets = []
+    for sheet in workbook_root.findall(f".//{XLSX_MAIN_NS}sheet"):
+        rel_id = sheet.attrib.get(f"{XLSX_DOC_REL_NS}id")
+        path = relationships.get(rel_id)
+        if path:
+            sheets.append({"name": sheet.attrib.get("name", ""), "path": path})
+    return sheets
+
+
+def read_xlsx_grid(workbook: zipfile.ZipFile, sheet_path: str, shared_strings: List[str]) -> List[List[str]]:
+    root = ET.fromstring(workbook.read(sheet_path))
+    grid = []
+    for row in root.findall(f".//{XLSX_MAIN_NS}row"):
+        values = []
+        for cell in row.findall(f"{XLSX_MAIN_NS}c"):
+            index = xlsx_column_index(cell.attrib.get("r", "A1"))
+            while len(values) <= index:
+                values.append("")
+            values[index] = read_xlsx_cell(cell, shared_strings)
+        if any(values):
+            grid.append(values)
+    return grid
+
+
+def rows_from_xlsx_grid(grid: List[List[str]]) -> List[Dict[str, str]]:
+    for header_index, header_row in enumerate(grid[:20]):
+        headers = [normalize_gsc_header(value) for value in header_row]
+        if not gsc_headers_are_usable(headers):
+            continue
+
+        rows = []
+        for data_row in grid[header_index + 1:]:
+            raw_row = {}
+            for index, header in enumerate(headers):
+                if header:
+                    raw_row[header] = data_row[index] if index < len(data_row) else ""
+            normalized = normalize_gsc_row(raw_row)
+            if normalized.get("query") and any(v for v in normalized.values()):
+                rows.append(normalized)
+        return rows
+    return []
+
+
+def parse_gsc_xlsx_upload(content: bytes) -> List[Dict[str, str]]:
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as workbook:
+            shared_strings = read_xlsx_shared_strings(workbook)
+            sheets = read_xlsx_sheet_paths(workbook)
+            sheets.sort(key=lambda sheet: (
+                0 if sheet["name"].strip().lower() == "queries" else
+                1 if "query" in sheet["name"].strip().lower() else
+                2
+            ))
+            for sheet in sheets:
+                grid = read_xlsx_grid(workbook, sheet["path"], shared_strings)
+                rows = rows_from_xlsx_grid(grid)
+                if rows:
+                    return rows
+    except zipfile.BadZipFile as exc:
+        raise ValueError("That file is not a valid .xlsx workbook. Please upload CSV or XLSX.") from exc
+    except KeyError as exc:
+        raise ValueError("That .xlsx workbook is missing worksheet data. Please re-export from GSC.") from exc
+    return []
+
+
+def parse_gsc_upload(content: bytes, filename: str = "") -> List[Dict[str, str]]:
+    filename_lower = (filename or "").lower()
+    is_xlsx = filename_lower.endswith(".xlsx") or content.startswith(b"PK\x03\x04")
+    if filename_lower.endswith(".xls") and not filename_lower.endswith(".xlsx"):
+        raise ValueError("Old .xls files are not supported. Please save the export as .xlsx or CSV.")
+    if is_xlsx:
+        return parse_gsc_xlsx_upload(content)
+    return parse_gsc_csv_upload(content)
+
 
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 os.makedirs(STATIC_DIR, exist_ok=True)
@@ -503,92 +714,11 @@ async def analyze_csv(file: UploadFile = File(...)):
     """Upload GSC CSV → queue Hermes analysis job → return job ID for polling."""
     try:
         content = await file.read()
-        filename = file.filename or ""
-
-        # Handle Excel files (.xlsx)
-        if filename.endswith(".xlsx"):
-            import openpyxl
-            import tempfile
-            with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
-                tmp.write(content)
-                tmp_path = tmp.name
-            try:
-                wb = openpyxl.load_workbook(tmp_path, read_only=True)
-                # Prioritize Queries sheet, then Pages, then first sheet
-                sheet_name = None
-                for candidate in ["Queries", "Pages"]:
-                    if candidate in wb.sheetnames:
-                        sheet_name = candidate
-                        break
-                if not sheet_name:
-                    sheet_name = wb.sheetnames[0]
-                ws = wb[sheet_name]
-                rows = []
-                headers = None
-                for row in ws.iter_rows(values_only=True):
-                    if headers is None:
-                        headers = [str(h).strip() if h else "" for h in row]
-                        continue
-                    if all(v is None or str(v).strip() == "" for v in row):
-                        continue
-                    row_dict = {}
-                    for i, h in enumerate(headers):
-                        if h and i < len(row):
-                            row_dict[h] = str(row[i]) if row[i] is not None else ""
-                    if row_dict:
-                        rows.append(row_dict)
-                wb.close()
-                os.unlink(tmp_path)
-                if not rows:
-                    return JSONResponse({"error": f"No data found in sheet '{sheet_name}'"}, status_code=400)
-            except Exception as e:
-                if os.path.exists(tmp_path):
-                    os.unlink(tmp_path)
-                return JSONResponse({"error": f"Failed to read Excel file: {str(e)}"}, status_code=400)
-        else:
-            # Handle CSV files
-            # Try UTF-8 first, fall back to latin-1 for Windows-exported CSVs
-            try:
-                csv_text = content.decode("utf-8")
-            except UnicodeDecodeError:
-                csv_text = content.decode("latin-1")
-
-            # GSC CSV exports may have multiple sections with blank lines.
-            all_rows = []
-            sections = csv_text.strip().split("\n\n")
-            for section in sections:
-                section = section.strip()
-                if not section:
-                    continue
-                lines = section.split("\n")
-                header_line = lines[0] if lines else ""
-                header_line = header_line.replace("\t", ",")
-                if not any(col in header_line.lower() for col in ["query", "page", "clicks", "impressions"]):
-                    if "\t" in lines[0]:
-                        normalized = [l.replace("\t", ",") for l in lines]
-                        try:
-                            reader = csv.DictReader(io.StringIO("\n".join(normalized)))
-                            for row in reader:
-                                if any(v for v in row.values() if v):
-                                    all_rows.append(row)
-                        except Exception:
-                            pass
-                    continue
-                normalized_lines = [header_line]
-                for line in lines[1:]:
-                    line = line.replace("\t", ",")
-                    normalized_lines.append(line)
-                try:
-                    reader = csv.DictReader(io.StringIO("\n".join(normalized_lines)))
-                    for row in reader:
-                        if any(v for v in row.values() if v):
-                            all_rows.append(row)
-                except Exception:
-                    pass
-            rows = all_rows
-
+        rows = parse_gsc_upload(content, file.filename or "")
         if not rows:
-            return JSONResponse({"error": "CSV file is empty or has unrecognized format"}, status_code=400)
+            return JSONResponse({
+                "error": "No usable GSC query data found. Upload a CSV with query/clicks/impressions/position columns or a GSC .xlsx export with a Queries sheet."
+            }, status_code=400)
 
         # Create async job
         from jobs import create_job, run_job_analysis
@@ -603,6 +733,8 @@ async def analyze_csv(file: UploadFile = File(...)):
             "rows_received": len(rows),
             "message": f"Analysis queued. Poll GET /api/jobs/{job_id} for results.",
         })
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
     except Exception as e:
         import traceback
         traceback.print_exc()
