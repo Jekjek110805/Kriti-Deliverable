@@ -1,0 +1,198 @@
+{
+  "main": {
+    "id": "52c734cb947f8efc",
+    "type": "split",
+    "children": [
+      {
+        "id": "e8e3d5d01cd0776b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9600d3b3dd16e382",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Stage 0 Kriti Blog Agent Architecture and Delivery Blueprint 1.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Stage 0 Kriti Blog Agent Architecture and Delivery Blueprint 1"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "ebf8e4d2820d936e",
+    "type": "split",
+    "children": [
+      {
+        "id": "6936083b983d5d9f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c319e7d8eaf708a3",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "c69bf8bbbb824539",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "000afcd3d1b0d00e",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "b03fe4461929f187",
+    "type": "split",
+    "children": [
+      {
+        "id": "6c5866212f2d4140",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d65a59395a236ed3",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "First Claude Response.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for First Claude Response"
+            }
+          },
+          {
+            "id": "7362a44157951dbf",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "First Claude Response.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from First Claude Response"
+            }
+          },
+          {
+            "id": "113aedaa20b7d25f",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "4466983d5462f1d5",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "083dbda6cf7bb000",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "First Claude Response.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of First Claude Response"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "9600d3b3dd16e382",
+  "lastOpenFiles": [
+    "Stage Delivery Plan - Kriti's Blog Agent 2.md",
+    "Stage 1 Kriti's Blog Agent.md",
+    "Stage 0 Kriti Blog Agent Architecture and Delivery Blueprint 1.md",
+    "First Claude Response.md",
+    "Stage 1/Deliverable 2.md",
+    "Stage 1/Deliverable 1.md",
+    "Kriti Project - Core Understanding.pdf",
+    "Kriti Marketing & Blog Automation Plan.md",
+    "Stage 1/Deliverable 3.md"
+  ]
+}
