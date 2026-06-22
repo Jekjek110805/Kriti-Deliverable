@@ -503,7 +503,11 @@ async def analyze_csv(file: UploadFile = File(...)):
     """Upload GSC CSV → queue Hermes analysis job → return job ID for polling."""
     try:
         content = await file.read()
-        csv_text = content.decode("utf-8")
+        # Try UTF-8 first, fall back to latin-1 for Windows-exported CSVs
+        try:
+            csv_text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            csv_text = content.decode("latin-1")
         reader = csv.DictReader(io.StringIO(csv_text))
         rows = list(reader)
         if not rows:
