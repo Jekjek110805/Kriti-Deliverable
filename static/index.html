@@ -126,6 +126,21 @@
   tr:last-child td { border-bottom: none; }
   td .badge, td .btn { display: inline-flex; align-items: center; }
 
+  /* Opportunity cards */
+  .opp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; transition: all .2s; position: relative; overflow: hidden; }
+  .opp-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; }
+  .opp-card:hover { border-color: var(--border-light); box-shadow: var(--shadow-glow); transform: translateX(2px); }
+  .opp-num { width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--accent-subtle); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+  .opp-keyword { font-size: 15px; font-weight: 700; color: var(--text); flex: 1; min-width: 0; }
+  .opp-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .opp-stat { text-align: center; min-width: 52px; }
+  .opp-stat-value { font-size: 15px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .opp-stat-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+  .opp-badges { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+  .opp-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .opp-score { font-size: 22px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; min-width: 40px; text-align: center; }
+  .opp-page { font-size: 11px; color: var(--text-muted); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
   /* Badges */
   .badge { display: inline-block; padding: 4px 14px; border-radius: 24px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap; }
   .badge-critical { background: rgba(255,71,87,0.12); color: var(--crimson); border: 1px solid rgba(255,71,87,0.15); }
@@ -319,30 +334,10 @@
         <!-- Stats -->
         <div class="stats-grid" id="statsGrid"></div>
 
-        <!-- Opportunities table -->
+        <!-- Opportunities -->
         <div class="card">
           <div class="card-title">Ranked Opportunities</div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Priority</th>
-                  <th>Keyword</th>
-                  <th>Page</th>
-                  <th>Pos</th>
-                  <th>Imp</th>
-                  <th>Clicks</th>
-                  <th>Intent</th>
-                  <th>Score</th>
-                  <th>Recommendation</th>
-                  <th>Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="oppsTable"></tbody>
-            </table>
-          </div>
+          <div id="oppsTable"></div>
         </div>
       </div>
     </div>
@@ -808,7 +803,7 @@ function showQueuedStatus(d) {
     <div class="stat-card"><div class="stat-value">${d.rows_received}</div><div class="stat-label">Rows received</div></div>
     <div class="stat-card"><div class="stat-value" style="font-size:13px">${d.job_id}</div><div class="stat-label">Job ID</div></div>
   `;
-  document.getElementById('oppsTable').innerHTML = `<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted);">Analyzing your data... please wait</td></tr>`;
+  document.getElementById('oppsTable').innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);">Analyzing your data... please wait</div>`;
 }
 
 function pollJob(jobId) {
@@ -847,22 +842,26 @@ function renderResults(d) {
     <div class="stat-card"><div class="stat-value" style="color:var(--text-muted)">${d.excluded}</div><div class="stat-label">Excluded</div></div>
   `;
 
-  const tbody = document.getElementById('oppsTable');
-  tbody.innerHTML = d.opportunities.map((o, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td><span class="badge badge-${o.priority.toLowerCase()}">${o.priority}</span></td>
-      <td><strong>${o.keyword}</strong></td>
-      <td style="font-size:12px;color:var(--text-muted)">${o.page}</td>
-      <td>${o.position}</td>
-      <td>${o.impressions.toLocaleString()}</td>
-      <td>${o.clicks}</td>
-      <td><span class="badge badge-${o.intent.toLowerCase()}">${o.intent}</span></td>
-      <td>${o.total_score}</td>
-      <td><span class="badge badge-${o.recommendation === 'Improve Existing' ? 'optimize' : o.recommendation === 'Expand Existing' ? 'maybe' : 'skip'}">${o.recommendation}</span></td>
-      <td><span class="badge badge-needs_review">needs_review</span></td>
-      <td><button class="btn btn-sm btn-secondary" onclick="quickDecision('${o.keyword.replace(/'/g, "\\\\'")}', '${o.page.replace(/'/g, "\\\\'")}', ${o.position}, ${o.impressions}, ${o.clicks})">Decide</button></td>
-    </tr>
+  const list = document.getElementById('oppsTable');
+  list.innerHTML = d.opportunities.map((o, i) => `
+    <div class="opp-card">
+      <div class="opp-num">${i + 1}</div>
+      <div class="opp-keyword">${o.keyword}</div>
+      <div class="opp-page">${o.page}</div>
+      <div class="opp-meta">
+        <div class="opp-stat"><div class="opp-stat-value">${o.position}</div><div class="opp-stat-label">Pos</div></div>
+        <div class="opp-stat"><div class="opp-stat-value">${o.impressions.toLocaleString()}</div><div class="opp-stat-label">Imp</div></div>
+        <div class="opp-stat"><div class="opp-stat-value">${o.clicks}</div><div class="opp-stat-label">Clicks</div></div>
+      </div>
+      <div class="opp-badges">
+        <span class="badge badge-${o.intent.toLowerCase()}">${o.intent}</span>
+        <span class="badge badge-${o.recommendation === 'Improve Existing' ? 'optimize' : o.recommendation === 'Expand Existing' ? 'maybe' : 'skip'}">${o.recommendation}</span>
+      </div>
+      <div class="opp-right">
+        <div class="opp-score">${o.total_score}</div>
+        <button class="btn btn-sm btn-secondary" onclick="quickDecision('${o.keyword.replace(/'/g, "\\\\'")}', '${o.page.replace(/'/g, "\\\\'")}', ${o.position}, ${o.impressions}, ${o.clicks})">Decide</button>
+      </div>
+    </div>
   `).join('');
 }
 
