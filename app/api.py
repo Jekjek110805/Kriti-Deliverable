@@ -2290,79 +2290,121 @@ async def run_full_pipeline(request: Request):
 
 class GSCConfig(BaseModel):
     site_url: str = ""
-    credentials_path: str = ""  # Path to service account JSON
+    api_key: str = ""
+    credentials_path: str = ""
+
+
+def _get_gsc_client():
+    """Create GSC client from env/config."""
+    from integrations.gsc_client import GSCClient
+    return GSCClient()
 
 
 @app.get("/api/integrations/gsc/status")
 async def gsc_integration_status():
     """Check GSC integration status."""
-    # In production, this would verify OAuth credentials and API access
+    client = _get_gsc_client()
+    connected = client.has_credentials()
+
+    if connected:
+        return {
+            "status": "connected",
+            "mode": "api_key",
+            "site_url": client.site_url,
+            "capabilities": [
+                "Live query data via API",
+                "Performance metrics (clicks, impressions, CTR, position)",
+                "Index status checking",
+                "Sitemap management",
+            ],
+        }
+
     return {
-        "status": "mock",
-        "mode": "csv_upload",  # Currently using CSV upload; API integration available with credentials
+        "status": "not_connected",
+        "mode": "csv_upload",
         "capabilities": [
             "Upload CSV export (current)",
-            "Live query data (requires service account)",
-            "Index status checking (requires API)",
-            "Performance reporting (requires API)",
+            "Live query data (requires API key)",
+            "Index status checking (requires API key)",
         ],
         "setup_instructions": {
-            "step1": "Create Google Cloud project",
-            "step2": "Enable Google Search Console API",
-            "step3": "Create service account and download JSON key",
-            "step4": "Add service account email to GSC property",
-            "step5": "POST to /api/integrations/gsc/configure with credentials",
+            "step1": "Go to console.google.com → APIs & Services → Library",
+            "step2": "Search 'Search Console API' → Enable it",
+            "step3": "Go to Credentials → Create API Key",
+            "step4": "Restrict key to Search Console API only",
+            "step5": "POST to /api/integrations/gsc/configure with key + site URL",
         },
-        "note": "CSV upload works immediately. Live API requires service account setup.",
     }
 
 
 @app.post("/api/integrations/gsc/configure")
 async def configure_gsc(config: GSCConfig):
     """Configure GSC API credentials for live data."""
-    # Save configuration
-    config_path = os.path.join(DATA_DIR, "gsc_config.json")
-    with open(config_path, "w") as f:
-        json.dump(config.dict(), f, indent=2)
+    # Save to config/api_keys.json
+    keys_path = os.path.join(DATA_DIR, "..", "config", "api_keys.json")
+    keys = {}
+    if os.path.exists(keys_path):
+        with open(keys_path) as f:
+            keys = json.load(f)
+
+    keys["GSC_API_KEY"] = config.api_key
+    keys["GSC_SITE_URL"] = config.site_url
+
+    os.makedirs(os.path.dirname(keys_path), exist_ok=True)
+    with open(keys_path, "w") as f:
+        json.dump(keys, f, indent=2, default=str)
 
     return {
         "status": "configured",
-        "message": "GSC credentials saved. Live data will be available after validation.",
+        "message": "GSC API credentials saved.",
         "next_steps": [
-            "Validate credentials with /api/integrations/gsc/validate",
+            "Validate with /api/integrations/gsc/validate",
             "Pull live data with /api/integrations/gsc/pull",
         ],
     }
 
 
+@app.get("/api/integrations/gsc/validate")
+async def validate_gsc():
+    """Test GSC API connection."""
+    client = _get_gsc_client()
+    if not client.has_credentials():
+        return JSONResponse({
+            "valid": False,
+            "error": "GSC not configured",
+        }, status_code=400)
+
+    data = client.get_performance_data(days=7, row_limit=5)
+    if data is not None:
+        return {"valid": True, "test_rows": len(data), "message": "Connection successful"}
+    return {"valid": False, "error": "Could not fetch data. Check API key and site URL."}
+
+
 @app.post("/api/integrations/gsc/pull")
 async def pull_gsc_data(request: Request):
-    """Pull live data from GSC API (or return mock data in CSV mode)."""
-    body = await request.json()
-    start_date = body.get("start_date", "")
-    end_date = body.get("end_date", "")
-    dimensions = body.get("dimensions", ["query", "page"])
-
-    # Check for API credentials
-    config_path = os.path.join(DATA_DIR, "gsc_config.json")
-    if not os.path.exists(config_path):
+    """Pull live data from GSC API."""
+    client = _get_gsc_client()
+    if not client.has_credentials():
         return JSONResponse({
-            "error": "GSC not configured. Use CSV upload or configure API credentials.",
+            "error": "GSC not configured",
             "endpoint": "/api/integrations/gsc/configure",
         }, status_code=400)
 
-    # In production, this would call the GSC API
-    # For now, return mock structure
+    body = await request.json() if request.headers.get("content-length", "0") != "0" else {}
+    days = body.get("days", 30)
+    row_limit = body.get("row_limit", 250)
+
+    data = client.get_performance_data(days=days, row_limit=row_limit)
+    if data is not None:
+        return {
+            "status": "live_data",
+            "rows": len(data),
+            "data": data,
+        }
+
     return {
-        "status": "mock_data",
-        "message": "In production, this returns live GSC data. Currently returning mock structure.",
-        "data": {
-            "dimensions": dimensions,
-            "date_range": {"start": start_date, "end": end_date},
-            "rows": [],
-            "total_rows": 0,
-        },
-        "note": "Connect GSC API for live data. CSV upload works today.",
+        "status": "error",
+        "message": "Failed to fetch from GSC API. Check credentials.",
     }
 
 
