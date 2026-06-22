@@ -1440,14 +1440,129 @@ function showIntegrationDetail(id) {
   const int = INTEGRATIONS.find(i => i.id === id);
   if (!int) return;
 
+  if (id === 'gsc') {
+    showGSCConfig(int);
+    return;
+  }
+
   fetch(BASE + int.endpoint)
     .then(r => r.json())
     .then(d => {
       let html = `<div class="card"><div class="card-title">${int.icon} ${int.name}</div>`;
       html += `<pre style="font-size:12px;background:var(--surface2);padding:12px;border-radius:8px;overflow:auto;max-height:400px;">${JSON.stringify(d, null, 2)}</pre>`;
-      html += `<button class="btn btn-secondary" style="margin-top:8px;" onclick="document.getElementById('integrations-grid').scrollIntoView()">← Back</button></div>`;
+      html += `<button class="btn btn-secondary" style="margin-top:8px;" onclick="loadIntegrations()">← Back</button></div>`;
       document.getElementById('integrations-grid').innerHTML = html;
     });
+}
+
+function showGSCConfig(int) {
+  fetch(BASE + '/api/integrations/gsc/status')
+    .then(r => r.json())
+    .then(d => {
+      const isConnected = d.status === 'connected';
+      let html = `<div class="card" style="max-width:560px;">`;
+      html += `<div class="card-title">${int.icon} Google Search Console</div>`;
+      html += `<p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">${int.desc}</p>`;
+
+      if (isConnected) {
+        html += `<div class="alert alert-success">✓ Connected — Live data is being pulled from GSC.</div>`;
+        html += `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Site: <strong>${d.site_url || 'configured'}</strong></p>`;
+        html += `<div style="display:flex;gap:10px;">`;
+        html += `<button class="btn btn-primary" onclick="validateGSC()">Test Connection</button>`;
+        html += `<button class="btn btn-secondary" onclick="pullGSCData()">Pull Data Now</button>`;
+        html += `<button class="btn btn-danger" onclick="disconnectGSC()">Disconnect</button>`;
+        html += `</div>`;
+        html += `<div id="gsc-config-result" style="margin-top:16px;"></div>`;
+      } else {
+        html += `<div class="alert alert-info">Not connected. Enter your API key and site URL below.</div>`;
+        html += `<div style="margin-bottom:16px;"><label>Google Cloud API Key</label><input type="password" id="gscApiKey" placeholder="AIzaSy..." style="font-family:monospace;"></div>`;
+        html += `<div style="margin-bottom:16px;"><label>Site URL</label><input type="text" id="gscSiteUrl" placeholder="https://example.com/"></div>`;
+        html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">`;
+        html += `<strong>How to get an API key:</strong><br>`;
+        `1. Go to <a href="https://console.google.com/apis/library" target="_blank" style="color:var(--accent);">Google Cloud Console → APIs Library</a><br>`;
+        `2. Search "Search Console API" → Enable<br>`;
+        `3. Go to Credentials → Create API Key<br>`;
+        `4. Restrict to Search Console API only`;
+        html += `</div>`;
+        html += `<button class="btn btn-primary" onclick="configureGSC()">Connect</button>`;
+        html += `<div id="gsc-config-result" style="margin-top:16px;"></div>`;
+      }
+
+      html += `<button class="btn btn-secondary" style="margin-top:16px;" onclick="loadIntegrations()">← Back</button></div>`;
+      document.getElementById('integrations-grid').innerHTML = html;
+    });
+}
+
+async function configureGSC() {
+  const apiKey = document.getElementById('gscApiKey').value.trim();
+  const siteUrl = document.getElementById('gscSiteUrl').value.trim();
+  const resultEl = document.getElementById('gsc-config-result');
+
+  if (!apiKey || !siteUrl) {
+    resultEl.innerHTML = '<div class="alert alert-error">Both API key and site URL are required.</div>';
+    return;
+  }
+
+  try {
+    const res = await fetch(BASE + '/api/integrations/gsc/configure', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: apiKey, site_url: siteUrl })
+    });
+    const data = await res.json();
+    if (data.status === 'configured') {
+      resultEl.innerHTML = '<div class="alert alert-success">✓ ' + data.message + '</div>';
+      setTimeout(() => showGSCConfig(INTEGRATIONS.find(i => i.id === 'gsc')), 1500);
+    } else {
+      resultEl.innerHTML = '<div class="alert alert-error">' + (data.error || 'Configuration failed') + '</div>';
+    }
+  } catch (e) {
+    resultEl.innerHTML = '<div class="alert alert-error">Connection failed. Check your API key.</div>';
+  }
+}
+
+async function validateGSC() {
+  const resultEl = document.getElementById('gsc-config-result');
+  resultEl.innerHTML = '<div class="loading active"><div class="spinner"></div>Testing connection...</div>';
+
+  try {
+    const res = await fetch(BASE + '/api/integrations/gsc/validate');
+    const data = await res.json();
+    if (data.valid) {
+      resultEl.innerHTML = `<div class="alert alert-success">✓ ${data.message} (${data.test_rows} test rows)</div>`;
+    } else {
+      resultEl.innerHTML = `<div class="alert alert-error">✗ ${data.error}</div>`;
+    }
+  } catch (e) {
+    resultEl.innerHTML = '<div class="alert alert-error">Validation failed.</div>';
+  }
+}
+
+async function pullGSCData() {
+  const resultEl = document.getElementById('gsc-config-result');
+  resultEl.innerHTML = '<div class="loading active"><div class="spinner"></div>Pulling data from GSC...</div>';
+
+  try {
+    const res = await fetch(BASE + '/api/integrations/gsc/pull', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days: 30, row_limit: 250 })
+    });
+    const data = await res.json();
+    if (data.status === 'live_data') {
+      resultEl.innerHTML = `<div class="alert alert-success">✓ Pulled ${data.rows} rows of live data.</div>`;
+    } else {
+      resultEl.innerHTML = `<div class="alert alert-error">✗ ${data.message}</div>`;
+    }
+  } catch (e) {
+    resultEl.innerHTML = '<div class="alert alert-error">Pull failed.</div>';
+  }
+}
+
+async function disconnectGSC() {
+  const resultEl = document.getElementById('gsc-config-result');
+  resultEl.innerHTML = '<div class="alert alert-info">GSC disconnected. CSV upload still available.</div>';
+  setTimeout(() => showGSCConfig(INTEGRATIONS.find(i => i.id === 'gsc')), 1500);
 }
 
 // ── Governance ───────────────────────────────────────────────────────────────
