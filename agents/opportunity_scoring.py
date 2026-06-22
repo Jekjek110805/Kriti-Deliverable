@@ -64,6 +64,28 @@ class OpportunityScoringAgent:
             elif kd <= 50:
                 score += 3
 
+            # EEAT Alignment (5)
+            eeat = topic.get("eeat_alignment")
+
+            if eeat == "strong":
+                score += 5
+            elif eeat == "good":
+                score += 4
+            elif eeat == "moderate":
+                score += 2
+            # weak or missing = 0
+
+            # Content Gap Opportunity (5)
+            content_gap = topic.get("content_gap")
+
+            if content_gap == "high":
+                score += 5
+            elif content_gap == "moderate":
+                score += 3
+            elif content_gap == "low":
+                score += 1
+            # none or missing = 0
+
             topic["opportunity_score"] = score
 
             if score >= 80:
@@ -72,8 +94,10 @@ class OpportunityScoringAgent:
                 topic["priority"] = "High"
             elif score >= 50:
                 topic["priority"] = "Medium"
-            else:
+            elif score >= 35:
                 topic["priority"] = "Low"
+            else:
+                topic["priority"] = "Reject"
 
             scored_topics.append(topic)
 

@@ -4960,3 +4960,70 @@ async def get_cost_saving_tips():
     ])
 
     return {"tips": tips, "usage_stats": {"total_calls": len(usage), "premium_calls": len(premium_calls)}}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GENERIC INTEGRATION STATUS — Dynamic name-based lookup
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/integrations/{name}")
+async def get_integration_status(name: str):
+    """Get status of a specific integration by name (gsc, semrush, cms, notifications, analytics, outreach)."""
+    known_integrations = {
+        "gsc": {
+            "name": "Google Search Console",
+            "status": "disconnected",
+            "configured": False,
+            "last_sync": None,
+            "metrics": {"keywords_tracked": 0, "pages_tracked": 0},
+        },
+        "semrush": {
+            "name": "SEMrush",
+            "status": "disconnected",
+            "configured": False,
+            "last_sync": None,
+            "metrics": {"keywords_looked_up": 0, "api_calls_remaining": 0},
+        },
+        "cms": {
+            "name": "CMS Publisher",
+            "status": "disconnected",
+            "configured": False,
+            "last_sync": None,
+            "metrics": {"published_count": 0, "draft_count": 0},
+        },
+        "notifications": {
+            "name": "Notifications",
+            "status": "disconnected",
+            "configured": False,
+            "last_sync": None,
+            "metrics": {"channels_configured": 0, "sent_today": 0},
+        },
+        "analytics": {
+            "name": "Analytics",
+            "status": "disconnected",
+            "configured": False,
+            "last_sync": None,
+            "metrics": {"active_trackers": 0, "events_today": 0},
+        },
+        "outreach": {
+            "name": "Outreach",
+            "status": "disconnected",
+            "configured": False,
+            "last_sync": None,
+            "metrics": {"campaigns_active": 0, "emails_sent_today": 0},
+        },
+    }
+
+    if name in known_integrations:
+        return {"integration": known_integrations[name], "found": True}
+
+    return {
+        "integration": {
+            "name": name,
+            "status": "unknown",
+            "configured": False,
+            "last_sync": None,
+            "metrics": {},
+        },
+        "found": False,
+    }

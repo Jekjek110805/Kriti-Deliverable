@@ -17,8 +17,8 @@ class ExistingPageEvaluationAgent:
 
             if has_existing_page:
                 if intent in ["BOFU", "MOFU"]:
-                    intent_match_score = 25
-                    expansion_potential_score = 20
+                    intent_match_score = 30
+                    expansion_potential_score = 25
                 else:
                     intent_match_score = 15
                     expansion_potential_score = 10
@@ -49,12 +49,12 @@ class ExistingPageEvaluationAgent:
             if has_existing_page and intent_match_score >= 25 and expansion_potential_score >= 20:
                 recommendation = "Optimize Existing Page"
                 reasoning = "Existing page has strong intent match and can be expanded."
-            elif has_existing_page:
+            elif not has_existing_page or intent_match_score < 15 or expansion_potential_score < 10:
+                recommendation = "Create New Content"
+                reasoning = "No suitable existing page was found or scores are too low."
+            else:
                 recommendation = "Expand Existing Page"
                 reasoning = "Existing page exists but may need more substantial updates."
-            else:
-                recommendation = "Create New Content"
-                reasoning = "No suitable existing page was found."
 
             topic["existing_page_evaluation"] = {
                 "intent_match_score": intent_match_score,
