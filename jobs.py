@@ -46,12 +46,30 @@ def _save_jobs():
 
 def create_job(rows: list) -> str:
     """Create a new analysis job and return job_id."""
+    # Normalize column names to handle various CSV formats
+    column_map = {
+        "query": "query", "search query": "query", "keyword": "query", "term": "query",
+        "page": "page", "url": "page", "landing page": "page", "address": "page",
+        "clicks": "clicks", "click": "clicks",
+        "impressions": "impressions", "impression": "impressions", "imps": "impressions",
+        "ctr": "ctr", "click-through rate": "ctr", "click through rate": "ctr",
+        "position": "position", "pos": "position", "avg position": "position", "average position": "position",
+    }
+    normalized_rows = []
+    for row in rows:
+        normalized = {}
+        for k, v in row.items():
+            clean_key = k.strip().lower()
+            mapped = column_map.get(clean_key, clean_key)
+            normalized[mapped] = v.strip() if v else ""
+        normalized_rows.append(normalized)
+
     job_id = str(uuid.uuid4())[:8]
     _jobs[job_id] = {
         "job_id": job_id,
         "status": "pending",
-        "rows_count": len(rows),
-        "rows": rows,
+        "rows_count": len(normalized_rows),
+        "rows": normalized_rows,
         "result": None,
         "error": None,
         "created_at": time.time(),

@@ -508,10 +508,50 @@ async def analyze_csv(file: UploadFile = File(...)):
             csv_text = content.decode("utf-8")
         except UnicodeDecodeError:
             csv_text = content.decode("latin-1")
-        reader = csv.DictReader(io.StringIO(csv_text))
-        rows = list(reader)
+
+        # GSC CSV exports may have multiple tab-separated sections with blank lines.
+        # Parse ALL sections and merge into one list of rows.
+        all_rows = []
+        # Split by double-newlines (section separators) and parse each section
+        sections = csv_text.strip().split("\n\n")
+        for section in sections:
+            section = section.strip()
+            if not section:
+                continue
+            lines = section.split("\n")
+            # Skip sections that don't have a header with known columns
+            header_line = lines[0] if lines else ""
+            # GSC exports sometimes use tabs within rows; normalize
+            header_line = header_line.replace("\t", ",")
+            # Check if this looks like a GSC data section
+            if not any(col in header_line.lower() for col in ["query", "page", "clicks", "impressions"]):
+                # Try tab-delimited
+                if "\t" in lines[0]:
+                    normalized = [l.replace("\t", ",") for l in lines]
+                    try:
+                        reader = csv.DictReader(io.StringIO("\n".join(normalized)))
+                        for row in reader:
+                            if any(v for v in row.values() if v):
+                                all_rows.append(row)
+                    except Exception:
+                        pass
+                continue
+            # Parse as comma-delimited
+            normalized_lines = [header_line]
+            for line in lines[1:]:
+                line = line.replace("\t", ",")
+                normalized_lines.append(line)
+            try:
+                reader = csv.DictReader(io.StringIO("\n".join(normalized_lines)))
+                for row in reader:
+                    if any(v for v in row.values() if v):
+                        all_rows.append(row)
+            except Exception:
+                pass
+
+        rows = all_rows
         if not rows:
-            return JSONResponse({"error": "CSV file is empty"}, status_code=400)
+            return JSONResponse({"error": "CSV file is empty or has unrecognized format"}, status_code=400)
 
         # Create async job
         from jobs import create_job, run_job_analysis
