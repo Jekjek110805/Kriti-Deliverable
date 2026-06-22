@@ -794,7 +794,7 @@ function showQueuedStatus(d) {
     <div class="stat-card"><div class="stat-value">${d.rows_received}</div><div class="stat-label">Rows received</div></div>
     <div class="stat-card"><div class="stat-value" style="font-size:13px">${d.job_id}</div><div class="stat-label">Job ID</div></div>
   `;
-  document.getElementById('oppsTable').innerHTML = `<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted);">Hermes is analyzing your data...</td></tr>`;
+  document.getElementById('oppsTable').innerHTML = `<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted);">Analyzing your data... please wait</td></tr>`;
 }
 
 function pollJob(jobId) {
