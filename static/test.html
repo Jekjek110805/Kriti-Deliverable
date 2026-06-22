@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stage 1A — Existing Page Opportunity Finder</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e4e6f0; min-height: 100vh; padding: 40px 20px; }
+
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 14px; color: #8b8fa8; margin-bottom: 28px; }
+
+  /* Upload area */
+  .upload-area { border: 2px dashed #2e3348; border-radius: 12px; padding: 36px; text-align: center; margin-bottom: 16px; transition: all .15s; cursor: pointer; }
+  .upload-area:hover, .upload-area.dragover { border-color: #6366f1; background: rgba(99,102,241,0.05); }
+  .upload-area input[type="file"] { display: none; }
+  .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-text { font-size: 15px; margin-bottom: 4px; }
+  .upload-hint { font-size: 12px; color: #8b8fa8; }
+  .file-selected { font-size: 13px; color: #22c55e; margin-top: 8px; }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 10px; margin-bottom: 24px; }
+  .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-primary { background: #6366f1; color: #fff; }
+  .btn-primary:hover { background: #818cf8; }
+  .btn-primary:disabled { background: #3730a3; color: #8b8fa8; cursor: not-allowed; }
+  .btn-secondary { background: #1a1d27; color: #e4e6f0; border: 1px solid #2e3348; }
+  .btn-secondary:hover { background: #242836; }
+  .btn-success { background: #166534; color: #fff; }
+  .btn-success:hover { background: #15803d; }
+
+  /* Status */
+  .status-bar { background: #1a1d27; border: 1px solid #2e3348; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; display: none; }
+  .status-bar.active { display: block; }
+  .status-queued { color: #eab308; }
+  .status-running { color: #6366f1; }
+  .status-success { color: #22c55e; }
+  .status-error { color: #ef4444; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: #1a1d27; border: 1px solid #2e3348; border-radius: 8px; padding: 16px; text-align: center; }
+  .stat-value { font-size: 24px; font-weight: 700; }
+  .stat-label { font-size: 12px; color: #8b8fa8; margin-top: 4px; }
+
+  /* Table */
+  .table-wrap { background: #1a1d27; border: 1px solid #2e3348; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+  .table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .table-wrap th { background: #242836; padding: 10px 12px; text-align: left; font-weight: 600; color: #8b8fa8; border-bottom: 1px solid #2e3348; white-space: nowrap; }
+  .table-wrap td { padding: 10px 12px; border-bottom: 1px solid #1e2230; }
+  .table-wrap tr:last-child td { border-bottom: none; }
+  .table-wrap tr:hover td { background: rgba(99,102,241,0.04); }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+  .badge-critical { background: #7f1d1d; color: #fca5a5; }
+  .badge-high { background: #7c2d12; color: #fdba74; }
+  .badge-medium { background: #713f12; color: #fde68a; }
+  .badge-low { background: #1e293b; color: #94a3b8; }
+  .badge-bofu { background: #1e3a5f; color: #93c5fd; }
+  .badge-mofu { background: #3b1f5e; color: #c4b5fd; }
+  .badge-tofu { background: #1f3a2f; color: #86efac; }
+  .badge-optimize { background: #166534; color: #86efac; }
+  .badge-expand { background: #7c2d12; color: #fdba74; }
+  .badge-create { background: #1e3a5f; color: #93c5fd; }
+  .badge-review { background: #1e293b; color: #94a3b8; }
+
+  /* Download buttons */
+  .downloads { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .hidden { display: none; }
+
+  /* Spinner */
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #6366f1; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .section-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Stage 1A — Existing Page Opportunity Finder</h1>
+  <p class="subtitle">Upload a Google Search Console CSV export. Hermes will analyze and return ranked opportunities.</p>
+
+  <!-- Upload -->
+  <div class="upload-area" id="uploadZone">
+    <div class="upload-icon">📄</div>
+    <div class="upload-text">Drop your GSC CSV here or click to browse</div>
+    <div class="upload-hint">Expected columns: query, page, clicks, impressions, ctr, position</div>
+    <div class="file-selected" id="fileSelected"></div>
+    <input type="file" id="fileInput" accept=".csv">
+  </div>
+
+  <!-- Buttons -->
+  <div class="btn-row">
+    <button class="btn btn-primary" id="runBtn" onclick="runAnalysis()" disabled>Run Analysis</button>
+    <button class="btn btn-secondary" onclick="loadSample()">Load Sample Data</button>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar" id="statusBar">
+    <span id="statusIcon"></span>
+    <span id="statusText"></span>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsSection" class="hidden">
+
+    <!-- Stats -->
+    <div class="stats" id="statsGrid"></div>
+
+    <!-- Table -->
+    <div class="section-title">Top Opportunities</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Priority</th>
+            <th>Keyword</th>
+            <th>Page</th>
+            <th>Position</th>
+            <th>Impressions</th>
+            <th>Clicks</th>
+            <th>CTR</th>
+            <th>Intent</th>
+            <th>Score</th>
+            <th>Recommendation</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="oppsTable"></tbody>
+      </table>
+    </div>
+
+    <!-- Downloads -->
+    <div class="section-title">Downloads</div>
+    <div class="downloads">
+      <button class="btn btn-success" onclick="downloadFile('csv')">Download CSV</button>
+      <button class="btn btn-success" onclick="downloadFile('yaml')">Download Approval Queue</button>
+      <button class="btn btn-success" onclick="downloadFile('report')">Download Report</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+// Auto-detect: if opened from file://, default to localhost. Otherwise use same origin.
+// Override with URL param: ?server=http://gc-gei-ollama:8000
+const _urlParams = new URLSearchParams(window.location.search);
+const _serverOverride = _urlParams.get('server');
+const API_BASE = _serverOverride
+  || (window.location.protocol === 'file:' ? 'http://localhost:8000' : window.location.origin);
+
+// ── State ───────────────────────────────────────────────────────────────────
+let currentFile = null;
+let pollInterval = null;
+let currentResult = null;
+
+// ── File Upload ──────────────────────────────────────────────────────────────
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) selectFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) selectFile(e.target.files[0]); });
+
+function selectFile(file) {
+  currentFile = file;
+  document.getElementById('fileSelected').textContent = 'Selected: ' + file.name;
+  document.getElementById('runBtn').disabled = false;
+}
+
+// ── Sample Data ──────────────────────────────────────────────────────────────
+function loadSample() {
+  const sampleCSV = `query,page,clicks,impressions,ctr,position
+clinic management software,/clinic-software,120,2450,4.9,8
+ehr software,/ehr-guide,95,1800,5.2,6
+patient management software,/patient-management,50,1400,3.5,14
+medical billing software,/medical-billing,150,3100,4.8,5
+telemedicine platform,/telemedicine-features,85,1950,4.3,9
+healthcare crm,/healthcare-crm,40,1150,3.4,12
+best clinic software,/clinic-software-comparison,180,4200,4.3,4
+clinic scheduling software,/appointment-scheduling,70,1600,4.4,10
+electronic medical records,/emr-guide,90,2100,4.2,7
+patient engagement software,/patient-engagement,45,980,4.6,13
+medical practice management,/practice-management,110,2800,3.9,11
+ehr pricing,/ehr-pricing,60,950,6.3,3
+crm for clinics,/healthcare-crm,55,1300,4.2,8
+clinic crm software,/healthcare-crm,75,1750,4.3,6
+telehealth software pricing,/telemedicine-pricing,35,820,4.1,15
+medical software comparison,/software-comparison,95,2400,4.0,9
+best emr software,/best-emr-software,160,3900,4.1,5
+medical records management,/records-management,50,1250,4.0,12
+healthcare software solutions,/healthcare-solutions,65,1450,4.5,10
+ehr implementation guide,/ehr-implementation,40,900,4.4,16`;
+
+  const blob = new Blob([sampleCSV], { type: 'text/csv' });
+  currentFile = new File([blob], 'sample_gsc_export.csv', { type: 'text/csv' });
+  document.getElementById('fileSelected').textContent = 'Selected: sample_gsc_export.csv (20 rows)';
+  document.getElementById('runBtn').disabled = false;
+}
+
+// ── Run Analysis ─────────────────────────────────────────────────────────────
+function runAnalysis() {
+  if (!currentFile) return;
+
+  const formData = new FormData();
+  formData.append('file', currentFile);
+
+  setStatus('running', '<span class="spinner"></span> Uploading CSV...');
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('resultsSection').classList.add('hidden');
+
+  // Clear any previous poll
+  if (pollInterval) clearInterval(pollInterval);
+
+  fetch(API_BASE + '/api/stage1a/analyze', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) {
+        setStatus('error', 'Error: ' + d.error);
+        document.getElementById('runBtn').disabled = false;
+        return;
+      }
+
+      if (d.status === 'queued' && d.job_id) {
+        setStatus('running', '<span class="spinner"></span> Hermes is analyzing ' + d.rows_received + ' rows... Job: ' + d.job_id);
+        pollInterval = setInterval(() => pollJob(d.job_id), 5000);
+      } else if (d.opportunities) {
+        // Direct result (fallback)
+        currentResult = d;
+        showResults(d);
+        document.getElementById('runBtn').disabled = false;
+      }
+    })
+    .catch(err => {
+      setStatus('error', 'Error: ' + err);
+      document.getElementById('runBtn').disabled = false;
+    });
+}
+
+// ── Poll Job ─────────────────────────────────────────────────────────────────
+function pollJob(jobId) {
+  fetch(API_BASE + '/api/jobs/' + jobId)
+    .then(r => r.json())
+    .then(job => {
+      if (job.status === 'complete') {
+        clearInterval(pollInterval);
+        currentResult = job.result;
+        showResults(job.result);
+        document.getElementById('runBtn').disabled = false;
+      } else if (job.status === 'error') {
+        clearInterval(pollInterval);
+        setStatus('error', 'Analysis failed: ' + job.error);
+        document.getElementById('runBtn').disabled = false;
+      } else {
+        setStatus('running', '<span class="spinner"></span> Hermes is analyzing... (' + (job.elapsed_seconds || '?') + 's elapsed)');
+      }
+    })
+    .catch(() => { /* keep polling */ });
+}
+
+// ── Show Results ─────────────────────────────────────────────────────────────
+function showResults(d) {
+  document.getElementById('resultsSection').classList.remove('hidden');
+  setStatus('success', 'Analysis complete. ' + d.summary.opportunities_found + ' opportunities found from ' + d.summary.rows_processed + ' rows.');
+
+  // Stats
+  const opps = d.opportunities || [];
+  const critical = opps.filter(o => o.priority === 'Critical').length;
+  const high = opps.filter(o => o.priority === 'High').length;
+  const bofu = opps.filter(o => o.intent === 'BOFU').length;
+  const mofu = opps.filter(o => o.intent === 'MOFU').length;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${d.summary.rows_processed}</div><div class="stat-label">Rows Processed</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:#22c55e">${d.summary.opportunities_found}</div><div class="stat-label">Opportunities</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:#ef4444">${critical}</div><div class="stat-label">Critical</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:#f97316">${high}</div><div class="stat-label">High</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:#3b82f6">${bofu}</div><div class="stat-label">BOFU</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:#a78bfa">${mofu}</div><div class="stat-label">MOFU</div></div>
+  `;
+
+  // Table
+  const tbody = document.getElementById('oppsTable');
+  tbody.innerHTML = opps.map((o, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><span class="badge badge-${o.priority.toLowerCase()}">${o.priority}</span></td>
+      <td><strong>${o.keyword}</strong></td>
+      <td style="font-size:12px;color:#8b8fa8">${o.page}</td>
+      <td>${o.position}</td>
+      <td>${o.impressions.toLocaleString()}</td>
+      <td>${o.clicks}</td>
+      <td>${o.ctr}</td>
+      <td><span class="badge badge-${o.intent.toLowerCase()}">${o.intent}</span></td>
+      <td><strong>${o.score}</strong></td>
+      <td><span class="badge badge-${o.recommendation === 'Improve Existing' ? 'optimize' : o.recommendation === 'Expand Existing' ? 'expand' : 'create'}">${o.recommendation}</span></td>
+      <td><span class="badge badge-review">${o.approval_status}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ── Status Bar ───────────────────────────────────────────────────────────────
+function setStatus(type, text) {
+  const bar = document.getElementById('statusBar');
+  const icon = document.getElementById('statusIcon');
+  const txt = document.getElementById('statusText');
+  bar.className = 'status-bar active status-' + type;
+  txt.textContent = text;
+}
+
+// ── Download ─────────────────────────────────────────────────────────────────
+function downloadFile(type) {
+  const urls = {
+    csv: API_BASE + '/api/stage1a/csv',
+    yaml: API_BASE + '/api/stage1a/yaml',
+    report: API_BASE + '/api/stage1a/report',
+  };
+  if (urls[type]) window.open(urls[type], '_blank');
+}
+</script>
+</body>
+</html>

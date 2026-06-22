@@ -1,0 +1,63 @@
+{
+  "keyword": "best crm software",
+  "intent": "BOFU",
+  "target_audience": "clinic managers",
+  "word_count_target": 1500,
+  "title_suggestions": [
+    "Best Crm Software: The Complete Guide",
+    "Best Best Crm Software for clinic managers",
+    "How to Choose Best Crm Software in 2026"
+  ],
+  "h1": "Best Crm Software: The Complete Guide",
+  "h2_outline": [
+    "What is best crm software?",
+    "Why best crm software matters for your business",
+    "Key features to look for",
+    "How to choose the right best crm software",
+    "Top best crm software options compared",
+    "Implementation best practices",
+    "Common mistakes to avoid",
+    "Next steps"
+  ],
+  "faq_questions": [
+    "What is best crm software and why does it matter?",
+    "How do I get started with best crm software?",
+    "What are the best best crm software options?",
+    "How much does best crm software cost?",
+    "What mistakes should I avoid with best crm software?"
+  ],
+  "competitor_angles": [
+    "Comparison posts (vs. alternatives)",
+    "Review-style content",
+    "Case studies and results",
+    "Problem-solution framing"
+  ],
+  "internal_link_suggestions": [
+    "Link from related service pages",
+    "Link from blog category page",
+    "Link from resource/guide pages"
+  ],
+  "seo_requirements": {
+    "keyword_in_title": true,
+    "keyword_in_first_paragraph": true,
+    "keyword_in_h2": true,
+    "meta_description_length": "150-160 characters",
+    "url_slug": "best-crm-software",
+    "alt_text_keyword": true,
+    "internal_links_min": 3,
+    "word_count_min": 1500
+  },
+  "content_guidelines": {
+    "tldr_required": true,
+    "tldr_length": "2-3 sentences",
+    "paragraph_max_length": "150 words",
+    "use_second_person": true,
+    "cta_required": true,
+    "image_required": true
+  },
+  "approval_status": "approved",
+  "created_at": "2026-06-22T01:04:18.795581",
+  "approved_by": "editor",
+  "approved_at": "2026-06-22T01:33:19.838098",
+  "approval_notes": "Brief looks good"
+}

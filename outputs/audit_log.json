@@ -1,0 +1,67 @@
+[
+  {
+    "id": 1,
+    "action": "brief_approved",
+    "resource": "best crm software",
+    "actor": "editor",
+    "timestamp": "2026-06-22T01:33:19.839199",
+    "details": {
+      "notes": "Brief looks good"
+    }
+  },
+  {
+    "id": 2,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-22T02:25:57.269276",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 3,
+    "action": "gate_approved",
+    "resource": "existing_vs_new",
+    "actor": "human",
+    "timestamp": "2026-06-22T02:25:57.961817",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 4,
+    "action": "gate_approved",
+    "resource": "brief_approval",
+    "actor": "human",
+    "timestamp": "2026-06-22T02:25:59.031201",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 5,
+    "action": "gate_approved",
+    "resource": "final_review",
+    "actor": "human",
+    "timestamp": "2026-06-22T02:26:00.161594",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 6,
+    "action": "gate_approved",
+    "resource": "publish_approval",
+    "actor": "human",
+    "timestamp": "2026-06-22T02:26:00.869906",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  }
+]

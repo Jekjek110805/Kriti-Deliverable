@@ -1,0 +1,20 @@
+{
+  "CRM for clinics": {
+    "volume": 400,
+    "keyword_difficulty": 22,
+    "intent": "BOFU",
+    "commercial_potential": "High"
+  },
+  "clinic management software": {
+    "volume": 900,
+    "keyword_difficulty": 30,
+    "intent": "MOFU",
+    "commercial_potential": "High"
+  },
+  "patient management system": {
+    "volume": 700,
+    "keyword_difficulty": 27,
+    "intent": "MOFU",
+    "commercial_potential": "Medium"
+  }
+}

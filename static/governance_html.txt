@@ -1,0 +1,77 @@
+    <!-- PAGE: GOVERNANCE -->
+    <div id="page-governance" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Governance & Compliance</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Approval gates, audit log, roles, and compliance tracking.</p>
+
+      <!-- Approval Gates -->
+      <div class="card">
+        <div class="card-title">Approval Gates</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Content must pass each gate in order. Click to approve/reject.</p>
+        <div id="gates-list"></div>
+      </div>
+
+      <!-- Brief Approval -->
+      <div class="card">
+        <div class="card-title">Brief Approval Workflow</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><label>Keyword</label><input type="text" id="govBriefKeyword" placeholder="Keyword"></div>
+          <div><label>Action</label>
+            <select id="govBriefAction">
+              <option value="submit">Submit for Approval</option>
+              <option value="approve">Approve</option>
+              <option value="reject">Reject</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;"><label>Notes</label><textarea id="govBriefNotes" rows="2" placeholder="Approval notes or rejection feedback..."></textarea></div>
+        <button class="btn btn-primary" onclick="submitBriefGov()">Submit</button>
+        <div id="gov-brief-result" style="margin-top:12px;"></div>
+      </div>
+
+      <!-- Final Review -->
+      <div class="card">
+        <div class="card-title">Final Review Gate</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><label>Keyword</label><input type="text" id="govFinalKeyword" placeholder="Keyword"></div>
+          <div><label>Action</label>
+            <select id="govFinalAction">
+              <option value="submit">Submit for Final Review</option>
+              <option value="approve">Approve for Publishing</option>
+              <option value="reject">Reject — Needs Revision</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;"><label>Notes</label><textarea id="govFinalNotes" rows="2" placeholder="Review notes..."></textarea></div>
+        <button class="btn btn-primary" onclick="submitFinalReview()">Submit</button>
+        <div id="gov-final-result" style="margin-top:12px;"></div>
+      </div>
+
+      <!-- Compliance Check -->
+      <div class="card">
+        <div class="card-title">Compliance Check</div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;">
+          <input type="text" id="govComplianceKeyword" placeholder="Keyword to check" style="flex:1;">
+          <button class="btn btn-secondary" onclick="checkCompliance()">Check</button>
+        </div>
+        <div id="gov-compliance-result"></div>
+      </div>
+
+      <!-- Audit Log -->
+      <div class="card">
+        <div class="card-title">Audit Log</div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+          <select id="auditFilterAction" onchange="loadAuditLog()">
+            <option value="">All actions</option>
+            <option value="gate_approved">Gate Approved</option>
+            <option value="gate_rejected">Gate Rejected</option>
+            <option value="brief_approved">Brief Approved</option>
+            <option value="brief_rejected">Brief Rejected</option>
+            <option value="final_review_approved">Final Review Approved</option>
+            <option value="final_review_rejected">Final Review Rejected</option>
+          </select>
+          <button class="btn btn-sm btn-secondary" onclick="loadAuditLog()">Refresh</button>
+        </div>
+        <div id="audit-log"></div>
+      </div>
+    </div>
+

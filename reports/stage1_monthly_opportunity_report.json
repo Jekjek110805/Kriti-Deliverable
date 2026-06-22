@@ -1,0 +1,265 @@
+{
+  "executive_summary": {
+    "total_opportunities": 3,
+    "existing_page_opportunities": 3,
+    "new_content_opportunities": 0,
+    "priority_counts": {
+      "Critical": 1,
+      "High": 2,
+      "Medium": 0,
+      "Low": 0
+    },
+    "top_opportunity": {
+      "keyword": "dental software",
+      "recommendation": "Improve Existing Page",
+      "score": 85,
+      "priority": "Critical"
+    }
+  },
+  "existing_page_opportunities": [
+    {
+      "keyword": "dental software",
+      "topic": "Dental Software",
+      "volume": 5000,
+      "keyword_difficulty": 92,
+      "intent": "BOFU",
+      "commercial_potential": "High",
+      "existing_page": "/blog/dental-software",
+      "existing_page_title": "dental software",
+      "existing_page_evaluation": {
+        "intent_match_score": 25,
+        "expansion_potential_score": 20,
+        "performance_score": 20,
+        "cannibalization_score": 15,
+        "business_value_score": 10,
+        "total_score": 90,
+        "recommendation": "Optimize Existing Page",
+        "reasoning": "Existing page has strong intent match and can be expanded."
+      },
+      "gsc_position": 4,
+      "gsc_impressions": 5000,
+      "opportunity_type": "Existing Page Optimization",
+      "opportunity_score": 85,
+      "priority": "Critical",
+      "recommendation": "Improve Existing Page",
+      "reason": "An existing page is already ranking and can be optimized.",
+      "audience_questions": [
+        "What is the best dental software?",
+        "How do I choose dental software?",
+        "Is dental software worth it for small clinics?"
+      ],
+      "suggested_h2s": [
+        "What is dental software?",
+        "How to choose dental software",
+        "Best use cases for dental software"
+      ],
+      "approval_status": "Pending Human Approval"
+    },
+    {
+      "keyword": "patient management",
+      "topic": "Patient Management",
+      "volume": 3000,
+      "keyword_difficulty": 86,
+      "intent": "BOFU",
+      "commercial_potential": "Medium",
+      "existing_page": "/blog/patient-care",
+      "existing_page_title": "patient management",
+      "existing_page_evaluation": {
+        "intent_match_score": 25,
+        "expansion_potential_score": 20,
+        "performance_score": 20,
+        "cannibalization_score": 15,
+        "business_value_score": 5,
+        "total_score": 85,
+        "recommendation": "Optimize Existing Page",
+        "reasoning": "Existing page has strong intent match and can be expanded."
+      },
+      "gsc_position": 7,
+      "gsc_impressions": 3000,
+      "opportunity_type": "Existing Page Optimization",
+      "opportunity_score": 78,
+      "priority": "High",
+      "recommendation": "Improve Existing Page",
+      "reason": "An existing page is already ranking and can be optimized.",
+      "audience_questions": [
+        "What is the best patient management?",
+        "How do I choose patient management?",
+        "Is patient management worth it for small clinics?"
+      ],
+      "suggested_h2s": [
+        "What is patient management?",
+        "How to choose patient management",
+        "Best use cases for patient management"
+      ],
+      "approval_status": "Pending Human Approval"
+    },
+    {
+      "keyword": "clinic management",
+      "topic": "Clinic Management",
+      "volume": 8000,
+      "keyword_difficulty": 96,
+      "intent": "BOFU",
+      "commercial_potential": "High",
+      "existing_page": "/blog/clinic-mgmt",
+      "existing_page_title": "clinic management",
+      "existing_page_evaluation": {
+        "intent_match_score": 25,
+        "expansion_potential_score": 20,
+        "performance_score": 5,
+        "cannibalization_score": 15,
+        "business_value_score": 10,
+        "total_score": 75,
+        "recommendation": "Optimize Existing Page",
+        "reasoning": "Existing page has strong intent match and can be expanded."
+      },
+      "gsc_position": 2,
+      "gsc_impressions": 8000,
+      "opportunity_type": "Existing Page Optimization",
+      "opportunity_score": 70,
+      "priority": "High",
+      "recommendation": "Improve Existing Page",
+      "reason": "An existing page is already ranking and can be optimized.",
+      "audience_questions": [
+        "What is the best clinic management?",
+        "How do I choose clinic management?",
+        "Is clinic management worth it for small clinics?"
+      ],
+      "suggested_h2s": [
+        "What is clinic management?",
+        "How to choose clinic management",
+        "Best use cases for clinic management"
+      ],
+      "approval_status": "Pending Human Approval"
+    }
+  ],
+  "new_content_opportunities": [],
+  "audience_insights": [
+    {
+      "topic": "Dental Software",
+      "keyword": "dental software",
+      "audience_questions": [
+        "What is the best dental software?",
+        "How do I choose dental software?",
+        "Is dental software worth it for small clinics?"
+      ],
+      "suggested_h2s": [
+        "What is dental software?",
+        "How to choose dental software",
+        "Best use cases for dental software"
+      ]
+    },
+    {
+      "topic": "Patient Management",
+      "keyword": "patient management",
+      "audience_questions": [
+        "What is the best patient management?",
+        "How do I choose patient management?",
+        "Is patient management worth it for small clinics?"
+      ],
+      "suggested_h2s": [
+        "What is patient management?",
+        "How to choose patient management",
+        "Best use cases for patient management"
+      ]
+    },
+    {
+      "topic": "Clinic Management",
+      "keyword": "clinic management",
+      "audience_questions": [
+        "What is the best clinic management?",
+        "How do I choose clinic management?",
+        "Is clinic management worth it for small clinics?"
+      ],
+      "suggested_h2s": [
+        "What is clinic management?",
+        "How to choose clinic management",
+        "Best use cases for clinic management"
+      ]
+    }
+  ],
+  "approval_queue": [
+    {
+      "topic": "Dental Software",
+      "keyword": "dental software",
+      "recommendation": "Improve Existing Page",
+      "priority": "Critical",
+      "reviewer": "TBD",
+      "status": "Pending Human Approval",
+      "approval_options": [
+        "Approved",
+        "Approved with Notes",
+        "Rejected",
+        "Needs Further Research"
+      ]
+    },
+    {
+      "topic": "Patient Management",
+      "keyword": "patient management",
+      "recommendation": "Improve Existing Page",
+      "priority": "High",
+      "reviewer": "TBD",
+      "status": "Pending Human Approval",
+      "approval_options": [
+        "Approved",
+        "Approved with Notes",
+        "Rejected",
+        "Needs Further Research"
+      ]
+    },
+    {
+      "topic": "Clinic Management",
+      "keyword": "clinic management",
+      "recommendation": "Improve Existing Page",
+      "priority": "High",
+      "reviewer": "TBD",
+      "status": "Pending Human Approval",
+      "approval_options": [
+        "Approved",
+        "Approved with Notes",
+        "Rejected",
+        "Needs Further Research"
+      ]
+    }
+  ],
+  "content_calendar_export": [
+    {
+      "topic": "Dental Software",
+      "keyword": "dental software",
+      "opportunity_type": "Existing Page Optimization",
+      "volume": 5000,
+      "keyword_difficulty": 92,
+      "intent": "BOFU",
+      "existing_page_url": "/blog/dental-software",
+      "current_position": 4,
+      "priority": "Critical",
+      "recommendation": "Improve Existing Page",
+      "approval_status": "Pending Human Approval"
+    },
+    {
+      "topic": "Patient Management",
+      "keyword": "patient management",
+      "opportunity_type": "Existing Page Optimization",
+      "volume": 3000,
+      "keyword_difficulty": 86,
+      "intent": "BOFU",
+      "existing_page_url": "/blog/patient-care",
+      "current_position": 7,
+      "priority": "High",
+      "recommendation": "Improve Existing Page",
+      "approval_status": "Pending Human Approval"
+    },
+    {
+      "topic": "Clinic Management",
+      "keyword": "clinic management",
+      "opportunity_type": "Existing Page Optimization",
+      "volume": 8000,
+      "keyword_difficulty": 96,
+      "intent": "BOFU",
+      "existing_page_url": "/blog/clinic-mgmt",
+      "current_position": 2,
+      "priority": "High",
+      "recommendation": "Improve Existing Page",
+      "approval_status": "Pending Human Approval"
+    }
+  ]
+}

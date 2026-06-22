@@ -1,0 +1,52 @@
+{
+  "topic_approval": {
+    "label": "Topic Approval",
+    "description": "Approve topic before research begins",
+    "required_role": "editor",
+    "check_permission": "queue:approve",
+    "status": "approved",
+    "approved_by": "human",
+    "approved_at": "2026-06-22T02:25:57.268558",
+    "notes": "Approved via governance page"
+  },
+  "existing_vs_new": {
+    "label": "Existing Page vs New Content",
+    "description": "Decide whether to optimize existing page or create new content",
+    "required_role": "editor",
+    "check_permission": "queue:approve",
+    "status": "approved",
+    "approved_by": "human",
+    "approved_at": "2026-06-22T02:25:57.961026",
+    "notes": "Approved via governance page"
+  },
+  "brief_approval": {
+    "label": "Brief Approval",
+    "description": "Approve content brief before writing begins",
+    "required_role": "editor",
+    "check_permission": "brief:approve",
+    "status": "approved",
+    "approved_by": "human",
+    "approved_at": "2026-06-22T02:25:59.030449",
+    "notes": "Approved via governance page"
+  },
+  "final_review": {
+    "label": "Final Review",
+    "description": "Final human review before publishing",
+    "required_role": "editor",
+    "check_permission": "content:submit",
+    "status": "approved",
+    "approved_by": "human",
+    "approved_at": "2026-06-22T02:26:00.160824",
+    "notes": "Approved via governance page"
+  },
+  "publish_approval": {
+    "label": "Publish Approval",
+    "description": "Approve content for publishing",
+    "required_role": "publisher",
+    "check_permission": "publish:execute",
+    "status": "approved",
+    "approved_by": "human",
+    "approved_at": "2026-06-22T02:26:00.869142",
+    "notes": "Approved via governance page"
+  }
+}

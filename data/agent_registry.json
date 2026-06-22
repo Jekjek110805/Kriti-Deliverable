@@ -1,0 +1,450 @@
+{
+  "topic_discovery": {
+    "name": "Topic Discovery Agent",
+    "group": "research",
+    "description": "Discovers content topics from seed keywords, trends, and research data",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "topic_generation",
+      "trend_analysis",
+      "keyword_expansion"
+    ],
+    "endpoints": [
+      "/api/stage1a/analyze"
+    ],
+    "inputs": [
+      "seed_keywords",
+      "gsc_data"
+    ],
+    "outputs": [
+      "topics",
+      "opportunities"
+    ],
+    "dependencies": [],
+    "reusable": true
+  },
+  "gsc_opportunity": {
+    "name": "GSC Opportunity Agent",
+    "group": "research",
+    "description": "Identifies existing-page SEO opportunities from Google Search Console data",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "opportunity_detection",
+      "position_analysis",
+      "impression_filtering"
+    ],
+    "endpoints": [
+      "/api/stage1a/analyze"
+    ],
+    "inputs": [
+      "gsc_csv",
+      "gsc_api_data"
+    ],
+    "outputs": [
+      "ranked_opportunities",
+      "excluded_keywords"
+    ],
+    "dependencies": [],
+    "reusable": true
+  },
+  "keyword_research": {
+    "name": "Keyword Research Agent",
+    "group": "research",
+    "description": "Enriches keywords with search volume, difficulty, and intent data",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "keyword_metrics",
+      "intent_classification",
+      "difficulty_scoring"
+    ],
+    "endpoints": [
+      "/api/integrations/semrush/keyword"
+    ],
+    "inputs": [
+      "keywords"
+    ],
+    "outputs": [
+      "keyword_metrics",
+      "intent_labels",
+      "difficulty_scores"
+    ],
+    "dependencies": [
+      "semrush_api"
+    ],
+    "reusable": true
+  },
+  "audience_research": {
+    "name": "Audience Research Agent",
+    "group": "research",
+    "description": "Mines Reddit, Quora, and PAA for audience questions and content ideas",
+    "status": "planned",
+    "version": "0.1",
+    "capabilities": [
+      "question_mining",
+      "audience_analysis",
+      "content_ideation"
+    ],
+    "endpoints": [],
+    "inputs": [
+      "niche_keywords",
+      "audience_segment"
+    ],
+    "outputs": [
+      "audience_questions",
+      "content_angles"
+    ],
+    "dependencies": [
+      "reddit_api",
+      "quora_scraper"
+    ],
+    "reusable": true
+  },
+  "site_crawler": {
+    "name": "Site Crawler Agent",
+    "group": "research",
+    "description": "Crawls websites to map existing pages, internal links, and content structure",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "site_crawling",
+      "link_analysis",
+      "content_mapping"
+    ],
+    "endpoints": [
+      "/api/integrations/crawl"
+    ],
+    "inputs": [
+      "start_url",
+      "max_pages"
+    ],
+    "outputs": [
+      "page_map",
+      "link_graph",
+      "content_inventory"
+    ],
+    "dependencies": [],
+    "reusable": true
+  },
+  "content_brief": {
+    "name": "Content Brief Agent",
+    "group": "planning",
+    "description": "Generates structured content briefs with outlines, FAQs, and SEO requirements",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "brief_generation",
+      "outline_creation",
+      "seo_requirements",
+      "faq_generation"
+    ],
+    "endpoints": [
+      "/api/brief/generate"
+    ],
+    "inputs": [
+      "keyword",
+      "intent",
+      "target_audience",
+      "word_count"
+    ],
+    "outputs": [
+      "content_brief",
+      "h2_outline",
+      "faq_questions",
+      "seo_requirements"
+    ],
+    "dependencies": [
+      "keyword_research"
+    ],
+    "reusable": true
+  },
+  "content_writer": {
+    "name": "Content Writer Agent",
+    "group": "production",
+    "description": "Generates AI-assisted content drafts from briefs",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "draft_generation",
+      "content_structuring",
+      "cta_creation"
+    ],
+    "endpoints": [
+      "/api/content/write",
+      "/api/content/draft/{keyword}"
+    ],
+    "inputs": [
+      "content_brief",
+      "tone",
+      "word_count"
+    ],
+    "outputs": [
+      "content_draft",
+      "sections",
+      "full_content"
+    ],
+    "dependencies": [
+      "content_brief"
+    ],
+    "reusable": true
+  },
+  "image_production": {
+    "name": "Image Production Agent",
+    "group": "production",
+    "description": "Creates and sources images for content \u2014 Canva integration, stock photos, original assets",
+    "status": "planned",
+    "version": "0.1",
+    "capabilities": [
+      "image_generation",
+      "image_sourcing",
+      "alt_text_creation",
+      "compression"
+    ],
+    "endpoints": [],
+    "inputs": [
+      "content_brief",
+      "image_requirements"
+    ],
+    "outputs": [
+      "images",
+      "alt_text",
+      "compressed_assets"
+    ],
+    "dependencies": [
+      "canva_api",
+      "stock_photo_apis"
+    ],
+    "reusable": true
+  },
+  "seo_gate": {
+    "name": "SEO Gate Agent",
+    "group": "quality",
+    "description": "Validates content against SEO best practices and technical requirements",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "seo_validation",
+      "keyword_checking",
+      "structure_analysis",
+      "meta_validation"
+    ],
+    "endpoints": [
+      "/api/validate"
+    ],
+    "inputs": [
+      "content",
+      "keyword",
+      "title",
+      "meta_description"
+    ],
+    "outputs": [
+      "seo_score",
+      "issues",
+      "recommendations"
+    ],
+    "dependencies": [],
+    "reusable": true
+  },
+  "fact_check": {
+    "name": "Fact Check Agent",
+    "group": "quality",
+    "description": "Flags potential hallucinations, unverified claims, and missing sources",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "claim_detection",
+      "source_verification",
+      "hallucination_flagging"
+    ],
+    "endpoints": [
+      "/api/validate"
+    ],
+    "inputs": [
+      "content"
+    ],
+    "outputs": [
+      "issues",
+      "unverified_claims",
+      "source_suggestions"
+    ],
+    "dependencies": [
+      "source_ledger"
+    ],
+    "reusable": true
+  },
+  "brand_review": {
+    "name": "Brand Review Agent",
+    "group": "quality",
+    "description": "Checks content against MAAI house style \u2014 no em dashes, no filler, no competitor put-downs",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "style_checking",
+      "voice_analysis",
+      "brand_compliance",
+      "readability"
+    ],
+    "endpoints": [
+      "/api/validate"
+    ],
+    "inputs": [
+      "content",
+      "client"
+    ],
+    "outputs": [
+      "style_issues",
+      "compliance_score",
+      "suggestions"
+    ],
+    "dependencies": [],
+    "reusable": true
+  },
+  "publisher": {
+    "name": "Publisher Agent",
+    "group": "publishing",
+    "description": "Publishes approved content to CMS with proper formatting and metadata",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "cms_publishing",
+      "content_formatting",
+      "meta_tagging",
+      "scheduling"
+    ],
+    "endpoints": [
+      "/api/publish",
+      "/api/integrations/cms/publish"
+    ],
+    "inputs": [
+      "content",
+      "cms_config",
+      "publish_settings"
+    ],
+    "outputs": [
+      "publish_record",
+      "cms_post_id",
+      "url"
+    ],
+    "dependencies": [
+      "cms_api",
+      "seo_gate",
+      "fact_check",
+      "brand_review"
+    ],
+    "reusable": true
+  },
+  "indexing": {
+    "name": "Indexing Agent",
+    "group": "publishing",
+    "description": "Submits URLs to Google Search Console and requests indexing",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "gsc_submission",
+      "indexing_request",
+      "sitemap_update"
+    ],
+    "endpoints": [
+      "/api/publish/{keyword}/index"
+    ],
+    "inputs": [
+      "url",
+      "gsc_config"
+    ],
+    "outputs": [
+      "indexing_status",
+      "submission_record"
+    ],
+    "dependencies": [
+      "gsc_api"
+    ],
+    "reusable": true
+  },
+  "performance_monitor": {
+    "name": "Performance Monitor Agent",
+    "group": "monitoring",
+    "description": "Tracks published content performance \u2014 rankings, impressions, clicks, conversions",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "performance_tracking",
+      "ranking_monitor",
+      "conversion_attribution"
+    ],
+    "endpoints": [
+      "/api/monitor",
+      "/api/monitor/{keyword}"
+    ],
+    "inputs": [
+      "published_content",
+      "gsc_data",
+      "analytics_data"
+    ],
+    "outputs": [
+      "performance_report",
+      "recommendations"
+    ],
+    "dependencies": [
+      "gsc_api",
+      "analytics_api"
+    ],
+    "reusable": true
+  },
+  "content_refresh": {
+    "name": "Content Refresh Agent",
+    "group": "monitoring",
+    "description": "Identifies underperforming content and recommends updates or consolidation",
+    "status": "planned",
+    "version": "0.1",
+    "capabilities": [
+      "performance_analysis",
+      "content_audit",
+      "refresh_recommendations"
+    ],
+    "endpoints": [],
+    "inputs": [
+      "performance_data",
+      "content_inventory"
+    ],
+    "outputs": [
+      "refresh_queue",
+      "update_recommendations"
+    ],
+    "dependencies": [
+      "performance_monitor",
+      "site_crawler"
+    ],
+    "reusable": true
+  },
+  "orchestrator": {
+    "name": "Orchestrator Agent",
+    "group": "coordination",
+    "description": "Coordinates all agents in the content pipeline \u2014 manages workflow, handles errors, tracks progress",
+    "status": "active",
+    "version": "1.0",
+    "capabilities": [
+      "workflow_management",
+      "agent_coordination",
+      "error_handling",
+      "progress_tracking"
+    ],
+    "endpoints": [
+      "/api/orchestrate/full"
+    ],
+    "inputs": [
+      "keyword",
+      "pipeline_config"
+    ],
+    "outputs": [
+      "pipeline_results",
+      "step_status",
+      "next_actions"
+    ],
+    "dependencies": [
+      "all_agents"
+    ],
+    "reusable": true
+  }
+}

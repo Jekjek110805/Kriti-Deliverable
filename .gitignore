@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.pyo
+config/litellm_key.txt
+*.env
+.env

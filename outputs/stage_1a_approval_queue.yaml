@@ -1,0 +1,261 @@
+approval_queue:
+  - keyword: "medical billing software"
+    page: "/medical-billing"
+    position: 5
+    impressions: 3100
+    clicks: 150
+    ctr: "4.8%"
+    intent: BOFU
+    commercial_potential: High
+    score: 95
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #5 for high-value keyword with 3100 impressions and 150 clicks. BOFU intent with High commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "best clinic software"
+    page: "/clinic-software-comparison"
+    position: 4
+    impressions: 4200
+    clicks: 180
+    ctr: "4.3%"
+    intent: BOFU
+    commercial_potential: High
+    score: 95
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #4 for high-value keyword with 4200 impressions and 180 clicks. BOFU intent with High commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "best emr software"
+    page: "/best-emr-software"
+    position: 5
+    impressions: 3900
+    clicks: 160
+    ctr: "4.1%"
+    intent: BOFU
+    commercial_potential: High
+    score: 95
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #5 for high-value keyword with 3900 impressions and 160 clicks. BOFU intent with High commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "clinic management software"
+    page: "/clinic-software"
+    position: 8
+    impressions: 2450
+    clicks: 120
+    ctr: "4.9%"
+    intent: BOFU
+    commercial_potential: High
+    score: 93
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #8 for high-value keyword with 2450 impressions and 120 clicks. BOFU intent with High commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "ehr software"
+    page: "/ehr-guide"
+    position: 6
+    impressions: 1800
+    clicks: 95
+    ctr: "5.2%"
+    intent: BOFU
+    commercial_potential: High
+    score: 93
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #6 for high-value keyword with 1800 impressions and 95 clicks. BOFU intent with High commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "clinic scheduling software"
+    page: "/appointment-scheduling"
+    position: 10
+    impressions: 1600
+    clicks: 70
+    ctr: "4.4%"
+    intent: BOFU
+    commercial_potential: High
+    score: 93
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #10 for high-value keyword with 1600 impressions and 70 clicks. BOFU intent with High commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "crm for clinics"
+    page: "/healthcare-crm"
+    position: 8
+    impressions: 1300
+    clicks: 55
+    ctr: "4.2%"
+    intent: BOFU
+    commercial_potential: High
+    score: 93
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #8 for high-value keyword with 1300 impressions and 55 clicks. BOFU intent with High commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "clinic crm software"
+    page: "/healthcare-crm"
+    position: 6
+    impressions: 1750
+    clicks: 75
+    ctr: "4.3%"
+    intent: BOFU
+    commercial_potential: High
+    score: 93
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #6 for high-value keyword with 1750 impressions and 75 clicks. BOFU intent with High commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "medical software comparison"
+    page: "/software-comparison"
+    position: 9
+    impressions: 2400
+    clicks: 95
+    ctr: "4.0%"
+    intent: BOFU
+    commercial_potential: High
+    score: 93
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #9 for high-value keyword with 2400 impressions and 95 clicks. BOFU intent with High commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "healthcare software solutions"
+    page: "/healthcare-solutions"
+    position: 10
+    impressions: 1450
+    clicks: 65
+    ctr: "4.5%"
+    intent: BOFU
+    commercial_potential: High
+    score: 93
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #10 for high-value keyword with 1450 impressions and 65 clicks. BOFU intent with High commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "ehr pricing"
+    page: "/ehr-pricing"
+    position: 3
+    impressions: 950
+    clicks: 60
+    ctr: "6.3%"
+    intent: BOFU
+    commercial_potential: High
+    score: 92
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #3 for high-value keyword with 950 impressions and 60 clicks. BOFU intent with High commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "patient management software"
+    page: "/patient-management"
+    position: 14
+    impressions: 1400
+    clicks: 50
+    ctr: "3.5%"
+    intent: BOFU
+    commercial_potential: High
+    score: 87
+    priority: Critical
+    recommendation: Expand Existing
+    reason: "Ranking #14 (page 2 territory) for keyword with 1400 impressions. BOFU intent. Expand and strengthen existing content to break into top 10."
+    approval_status: needs_review
+  - keyword: "patient engagement software"
+    page: "/patient-engagement"
+    position: 13
+    impressions: 980
+    clicks: 45
+    ctr: "4.6%"
+    intent: BOFU
+    commercial_potential: High
+    score: 84
+    priority: Critical
+    recommendation: Expand Existing
+    reason: "Ranking #13 (page 2 territory) for keyword with 980 impressions. BOFU intent. Expand and strengthen existing content to break into top 10."
+    approval_status: needs_review
+  - keyword: "telehealth software pricing"
+    page: "/telemedicine-pricing"
+    position: 15
+    impressions: 820
+    clicks: 35
+    ctr: "4.1%"
+    intent: BOFU
+    commercial_potential: High
+    score: 84
+    priority: Critical
+    recommendation: Expand Existing
+    reason: "Ranking #15 (page 2 territory) for keyword with 820 impressions. BOFU intent. Expand and strengthen existing content to break into top 10."
+    approval_status: needs_review
+  - keyword: "telemedicine platform"
+    page: "/telemedicine-features"
+    position: 9
+    impressions: 1950
+    clicks: 85
+    ctr: "4.3%"
+    intent: MOFU
+    commercial_potential: Medium
+    score: 83
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #9 for high-value keyword with 1950 impressions and 85 clicks. MOFU intent with Medium commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "electronic medical records"
+    page: "/emr-guide"
+    position: 7
+    impressions: 2100
+    clicks: 90
+    ctr: "4.2%"
+    intent: MOFU
+    commercial_potential: Medium
+    score: 83
+    priority: Critical
+    recommendation: Improve Existing
+    reason: "Ranking #7 for high-value keyword with 2100 impressions and 90 clicks. MOFU intent with Medium commercial potential. Optimize existing page to improve position."
+    approval_status: needs_review
+  - keyword: "healthcare crm"
+    page: "/healthcare-crm"
+    position: 12
+    impressions: 1150
+    clicks: 40
+    ctr: "3.4%"
+    intent: MOFU
+    commercial_potential: Medium
+    score: 77
+    priority: High
+    recommendation: Expand Existing
+    reason: "Ranking #12 (page 2 territory) for keyword with 1150 impressions. MOFU intent. Expand and strengthen existing content to break into top 10."
+    approval_status: needs_review
+  - keyword: "medical practice management"
+    page: "/practice-management"
+    position: 11
+    impressions: 2800
+    clicks: 110
+    ctr: "3.9%"
+    intent: MOFU
+    commercial_potential: Medium
+    score: 77
+    priority: High
+    recommendation: Expand Existing
+    reason: "Ranking #11 (page 2 territory) for keyword with 2800 impressions. MOFU intent. Expand and strengthen existing content to break into top 10."
+    approval_status: needs_review
+  - keyword: "medical records management"
+    page: "/records-management"
+    position: 12
+    impressions: 1250
+    clicks: 50
+    ctr: "4.0%"
+    intent: MOFU
+    commercial_potential: Medium
+    score: 77
+    priority: High
+    recommendation: Expand Existing
+    reason: "Ranking #12 (page 2 territory) for keyword with 1250 impressions. MOFU intent. Expand and strengthen existing content to break into top 10."
+    approval_status: needs_review
+  - keyword: "ehr implementation guide"
+    page: "/ehr-implementation"
+    position: 16
+    impressions: 900
+    clicks: 40
+    ctr: "4.4%"
+    intent: MOFU
+    commercial_potential: Medium
+    score: 74
+    priority: High
+    recommendation: Expand Existing
+    reason: "Ranking #16 (page 2 territory) for keyword with 900 impressions. MOFU intent. Expand and strengthen existing content to break into top 10."
+    approval_status: needs_review

@@ -1,0 +1,65 @@
+{
+  "architecture": {
+    "label": "Architecture",
+    "items": {
+      "workflow_approved": {
+        "label": "Workflow approved",
+        "status": "approved",
+        "by": "architect",
+        "at": "2026-06-22"
+      },
+      "agent_architecture_approved": {
+        "label": "Agent architecture approved",
+        "status": "approved",
+        "by": "architect",
+        "at": "2026-06-22"
+      },
+      "integration_architecture_approved": {
+        "label": "Integration architecture approved",
+        "status": "approved",
+        "by": "architect",
+        "at": "2026-06-22"
+      }
+    }
+  },
+  "governance": {
+    "label": "Governance",
+    "items": {
+      "governance_framework_approved": {
+        "label": "Governance framework approved",
+        "status": "approved",
+        "by": "architect",
+        "at": "2026-06-22"
+      },
+      "human_approval_model_approved": {
+        "label": "Human approval model approved",
+        "status": "approved",
+        "by": "architect",
+        "at": "2026-06-22"
+      }
+    }
+  },
+  "delivery": {
+    "label": "Delivery",
+    "items": {
+      "stage_1_scope_approved": {
+        "label": "Stage 1 scope approved",
+        "status": "approved",
+        "by": "architect",
+        "at": "2026-06-22"
+      },
+      "roadmap_approved": {
+        "label": "Roadmap approved",
+        "status": "approved",
+        "by": "architect",
+        "at": "2026-06-22"
+      },
+      "development_authorized": {
+        "label": "Development authorized",
+        "status": "approved",
+        "by": "architect",
+        "at": "2026-06-22"
+      }
+    }
+  }
+}

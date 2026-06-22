@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kriti — Content Operations Platform</title>
+<style>
+  :root {
+    --bg: #030014;
+    --bg-gradient: linear-gradient(165deg, #030014 0%, #0a0520 40%, #0f0a28 100%);
+    --surface: #0d0820;
+    --surface2: #140e2c;
+    --surface3: #1a1238;
+    --border: #1e1640;
+    --border-light: #2a1f50;
+    --text: #e8e0f5;
+    --text-muted: #8878a8;
+    --text-dim: #504070;
+    --accent: #8b5cf6;
+    --accent-hover: #a78bfa;
+    --accent-glow: rgba(139,92,246,0.12);
+    --accent-glow-strong: rgba(139,92,246,0.22);
+    --green: #10b981;
+    --green-glow: rgba(16,185,129,0.12);
+    --yellow: #f59e0b;
+    --yellow-glow: rgba(245,158,11,0.12);
+    --red: #ef4444;
+    --red-glow: rgba(239,68,68,0.12);
+    --crimson: #dc2626;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-gradient); color: var(--text); min-height: 100vh; }
+
+  /* Layout */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar { width: 250px; background: linear-gradient(180deg, #060218 0%, #0a0520 100%); border-right: 1px solid var(--border); padding: 16px 0; flex-shrink: 0; transition: width 0.25s cubic-bezier(0.4,0,0.2,1); position: relative; }
+  .sidebar::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.25; }
+  .sidebar.collapsed { width: 60px; }
+  .sidebar.collapsed .sidebar-logo { padding: 8px 0 20px; font-size: 0; text-align: center; }
+  .sidebar.collapsed .sidebar-logo span { font-size: 20px; }
+  .sidebar.collapsed .sidebar-toggle { right: 50%; transform: translateX(50%) rotate(180deg); }
+  .sidebar.collapsed .nav-item { padding: 12px 0; justify-content: center; margin-right: 0; border-radius: 10px; gap: 0; }
+  .sidebar.collapsed .nav-item-text { display: none !important; }
+  .sidebar.collapsed .nav-icon { width: 100%; }
+  .sidebar.collapsed .nav-icon .icon { width: 20px; height: 20px; }
+  .sidebar.collapsed .theme-toggle-wrap { padding: 12px 8px; }
+  .sidebar.collapsed .theme-toggle { padding: 8px; justify-content: center; gap: 0; }
+  .sidebar.collapsed .theme-toggle-label { display: none; }
+  .sidebar.collapsed .theme-toggle-track { display: none; }
+  .sidebar.collapsed .theme-toggle-icon { width: 100%; }
+  .main { flex: 1; padding: 32px 36px; overflow-y: auto; }
+
+  /* Sidebar */
+  .sidebar-logo { padding: 8px 20px 20px; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; border-bottom: 1px solid var(--border); margin-bottom: 12px; white-space: nowrap; overflow: hidden; background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+      .sidebar-logo span { color: var(--accent); -webkit-text-fill-color: var(--accent); }
+  .sidebar-toggle { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; position: absolute; top: 12px; right: 12px; z-index: 10; transition: all .2s; }
+  .sidebar-toggle:hover { background: var(--surface3); color: var(--text); border-color: var(--border-light); box-shadow: 0 0 12px var(--accent-glow); }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; color: var(--text-muted); cursor: pointer; font-size: 13.5px; font-weight: 500; transition: all .15s; white-space: nowrap; overflow: hidden; border-radius: 0 8px 8px 0; margin-right: 12px; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: linear-gradient(90deg, var(--accent-glow), transparent); color: var(--accent); border-right: 2px solid var(--accent); }
+  .nav-item.active .nav-icon .icon { color: var(--accent); filter: drop-shadow(0 0 6px var(--accent-glow-strong)); }
+        .nav-icon { width: 20px; text-align: center; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .nav-icon .icon { color: var(--text-dim); transition: color .15s; }
+  .nav-item:hover .nav-icon .icon { color: var(--text-muted); }
+
+  /* Cards */
+  .card { background: linear-gradient(135deg, rgba(13,8,32,0.85), rgba(13,8,32,0.45)); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 20px; backdrop-filter: blur(12px); position: relative; overflow: hidden; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--border-light), transparent); }
+  .card-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--text); letter-spacing: -0.2px; }
+  .card-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+
+  /* Upload */
+  .upload-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 48px; text-align: center; cursor: pointer; transition: all .2s; }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--accent-glow); box-shadow: 0 0 24px var(--accent-glow); }
+  .upload-icon .icon { width: 40px; height: 40px; color: var(--text-dim); }
+  .upload-text { font-size: 15px; margin-bottom: 6px; font-weight: 500; }
+  .upload-hint { font-size: 12px; color: var(--text-dim); }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; letter-spacing: -0.1px; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), #7c3aed); color: white; box-shadow: 0 2px 10px var(--accent-glow-strong); }
+  .btn-primary:hover { background: linear-gradient(135deg, var(--accent-hover), #8b5cf6); box-shadow: 0 4px 18px var(--accent-glow-strong); transform: translateY(-1px); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--surface3); border-color: var(--border-light); }
+  .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+  .btn-success { background: linear-gradient(135deg, var(--green), #059669); color: white; box-shadow: 0 2px 8px var(--green-glow); }
+  .btn-success:hover { box-shadow: 0 4px 16px var(--green-glow); transform: translateY(-1px); }
+  .btn-danger { background: linear-gradient(135deg, var(--red), #dc2626); color: white; box-shadow: 0 2px 8px var(--red-glow); }
+  .btn-danger:hover { box-shadow: 0 4px 16px var(--red-glow); transform: translateY(-1px); }
+  .btn-warning { background: linear-gradient(135deg, var(--yellow), #d97706); color: #000; box-shadow: 0 2px 8px var(--yellow-glow); }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .stat-card { background: linear-gradient(135deg, rgba(13,8,32,0.6), rgba(20,14,44,0.4)); border: 1px solid var(--border); border-radius: 12px; padding: 18px 14px; text-align: center; position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.35; }
+  .stat-value { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  .stat-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .stat-critical { color: var(--crimson); }
+  .stat-high { color: var(--yellow); }
+  .stat-approved { color: var(--green); }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 12px 14px; background: var(--surface2); color: var(--text-dim); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); }
+  td { padding: 11px 14px; border-bottom: 1px solid rgba(30,22,64,0.5); }
+  tr:hover td { background: var(--accent-glow); }
+  tr:last-child td { border-bottom: none; }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
+  .badge-critical { background: var(--red-glow); color: var(--crimson); border: 1px solid rgba(220,38,38,0.2); }
+  .badge-high { background: var(--yellow-glow); color: var(--yellow); border: 1px solid rgba(245,158,11,0.2); }
+  .badge-medium { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(139,92,246,0.2); }
+  .badge-low { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
+  .badge-bofu { background: var(--red-glow); color: var(--crimson); border: 1px solid rgba(220,38,38,0.2); }
+  .badge-mofu { background: var(--yellow-glow); color: var(--yellow); border: 1px solid rgba(245,158,11,0.2); }
+  .badge-tofu { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
+  .badge-optimize { background: var(--green-glow); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+  .badge-maybe { background: var(--yellow-glow); color: var(--yellow); border: 1px solid rgba(245,158,11,0.2); }
+  .badge-skip { background: var(--red-glow); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+  .badge-approved { background: var(--green-glow); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+  .badge-rejected { background: var(--red-glow); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+  .badge-blocked { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
+  .badge-needs_review { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(139,92,246,0.2); }
+
+  /* Decision card */
+  .decision-card { border-radius: 14px; padding: 24px; margin-bottom: 16px; position: relative; overflow: hidden; }
+  .decision-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .decision-optimize { background: linear-gradient(135deg, rgba(16,185,129,0.06), rgba(16,185,129,0.02)); border: 1px solid rgba(16,185,129,0.15); }
+  .decision-optimize::before { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+  .decision-maybe { background: linear-gradient(135deg, rgba(245,158,11,0.06), rgba(245,158,11,0.02)); border: 1px solid rgba(245,158,11,0.15); }
+  .decision-maybe::before { background: linear-gradient(90deg, transparent, var(--yellow), transparent); }
+  .decision-skip { background: linear-gradient(135deg, rgba(239,68,68,0.06), rgba(239,68,68,0.02)); border: 1px solid rgba(239,68,68,0.15); }
+  .decision-skip::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+  .decision-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .decision-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .decision-score { font-size: 34px; font-weight: 800; letter-spacing: -1px; }
+  .factor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 16px 0; }
+  .factor-card { background: rgba(13,8,32,0.5); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .factor-name { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+  .factor-value { font-size: 15px; font-weight: 700; margin: 4px 0; }
+  .factor-detail { font-size: 12px; color: var(--text-muted); }
+
+  /* Checklist */
+  .checklist-phase { margin-bottom: 20px; }
+  .checklist-phase-title { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
+  .checklist-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(30,22,64,0.3); }
+  .checklist-label { flex: 1; font-size: 13px; }
+  .checklist-status { font-size: 10px; padding: 3px 10px; border-radius: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .check-pass { background: var(--green-glow); color: var(--green); }
+  .check-fail { background: var(--red-glow); color: var(--red); }
+  .check-pending { background: var(--surface2); color: var(--text-dim); }
+  .check-na { background: var(--surface2); color: var(--text-dim); }
+  .check-auto { background: var(--accent-glow); color: var(--accent); font-style: italic; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(3,0,20,0.85); backdrop-filter: blur(8px); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: linear-gradient(135deg, #0d0820, #0a0520); border: 1px solid var(--border); border-radius: 18px; padding: 28px; width: 560px; max-height: 80vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 40px var(--accent-glow); }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.3px; }
+
+  /* Inputs */
+  input, select, textarea { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 13.5px; width: 100%; transition: all .15s; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Loading */
+  .loading { display: none; text-align: center; padding: 40px; }
+  .loading.active { display: block; }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Hidden */
+  .hidden { display: none; }
+
+  /* Page sections */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Toolbar */
+  .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .toolbar-spacer { flex: 1; }
+
+  /* Alert */
+  .alert { padding: 14px 18px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; font-weight: 500; }
+  .alert-info { background: var(--accent-glow); border: 1px solid rgba(139,92,246,0.2); color: var(--accent); }
+  .alert-success { background: var(--green-glow); border: 1px solid rgba(16,185,129,0.2); color: var(--green); }
+  .alert-error { background: var(--red-glow); border: 1px solid rgba(239,68,68,0.2); color: var(--red); }
+
+  /* Icons */
+  .icon { width: 18px; height: 18px; display: inline-block; vertical-align: middle; flex-shrink: 0; }
+  .icon-sm { width: 14px; height: 14px; }
+  .icon-lg { width: 24px; height: 24px; }
+  .nav-icon .icon { width: 18px; height: 18px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: middle; }
+  .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+  .dot-yellow { background: var(--yellow); box-shadow: 0 0 6px var(--yellow-glow); }
+  .dot-red { background: var(--red); box-shadow: 0 0 6px var(--red-glow); }
+  .upload-icon .icon { width: 40px; height: 40px; color: var(--text-dim); }
+  .integration-icon .icon { width: 28px; height: 28px; }
+  .icon.spinner { animation: spin 1s linear infinite; }
+  h1 .icon { width: 24px; height: 24px; margin-right: 8px; }
+  .card-title .icon { margin-right: 6px; }
+  button .icon { margin-right: 0; }
+  .stat-value .icon { width: 24px; height: 24px; }
+  .modal-title .icon { width: 20px; height: 20px; margin-right: 8px; }
+  .nav-icon { width: 18px; text-align: center; display: inline-flex; align-items: center; justify-content: center; }
+
+  /* Theme toggle */
+  .theme-toggle-wrap { padding: 12px 16px; border-top: 1px solid var(--border); margin-top: auto; }
+  .theme-toggle { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); cursor: pointer; transition: all .15s; width: 100%; }
+  .theme-toggle:hover { background: var(--surface3); border-color: var(--border-light); }
+  .theme-toggle-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .theme-toggle-icon .icon { color: var(--text-muted); }
+  .theme-toggle-label { font-size: 12px; font-weight: 600; color: var(--text-muted); flex: 1; }
+      .theme-toggle-track { width: 36px; height: 20px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); position: relative; flex-shrink: 0; transition: all .2s; }
+  .theme-toggle-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); position: absolute; top: 2px; left: 2px; transition: all .2s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .theme-toggle-track.light .theme-toggle-thumb { left: 18px; background: #f59e0b; }
+
+  /* Light mode overrides */
+  body.light { --bg: #f8f6fc; --bg-gradient: linear-gradient(165deg, #f8f6fc 0%, #ede8f5 50%, #e5ddf0 100%); --surface: #ffffff; --surface2: #f0ecf8; --surface3: #e8e2f2; --border: #d8d0e8; --border-light: #c4b8d8; --text: #1a1025; --text-muted: #6b5a80; --text-dim: #9888a8; --accent-glow: rgba(139,92,246,0.08); --accent-glow-strong: rgba(139,92,246,0.15); --green-glow: rgba(16,185,129,0.08); --yellow-glow: rgba(245,158,11,0.08); --red-glow: rgba(239,68,68,0.08); }
+  body.light .card { background: rgba(255,255,255,0.9); border-color: var(--border); box-shadow: 0 1px 3px rgba(139,92,246,0.06); }
+  body.light .card::before { background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.15; }
+  body.light .sidebar { background: linear-gradient(180deg, #f8f6fc 0%, #f0ecf8 100%); }
+  body.light .sidebar::before { opacity: 0.15; }
+  body.light .nav-item:hover { background: var(--surface2); }
+  body.light .nav-item.active { background: linear-gradient(90deg, var(--accent-glow), transparent); }
+  body.light .sidebar-logo { background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%); -webkit-background-clip: text; background-clip: text; }
+  body.light .btn-secondary { background: var(--surface2); border-color: var(--border); }
+  body.light .btn-secondary:hover { background: var(--surface3); }
+  body.light .stat-card { background: rgba(255,255,255,0.7); border-color: var(--border); }
+  body.light .table-wrap { border-color: var(--border); }
+  body.light th { background: var(--surface2); }
+  body.light td { border-bottom-color: var(--border); }
+  body.light .factor-card { background: rgba(255,255,255,0.6); }
+  body.light input, body.light select, body.light textarea { background: var(--surface); }
+  body.light .modal { background: #ffffff; box-shadow: 0 24px 64px rgba(0,0,0,0.1), 0 0 40px var(--accent-glow); }
+  body.light .badge-low, body.light .badge-blocked { background: var(--surface2); }
+  body.light .theme-toggle-track { background: var(--surface3); }
+
+  
+
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">Kriti<span>.</span></div>
+    <div class="sidebar-toggle" onclick="toggleSidebar()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-7-7 7-7"/><path d="M4 12h16"/></svg></div>
+    <div class="nav-item active" onclick="showPage('discover')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span><span class="nav-item-text">Discover</span></div>
+    <div class="nav-item" onclick="showPage('decide')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M2 8h20"/><path d="M6 8a2 2 0 0 0 2 2h2a2 2 0 0 0 0-4H8a2 2 0 0 0-2 2z"/><path d="M16 14a2 2 0 0 0 0 4h2a2 2 0 0 0 2-2h-4z"/><path d="M2 8l2-4h16l2 4"/></svg></span><span class="nav-item-text">Should Optimize?</span></div>
+    <div class="nav-item" onclick="showPage('results')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16h.01"/><path d="M11 12h.01"/><path d="M15 16h.01"/><path d="M19 8h.01"/></svg></span><span class="nav-item-text">Results</span></div>
+    <div class="nav-item" onclick="showPage('queue')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></span><span class="nav-item-text">Approval Queue</span></div>
+    <div class="nav-item" onclick="showPage('brief')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></span><span class="nav-item-text">Brief</span></div>
+    <div class="nav-item" onclick="showPage('content')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></span><span class="nav-item-text">Content</span></div>
+    <div class="nav-item" onclick="showPage('validate')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span><span class="nav-item-text">Validate</span></div>
+    <div class="nav-item" onclick="showPage('publish')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></span><span class="nav-item-text">Publish</span></div>
+    <div class="nav-item" onclick="showPage('monitor')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span><span class="nav-item-text">Monitor</span></div>
+    <div class="nav-item" onclick="showPage('integrations')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8a2 2 0 0 0-2-2h-1a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"/><path d="M10 12H6"/><path d="M18 12h-4"/></svg></span><span class="nav-item-text">Integrations</span></div>
+    <div class="nav-item" onclick="showPage('governance')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span class="nav-item-text">Governance</span></div>
+    <div class="nav-item" onclick="showPage('agents')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/></svg></span><span class="nav-item-text">Agent Registry</span></div>
+    <div class="nav-item" onclick="showPage('observability')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16h.01"/><path d="M11 12h.01"/><path d="M15 16h.01"/><path d="M19 8h.01"/></svg></span><span class="nav-item-text">Observability</span></div>
+    <div class="nav-item" onclick="showPage('approvals')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></span><span class="nav-item-text">Approvals</span></div>
+    <div class="nav-item" onclick="showPage('models')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2z"/></svg></span><span class="nav-item-text">Model Usage</span></div>
+    <div class="nav-item" onclick="showPage('calendar')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg></span><span class="nav-item-text">Content Calendar</span></div>
+    <div class="nav-item" onclick="showPage('review')"><span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span><span class="nav-item-text">Blog Review</span></div>
+    <div class="theme-toggle-wrap">
+      <div class="theme-toggle" onclick="toggleTheme()">
+        <span class="theme-toggle-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></span>
+        <span class="theme-toggle-label">Dark</span>
+        <div class="theme-toggle-track"><div class="theme-toggle-thumb"></div></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- PAGE: DISCOVER -->
+    <div id="page-discover" class="page active">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Discover Opportunities</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Upload a GSC CSV export to find existing-page SEO opportunities.</p>
+
+      <div class="card">
+        <div class="card-title">Upload GSC CSV</div>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="upload-text">Click or drag your CSV file here</div>
+          <div class="upload-hint">Expected columns: query, page, clicks, impressions, position</div>
+        </div>
+        <input type="file" id="fileInput" accept=".csv" style="display:none" onchange="handleFile(this)">
+      </div>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Analyzing opportunities...</div>
+      </div>
+
+      <div id="results-section" class="hidden">
+        <!-- Stats -->
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <!-- Opportunities table -->
+        <div class="card">
+          <div class="card-title">Ranked Opportunities</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Priority</th>
+                  <th>Keyword</th>
+                  <th>Page</th>
+                  <th>Position</th>
+                  <th>Impressions</th>
+                  <th>Clicks</th>
+                  <th>Intent</th>
+                  <th>Score</th>
+                  <th>Recommendation</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="oppsTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: SHOULD OPTIMIZE -->
+    <div id="page-decide" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Should I Optimize This Page?</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Enter keyword and page data to get a scored optimization decision.</p>
+
+      <div class="card">
+        <div class="card-title">Page Data</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div><label>Keyword</label><input type="text" id="decKeyword" placeholder="e.g. best clinic software"></div>
+          <div><label>Page URL</label><input type="text" id="decPage" placeholder="e.g. /best-clinic-management-software"></div>
+          <div><label>Position</label><input type="number" id="decPosition" placeholder="e.g. 8"></div>
+          <div><label>Impressions</label><input type="number" id="decImpressions" placeholder="e.g. 1200"></div>
+          <div><label>Clicks</label><input type="number" id="decClicks" placeholder="e.g. 45"></div>
+          <div><label>Intent (auto-detected if blank)</label>
+            <select id="decIntent">
+              <value="">Auto-detect</value>
+              <option value="BOFU">BOFU</option>
+              <option value="MOFU">MOFU</option>
+              <option value="TOFU">TOFU</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" onclick="runDecision()">Analyze</button>
+        </div>
+      </div>
+
+      <div id="decision-result"></div>
+    </div>
+
+    <!-- PAGE: RESULTS -->
+    <div id="page-results" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Results Report</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">View the last generated opportunity report.</p>
+
+      <div id="report-empty" class="card">
+        <div class="alert alert-info">No results yet. Go to Discover → upload a GSC CSV first.</div>
+      </div>
+      <div id="report-content" class="hidden">
+        <div id="report-stats" class="stats-grid"></div>
+        <div class="card">
+          <div class="card-title">Opportunities</div>
+          <div class="table-wrap"><table><thead><tr><th>#</th><th>Priority</th><th>Keyword</th><th>Page</th><th>Pos</th><th>Imp</th><th>Intent</th><th>Score</th><th>Recommendation</th></tr></thead><tbody id="reportTable"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: APPROVAL QUEUE -->
+    <div id="page-queue" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Approval Queue</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Review opportunities and approve, reject, or block them. Click "Review" to see full reasoning.</p>
+      <div id="queue-empty" class="card"><div class="alert alert-info">No queue yet. Upload a GSC CSV first.</div></div>
+      <div id="queue-content" class="hidden">
+        <div id="queue-stats" class="stats-grid"></div>
+
+        <!-- Batch actions -->
+        <div class="toolbar">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:13px;color:var(--text-muted);">Batch:</span>
+          </div>
+          <div class="toolbar-spacer"></div>
+          <button class="btn btn-sm btn-success" onclick="batchAction('approved')"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Approve selected</button>
+          <button class="btn btn-sm btn-danger" onclick="batchAction('rejected')"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Reject selected</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Queue Items</div>
+          <div class="table-wrap"><table><thead><tr><th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th><th>Keyword</th><th>Page</th><th>Score</th><th>Recommendation</th><th>Status</th><th>Actions</th></tr></thead><tbody id="queueTable"></tbody></table></div>
+        </div>
+
+        <!-- Recent activity -->
+        <div class="card">
+          <div class="card-title">Recent Activity</div>
+          <div id="queue-activity"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REVIEW DETAIL MODAL -->
+    <div class="modal-overlay" id="reviewModal">
+      <div class="modal" style="width:640px;">
+        <div class="modal-title" id="reviewModalTitle">Review: keyword</div>
+        <div id="reviewModalContent"></div>
+        <div style="margin-top:16px;">
+          <label>Notes (optional)</label>
+          <textarea id="reviewNotes" rows="2" placeholder="Add a note about this decision..."></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+          <button class="btn btn-secondary" onclick="closeReviewModal()">Cancel</button>
+          <button class="btn btn-danger" onclick="submitReviewAction('rejected')"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Reject</button>
+          <button class="btn btn-warning" onclick="submitReviewAction('blocked')">⊘ Block</button>
+          <button class="btn btn-success" onclick="submitReviewAction('approved')"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Approve</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: BRIEF -->
+    <div id="page-brief" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Content Brief</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Generate a structured content brief for any keyword.</p>
+      <div class="card">
+        <div class="card-title">Generate Brief</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><label>Keyword</label><input type="text" id="briefKeyword" placeholder="e.g. best crm software"></div>
+          <div><label>Target Audience</label><input type="text" id="briefAudience" placeholder="e.g. clinic managers"></div>
+          <div><label>Intent</label>
+            <select id="briefIntent">
+              <option value="">Auto-detect</option>
+              <option value="BOFU">BOFU</option>
+              <option value="MOFU">MOFU</option>
+              <option value="TOFU">TOFU</option>
+            </select>
+          </div>
+          <div><label>Word Count Target</label><input type="number" id="briefWords" value="1500"></div>
+        </div>
+        <button class="btn btn-primary" onclick="generateBrief()">Generate Brief</button>
+      </div>
+      <div id="brief-result"></div>
+    </div>
+
+    <!-- PAGE: CONTENT -->
+    <div id="page-content" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Content Writer</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Generate an AI-assisted content draft from a brief.</p>
+      <div class="card">
+        <div class="card-title">Write Content</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><label>Keyword</label><input type="text" id="writeKeyword" placeholder="e.g. best crm software"></div>
+          <div><label>Tone</label>
+            <select id="writeTone">
+              <option value="professional">Professional</option>
+              <option value="conversational">Conversational</option>
+              <option value="authoritative">Authoritative</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;"><label>Or paste existing brief JSON (optional)</label><textarea id="writeBrief" rows="3" placeholder='{"h2_outline": [...], ...}'></textarea></div>
+        <button class="btn btn-primary" onclick="writeContent()">Generate Draft</button>
+      </div>
+      <div id="content-result"></div>
+    </div>
+
+    <!-- PAGE: VALIDATE -->
+    <div id="page-validate" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Quality Validation</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Run SEO Gate, Fact Check, and Brand Review agents on your content.</p>
+      <div class="card">
+        <div class="card-title">Validate Content</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><label>Keyword</label><input type="text" id="valKeyword" placeholder="Target keyword"></div>
+          <div><label>Title</label><input type="text" id="valTitle" placeholder="Content title"></div>
+          <div><label>URL Slug</label><input type="text" id="valSlug" placeholder="/best-crm-software"></div>
+          <div><label>Client</label><input type="text" id="valClient" placeholder="Client name"></div>
+        </div>
+        <div style="margin-bottom:16px;"><label>Meta Description</label><input type="text" id="valMeta" placeholder="Meta description (150-160 chars)"></div>
+        <div style="margin-bottom:16px;"><label>Content</label><textarea id="valContent" rows="6" placeholder="Paste the full content..."></textarea></div>
+        <button class="btn btn-primary" onclick="runValidation()">Run All Checks</button>
+      </div>
+      <div id="validate-result"></div>
+    </div>
+
+    <!-- PAGE: PUBLISH -->
+    <div id="page-publish" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Publish</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Publish approved, validated content.</p>
+      <div class="card">
+        <div class="card-title">Publish Content</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><label>Keyword</label><input type="text" id="pubKeyword" placeholder="Keyword to publish"></div>
+          <div><label>Client</label><input type="text" id="pubClient" placeholder="Client name"></div>
+          <div><label>URL Slug</label><input type="text" id="pubSlug" placeholder="/best-crm-software"></div>
+          <div><label>Meta Description</label><input type="text" id="pubMeta" placeholder="Meta description"></div>
+        </div>
+        <div style="margin-bottom:16px;"><label>Title</label><input type="text" id="pubTitle" placeholder="Content title"></div>
+        <div style="margin-bottom:16px;"><label>Content (final)</label><textarea id="pubContent" rows="4" placeholder="Final content..."></textarea></div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-primary" onclick="publishContent(false)">Schedule</button>
+          <button class="btn btn-success" onclick="publishContent(true)">Publish Now</button>
+        </div>
+      </div>
+      <div id="publish-result"></div>
+    </div>
+
+    <!-- PAGE: MONITOR -->
+    <div id="page-monitor" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Performance Monitor</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Track published content performance.</p>
+      <div class="toolbar">
+        <button class="btn btn-secondary" onclick="loadMonitor()">Refresh</button>
+      </div>
+      <div id="monitor-content"></div>
+    </div>
+
+    <!-- PAGE: INTEGRATIONS -->
+    <div id="page-integrations" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Integrations</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Connect external systems for live data, publishing, and monitoring.</p>
+      <div id="integrations-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;"></div>
+    </div>
+
+    <!-- PAGE: GOVERNANCE -->
+    <div id="page-governance" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Governance & Compliance</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Approval gates, audit log, roles, and compliance tracking.</p>
+
+      <!-- Approval Gates -->
+      <div class="card">
+        <div class="card-title">Approval Gates</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Content must pass each gate in order. Click to approve/reject.</p>
+        <div id="gates-list"></div>
+      </div>
+
+      <!-- Brief Approval -->
+      <div class="card">
+        <div class="card-title">Brief Approval Workflow</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><label>Keyword</label><input type="text" id="govBriefKeyword" placeholder="Keyword"></div>
+          <div><label>Action</label>
+            <select id="govBriefAction">
+              <option value="submit">Submit for Approval</option>
+              <option value="approve">Approve</option>
+              <option value="reject">Reject</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;"><label>Notes</label><textarea id="govBriefNotes" rows="2" placeholder="Approval notes or rejection feedback..."></textarea></div>
+        <button class="btn btn-primary" onclick="submitBriefGov()">Submit</button>
+        <div id="gov-brief-result" style="margin-top:12px;"></div>
+      </div>
+
+      <!-- Final Review -->
+      <div class="card">
+        <div class="card-title">Final Review Gate</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><label>Keyword</label><input type="text" id="govFinalKeyword" placeholder="Keyword"></div>
+          <div><label>Action</label>
+            <select id="govFinalAction">
+              <option value="submit">Submit for Final Review</option>
+              <option value="approve">Approve for Publishing</option>
+              <option value="reject">Reject — Needs Revision</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;"><label>Notes</label><textarea id="govFinalNotes" rows="2" placeholder="Review notes..."></textarea></div>
+        <button class="btn btn-primary" onclick="submitFinalReview()">Submit</button>
+        <div id="gov-final-result" style="margin-top:12px;"></div>
+      </div>
+
+      <!-- Compliance Check -->
+      <div class="card">
+        <div class="card-title">Compliance Check</div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;">
+          <input type="text" id="govComplianceKeyword" placeholder="Keyword to check" style="flex:1;">
+          <button class="btn btn-secondary" onclick="checkCompliance()">Check</button>
+        </div>
+        <div id="gov-compliance-result"></div>
+      </div>
+
+      <!-- Audit Log -->
+      <div class="card">
+        <div class="card-title">Audit Log</div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+          <select id="auditFilterAction" onchange="loadAuditLog()">
+            <option value="">All actions</option>
+            <option value="gate_approved">Gate Approved</option>
+            <option value="gate_rejected">Gate Rejected</option>
+            <option value="brief_approved">Brief Approved</option>
+            <option value="brief_rejected">Brief Rejected</option>
+            <option value="final_review_approved">Final Review Approved</option>
+            <option value="final_review_rejected">Final Review Rejected</option>
+          </select>
+          <button class="btn btn-sm btn-secondary" onclick="loadAuditLog()">Refresh</button>
+        </div>
+        <div id="audit-log"></div>
+      </div>
+    </div>
+
+    <!-- PAGE: CALENDAR -->
+    <div id="page-calendar" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Content Calendar</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Monthly topic pipeline — manage planned content.</p>
+
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="openAddCalendarModal()">+ Add Topic</button>
+        <select id="calFilterStatus" onchange="loadCalendar()">
+          <option value="">All statuses</option>
+          <option value="planned">Planned</option>
+          <option value="approved">Approved</option>
+          <option value="in_progress">In Progress</option>
+          <option value="published">Published</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <input type="month" id="calFilterMonth" onchange="loadCalendar()">
+      </div>
+
+      <div class="card">
+        <div class="table-wrap"><table><thead><tr><th>Keyword</th><th>Client</th><th>Intent</th><th>Funnel</th><th>Action</th><th>Status</th><th>Month</th><th></th></tr></thead><tbody id="calendarTable"><tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px;">No calendar entries yet.</td></tr></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- PAGE: BLOG REVIEW -->
+    <div id="page-review" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Blog Review (Phase 2-8)</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Submit a blog post draft for SOP quality review.</p>
+
+      <div class="card">
+        <div class="card-title">Submit Draft</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><label>Keyword</label><input type="text" id="revKeyword" placeholder="Target keyword"></div>
+          <div><label>Title</label><input type="text" id="revTitle" placeholder="Blog post title"></div>
+          <div><label>URL Slug</label><input type="text" id="revSlug" placeholder="/best-clinic-software"></div>
+          <div><label>Client</label><input type="text" id="revClient" placeholder="Client name"></div>
+        </div>
+        <div style="margin-bottom:16px;"><label>Meta Description</label><input type="text" id="revMeta" placeholder="Meta description"></div>
+        <div style="margin-bottom:16px;"><label>Content (Markdown or HTML)</label><textarea id="revContent" rows="6" placeholder="Paste the full blog post draft..."></textarea></div>
+        <button class="btn btn-primary" onclick="submitReview()">Submit for Review</button>
+      </div>
+
+      <div id="review-result"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- AGENT REGISTRY PAGE -->
+<div id="agent-registry-container"></div>
+<div id="obs-container"></div>
+<div id="approvals-container"></div>
+<div id="models-container"></div>
+
+<!-- ADD CALENDAR MODAL -->
+<div class="modal-overlay" id="addCalModal">
+  <div class="modal">
+    <div class="modal-title">Add to Content Calendar</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div><label>Keyword</label><input type="text" id="calKeyword" required></div>
+      <div><label>Client</label><input type="text" id="calClient" value="default"></div>
+      <div><label>Intent</label><select id="calIntent"><option value="BOFU">BOFU</option><option value="MOFU" selected>MOFU</option><option value="TOFU">TOFU</option></select></div>
+      <div><label>Funnel Stage</label><select id="calFunnel"><option value="bottom">Bottom</option><option value="mid" selected>Mid</option><option value="top">Top</option></select></div>
+      <div><label>Action</label><select id="calAction"><option value="improve_existing">Improve Existing</option><option value="create_new">Create New</option></select></div>
+      <div><label>GSC Position</label><input type="number" id="calPosition" placeholder="e.g. 8"></div>
+      <div><label>Impressions</label><input type="number" id="calImpressions" placeholder="e.g. 1200"></div>
+      <div><label>Month</label><input type="month" id="calMonth"></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeAddCalendarModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addCalendarEntry()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const BASE = 'http://' + window.location.hostname + ':8000';
+let opportunities = [];
+
+// ── Icon helper ──────────────────────────────────────────────────────────────
+function icon(name) {
+  const icons = {
+    search: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>',
+    scale: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M2 8h20"/><path d="M6 8a2 2 0 0 0 2 2h2a2 2 0 0 0 0-4H8a2 2 0 0 0-2 2z"/><path d="M16 14a2 2 0 0 0 0 4h2a2 2 0 0 0 2-2h-4z"/><path d="M2 8l2-4h16l2 4"/></svg>',
+    chart: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16h.01"/><path d="M11 12h.01"/><path d="M15 16h.01"/><path d="M19 8h.01"/></svg>',
+    check: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
+    clipboard: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>',
+    pencil: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
+    rocket: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
+    graph: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+    plug: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8a2 2 0 0 0-2-2h-1a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"/><path d="M10 12H6"/><path d="M18 12h-4"/></svg>',
+    shield: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+    robot: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/></svg>',
+    brain: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2z"/></svg>',
+    calendar: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>',
+    edit: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+    spider: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v6"/><path d="M14 2v6"/><path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M12 12h.01"/><path d="M8 22l-2-4"/><path d="M16 22l2-4"/><path d="M8 10 4 6"/><path d="M16 10l4-4"/></svg>',
+    bell: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+    books: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+    mail: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
+    target: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+    package: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 1 1 5.66 5.66l-9.2 9.19a2 2 0 1 1-2.83-2.83l8.49-8.48"/></svg>',
+    lightbulb: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>',
+    folder: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+  };
+  return icons[name] || '';
+}
+
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('collapsed');
+}
+
+const themeIcons = {
+  moon: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+  sun: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>'
+};
+
+function toggleTheme() {
+  const body = document.body;
+  const isLight = body.classList.toggle('light');
+  const track = document.querySelector('.theme-toggle-track');
+  const label = document.querySelector('.theme-toggle-label');
+  const iconEl = document.querySelector('.theme-toggle-icon');
+  if (isLight) {
+    track.classList.add('light');
+    label.textContent = 'Light';
+    iconEl.innerHTML = themeIcons.sun;
+  } else {
+    track.classList.remove('light');
+    label.textContent = 'Dark';
+    iconEl.innerHTML = themeIcons.moon;
+  }
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+}
+
+// Restore saved theme
+if (localStorage.getItem('theme') === 'light') {
+  document.body.classList.add('light');
+  document.querySelector('.theme-toggle-track').classList.add('light');
+  document.querySelector('.theme-toggle-label').textContent = 'Light';
+  document.querySelector('.theme-toggle-icon').innerHTML = themeIcons.sun;
+}
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+
+function handleFile(input) {
+  const file = input.files ? input.files[0] : input;
+  if (!file) return;
+  const formData = new FormData();
+  formData.append('file', file);
+
+  document.getElementById('loading').classList.add('active');
+  document.getElementById('results-section').classList.add('hidden');
+
+  fetch(BASE + '/api/stage1a/analyze', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('loading').classList.remove('active');
+      if (d.error) { alert('Error: ' + d.error); return; }
+
+      if (d.status === 'queued' && d.job_id) {
+        // Hermes analysis queued -- poll for results
+        showQueuedStatus(d);
+        pollJob(d.job_id);
+      } else if (d.opportunities) {
+        // Synchronous result (fallback)
+        opportunities = d.opportunities;
+        renderResults(d);
+      }
+    })
+    .catch(err => {
+      document.getElementById('loading').classList.remove('active');
+      alert('Error: ' + err);
+    });
+}
+
+function showQueuedStatus(d) {
+  document.getElementById('results-section').classList.remove('hidden');
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-value" style="color:var(--accent)"><svg class="icon spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="stat-label">Analyzing...</div></div>
+    <div class="stat-card"><div class="stat-value">${d.rows_received}</div><div class="stat-label">Rows received</div></div>
+    <div class="stat-card"><div class="stat-value" style="font-size:13px">${d.job_id}</div><div class="stat-label">Job ID</div></div>
+  `;
+  document.getElementById('oppsTable').innerHTML = `<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted);">Hermes is analyzing your data. This may take 1-2 minutes...</td></tr>`;
+}
+
+function pollJob(jobId) {
+  const interval = setInterval(() => {
+    fetch(BASE + '/api/jobs/' + jobId)
+      .then(r => r.json())
+      .then(job => {
+        if (job.status === 'complete') {
+          clearInterval(interval);
+          opportunities = job.result.opportunities;
+          renderResults(job.result);
+        } else if (job.status === 'error') {
+          clearInterval(interval);
+          alert('Analysis failed: ' + job.error);
+          document.getElementById('results-section').classList.add('hidden');
+        }
+        // else still running, keep polling
+      })
+      .catch(() => {/* keep polling on network error */});
+  }, 5000); // poll every 5 seconds
+}
+
+// ── Render Results ──────────────────────────────────────────────────────────
+function renderResults(d) {
+  document.getElementById('results-section').classList.remove('hidden');
+
+  const critical = d.opportunities.filter(o => o.priority === 'Critical').length;
+  const high = d.opportunities.filter(o => o.priority === 'High').length;
+  const bofu = d.opportunities.filter(o => o.intent === 'BOFU').length;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${d.opportunities_found}</div><div class="stat-label">Opportunities</div></div>
+    <div class="stat-card"><div class="stat-value stat-critical">${critical}</div><div class="stat-label">Critical</div></div>
+    <div class="stat-card"><div class="stat-value stat-high">${high}</div><div class="stat-label">High</div></div>
+    <div class="stat-card"><div class="stat-value">${bofu}</div><div class="stat-label">BOFU</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--text-muted)">${d.excluded}</div><div class="stat-label">Excluded</div></div>
+  `;
+
+  const tbody = document.getElementById('oppsTable');
+  tbody.innerHTML = d.opportunities.map((o, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><span class="badge badge-${o.priority.toLowerCase()}">${o.priority}</span></td>
+      <td><strong>${o.keyword}</strong></td>
+      <td style="font-size:12px;color:var(--text-muted)">${o.page}</td>
+      <td>${o.position}</td>
+      <td>${o.impressions.toLocaleString()}</td>
+      <td>${o.clicks}</td>
+      <td><span class="badge badge-${o.intent.toLowerCase()}">${o.intent}</span></td>
+      <td><strong>${o.total_score}</strong></td>
+      <td><span class="badge badge-${o.recommendation === 'Improve Existing' ? 'optimize' : o.recommendation === 'Expand Existing' ? 'maybe' : 'skip'}">${o.recommendation}</span></td>
+      <td><span class="badge badge-needs_review">needs_review</span></td>
+      <td><button class="btn btn-sm btn-secondary" onclick="quickDecision('${o.keyword.replace(/'/g, "\\'")}', '${o.page.replace(/'/g, "\\'")}', ${o.position}, ${o.impressions}, ${o.clicks})">Decide</button></td>
+    </tr>
+  `).join('');
+}
+
+// ── Quick Decision ──────────────────────────────────────────────────────────
+function quickDecision(keyword, page, position, impressions, clicks) {
+  showPage('decide');
+  document.getElementById('decKeyword').value = keyword;
+  document.getElementById('decPage').value = page;
+  document.getElementById('decPosition').value = position;
+  document.getElementById('decImpressions').value = impressions;
+  document.getElementById('decClicks').value = clicks;
+  runDecision();
+}
+
+function runDecision() {
+  const body = {
+    keyword: document.getElementById('decKeyword').value,
+    page: document.getElementById('decPage').value,
+    position: parseInt(document.getElementById('decPosition').value) || 0,
+    impressions: parseInt(document.getElementById('decImpressions').value) || 0,
+    clicks: parseInt(document.getElementById('decClicks').value) || 0,
+    intent: document.getElementById('decIntent').value,
+  };
+  if (!body.keyword) return alert('Keyword is required');
+
+  fetch(BASE + '/api/decide/should-optimize', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  .then(r => r.json())
+  .then(d => {
+    const dc = d.decision === 'optimize' ? 'decision-optimize' : d.decision === 'maybe' ? 'decision-maybe' : 'decision-skip';
+    const factorsHtml = d.factors.map(f => `
+      <div class="factor-card">
+        <div class="factor-name">${f.factor}</div>
+        <div class="factor-value">${f.value}</div>
+        <div class="factor-detail">${f.detail}</div>
+      </div>
+    `).join('');
+
+    const sopHtml = d.sop_alignment.map(s => `<div style="font-size:13px;margin-top:4px;">${s}</div>`).join('');
+
+    document.getElementById('decision-result').innerHTML = `
+      <div class="decision-card ${dc}">
+        <div class="decision-header">
+          <div>
+            <div class="decision-title">${d.keyword}</div>
+            <div style="color:var(--text-muted);font-size:13px;">${d.page}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="decision-score">${d.score}%</div>
+            <div style="font-size:12px;color:var(--text-muted);">${d.confidence} confidence</div>
+          </div>
+        </div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">${d.summary}</div>
+        <div class="badge badge-${d.decision === 'optimize' ? 'optimize' : d.decision === 'maybe' ? 'maybe' : 'skip'}" style="margin-bottom:12px;">${d.recommendation}</div>
+        <div style="font-size:14px;margin-bottom:12px;">${d.action}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--accent);margin:16px 0 8px;">Decision Factors</div>
+        <div class="factor-grid">${factorsHtml}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--accent);margin:16px 0 8px;">SOP Alignment</div>
+        ${sopHtml}
+      </div>
+    `;
+  });
+}
+
+// ── Approval Queue ──────────────────────────────────────────────────────────
+function loadQueue() {
+  fetch(BASE + '/api/queue')
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) { document.getElementById('queue-empty').classList.remove('hidden'); document.getElementById('queue-content').classList.add('hidden'); return; }
+      document.getElementById('queue-empty').classList.add('hidden');
+      document.getElementById('queue-content').classList.remove('hidden');
+
+      const items = d.approved_existing_page_actions;
+      const counts = { needs_review: 0, approved: 0, rejected: 0, blocked: 0 };
+      items.forEach(i => counts[i.approval_status] = (counts[i.approval_status] || 0) + 1);
+
+      document.getElementById('queue-stats').innerHTML = `
+        <div class="stat-card"><div class="stat-value">${items.length}</div><div class="stat-label">Total</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--accent)">${counts.needs_review}</div><div class="stat-label">Needs Review</div></div>
+        <div class="stat-card"><div class="stat-value stat-approved">${counts.approved}</div><div class="stat-label">Approved</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--red)">${counts.rejected + counts.blocked}</div><div class="stat-label">Rejected/Blocked</div></div>
+      `;
+
+      document.getElementById('queueTable').innerHTML = items.map(i => `
+        <tr>
+          <td><input type="checkbox" class="queue-checkbox" data-keyword="${i.keyword.replace(/"/g, '&quot;')}"></td>
+          <td><strong>${i.keyword}</strong></td>
+          <td style="font-size:12px;color:var(--text-muted)">${i.page}</td>
+          <td>${i.score}</td>
+          <td><span class="badge badge-${i.recommendation === 'Improve Existing' ? 'optimize' : i.recommendation === 'Expand Existing' ? 'maybe' : 'skip'}">${i.recommendation}</span></td>
+          <td><span class="badge badge-${i.approval_status}">${i.approval_status}</span></td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="openReviewModal('${i.keyword.replace(/'/g, "\\'")}')">Review</button>
+            <button class="btn btn-sm btn-success" onclick="setStatus('${i.keyword.replace(/'/g, "\\'")}', 'approved')" title="Approve"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>
+            <button class="btn btn-sm btn-danger" onclick="setStatus('${i.keyword.replace(/'/g, "\\'")}', 'rejected')" title="Reject"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Recent activity
+      if (d.recent_activity && d.recent_activity.length) {
+        document.getElementById('queue-activity').innerHTML = d.recent_activity.map(a => `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span class="badge badge-${a.action === 'approved' ? 'approved' : a.action === 'rejected' ? 'rejected' : 'blocked'}">${a.action}</span>
+            <span style="font-size:13px;"><strong>${a.keyword}</strong></span>
+            <span style="font-size:12px;color:var(--text-muted);margin-left:auto;">${new Date(a.timestamp).toLocaleString()}</span>
+          </div>
+        `).join('');
+      }
+    });
+}
+
+function setStatus(keyword, status) {
+  fetch(BASE + '/api/queue/' + encodeURIComponent(keyword) + '/' + status, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ notes: '' }),
+  }).then(() => loadQueue());
+}
+
+// ── Review Modal ─────────────────────────────────────────────────────────────
+let currentReviewKeyword = '';
+
+function openReviewModal(keyword) {
+  currentReviewKeyword = keyword;
+  document.getElementById('reviewModal').classList.add('open');
+  document.getElementById('reviewModalTitle').textContent = 'Review: ' + keyword;
+  document.getElementById('reviewModalContent').innerHTML = '<div class="loading active"><div class="spinner"></div><div>Loading review data...</div></div>';
+  document.getElementById('reviewNotes').value = '';
+
+  fetch(BASE + '/api/queue/' + encodeURIComponent(keyword) + '/review', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      const decision = d.decision;
+      let content = '';
+
+      if (decision) {
+        const dc = decision.decision === 'optimize' ? 'decision-optimize' : decision.decision === 'maybe' ? 'decision-maybe' : 'decision-skip';
+        content += `<div class="decision-card ${dc}" style="margin-bottom:16px;">`;
+        content += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">`;
+        content += `<div><strong>${decision.keyword}</strong><br><span style="font-size:12px;color:var(--text-muted);">${decision.page}</span></div>`;
+        content += `<div style="text-align:right;"><div style="font-size:24px;font-weight:700;">${decision.score}%</div><div style="font-size:11px;color:var(--text-muted);">${decision.confidence} confidence</div></div>`;
+        content += `</div>`;
+        content += `<div style="font-size:14px;font-weight:600;margin-bottom:4px;">${decision.summary}</div>`;
+        content += `<div class="badge badge-${decision.decision === 'optimize' ? 'optimize' : decision.decision === 'maybe' ? 'maybe' : 'skip'}" style="margin-bottom:8px;">${decision.recommendation}</div>`;
+        content += `<div style="font-size:13px;margin-bottom:8px;">${decision.action}</div>`;
+
+        if (decision.factors) {
+          content += `<div style="font-size:12px;font-weight:600;color:var(--accent);margin:12px 0 6px;">Decision Factors</div>`;
+          content += `<div class="factor-grid">`;
+          decision.factors.forEach(f => {
+            const icon = f.signal === 'strong' ? '<span class="dot dot-green"></span>' : f.signal === 'moderate' ? '<span class="dot dot-yellow"></span>' : '<span class="dot dot-red"></span>';
+            content += `<div class="factor-card"><div class="factor-name">${f.factor}</div><div class="factor-value">${icon} ${f.value}</div><div class="factor-detail">${f.detail}</div></div>`;
+          });
+          content += `</div>`;
+        }
+
+        if (decision.sop_alignment) {
+          content += `<div style="font-size:12px;font-weight:600;color:var(--accent);margin:12px 0 6px;">SOP Alignment</div>`;
+          decision.sop_alignment.forEach(s => {
+            content += `<div style="font-size:12px;margin-top:2px;">${s}</div>`;
+          });
+        }
+        content += `</div>`;
+      }
+
+      // History
+      if (d.history && d.history.length) {
+        content += `<div style="font-size:12px;font-weight:600;color:var(--accent);margin:16px 0 6px;">History</div>`;
+        d.history.forEach(h => {
+          content += `<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(46,51,72,0.5);"><span class="badge badge-${h.action === 'approved' ? 'approved' : h.action === 'rejected' ? 'rejected' : 'blocked'}">${h.action}</span> ${h.notes || '(no notes)'} <span style="color:var(--text-muted);margin-left:8px;">${new Date(h.timestamp).toLocaleString()}</span></div>`;
+        });
+      }
+
+      document.getElementById('reviewModalContent').innerHTML = content;
+    })
+    .catch(err => {
+      document.getElementById('reviewModalContent').innerHTML = `<div class="alert alert-error">Error loading review: ${err}</div>`;
+    });
+}
+
+function closeReviewModal() {
+  document.getElementById('reviewModal').classList.remove('open');
+  currentReviewKeyword = '';
+}
+
+function submitReviewAction(action) {
+  if (!currentReviewKeyword) return;
+  const notes = document.getElementById('reviewNotes').value;
+  fetch(BASE + '/api/queue/' + encodeURIComponent(currentReviewKeyword) + '/' + action, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ notes }),
+  }).then(() => { closeReviewModal(); loadQueue(); });
+}
+
+// ── Batch Operations ─────────────────────────────────────────────────────────
+let queueItems = [];
+
+function toggleSelectAll() {
+  const checked = document.getElementById('selectAll').checked;
+  document.querySelectorAll('.queue-checkbox').forEach(cb => cb.checked = checked);
+}
+
+function getSelectedKeywords() {
+  const keywords = [];
+  document.querySelectorAll('.queue-checkbox:checked').forEach(cb => {
+    keywords.push(cb.dataset.keyword);
+  });
+  return keywords;
+}
+
+function batchAction(action) {
+  const keywords = getSelectedKeywords();
+  if (!keywords.length) return alert('Select at least one item');
+
+  fetch(BASE + '/api/queue/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, keywords }),
+  }).then(() => loadQueue());
+}
+
+// ── Content Calendar ────────────────────────────────────────────────────────
+function loadCalendar() {
+  const status = document.getElementById('calFilterStatus').value;
+  const month = document.getElementById('calFilterMonth').value;
+  let url = BASE + '/api/calendar';
+  const params = [];
+  if (status) params.push('status=' + status);
+  if (month) params.push('month=' + month);
+  if (params.length) url += '?' + params.join('&');
+
+  fetch(url)
+    .then(r => r.json())
+    .then(d => {
+      const tbody = document.getElementById('calendarTable');
+      if (!d.entries.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px;">No calendar entries found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = d.entries.map((e, i) => `
+        <tr>
+          <td><strong>${e.keyword}</strong></td>
+          <td>${e.client}</td>
+          <td><span class="badge badge-${e.intent.toLowerCase()}">${e.intent}</span></td>
+          <td>${e.funnel_stage}</td>
+          <td>${e.action_type}</td>
+          <td><span class="badge badge-${e.status === 'approved' ? 'approved' : e.status === 'rejected' ? 'rejected' : 'needs_review'}">${e.status}</span></td>
+          <td>${e.month}</td>
+          <td><button class="btn btn-sm btn-secondary" onclick="deleteCalendar(${i})"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></td>
+        </tr>
+      `).join('');
+    });
+}
+
+function openAddCalendarModal() { document.getElementById('addCalModal').classList.add('open'); }
+function closeAddCalendarModal() { document.getElementById('addCalModal').classList.remove('open'); }
+
+function addCalendarEntry() {
+  const body = {
+    keyword: document.getElementById('calKeyword').value,
+    client: document.getElementById('calClient').value || 'default',
+    intent: document.getElementById('calIntent').value,
+    funnel_stage: document.getElementById('calFunnel').value,
+    action_type: document.getElementById('calAction').value,
+    gsc_position: parseInt(document.getElementById('calPosition').value) || null,
+    impressions: parseInt(document.getElementById('calImpressions').value) || null,
+    month: document.getElementById('calMonth').value || undefined,
+  };
+  if (!body.keyword) return alert('Keyword is required');
+
+  fetch(BASE + '/api/calendar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then(() => { closeAddCalendarModal(); loadCalendar(); });
+}
+
+function deleteCalendar(id) {
+  fetch(BASE + '/api/calendar/' + id, { method: 'DELETE' }).then(() => loadCalendar());
+}
+
+// ── Blog Review ─────────────────────────────────────────────────────────────
+function submitReview() {
+  const body = {
+    keyword: document.getElementById('revKeyword').value,
+    title: document.getElementById('revTitle').value,
+    content: document.getElementById('revContent').value,
+    url_slug: document.getElementById('revSlug').value,
+    meta_description: document.getElementById('revMeta').value,
+    client: document.getElementById('revClient').value || 'default',
+  };
+  if (!body.keyword || !body.content) return alert('Keyword and content are required');
+
+  fetch(BASE + '/api/review/submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  .then(r => r.json())
+  .then(d => {
+    const phasesHtml = d.human_checklist.map(phase => `
+      <div class="checklist-phase">
+        <div class="checklist-phase-title">${phase.label}</div>
+        ${phase.items.map(item => {
+          const isAuto = item.auto_checked !== null && item.auto_checked !== 'manual';
+          const autoLabel = item.auto_checked === true ? '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> auto' : item.auto_checked === false ? '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> auto' : '';
+          return `
+            <div class="checklist-item">
+              <span class="checklist-label">${item.label}</span>
+              ${isAuto ? `<span class="checklist-status check-auto">${autoLabel}</span>` : ''}
+              <span class="checklist-status check-${item.status}">${item.status}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `).join('');
+
+    document.getElementById('review-result').innerHTML = `
+      <div class="card">
+        <div class="card-title">Review: ${d.title}</div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;">
+          <span class="badge badge-${d.overall_status === 'pass' ? 'approved' : d.overall_status === 'fail' ? 'rejected' : 'needs_review'}">${d.overall_status}</span>
+          <span style="color:var(--text-muted);font-size:13px;">Auto-passed: ${d.summary.auto_passed} | Auto-failed: ${d.summary.auto_failed} | Needs human: ${d.summary.needs_human_review}</span>
+        </div>
+        ${phasesHtml}
+      </div>
+    `;
+  });
+}
+
+// ── Content Brief ────────────────────────────────────────────────────────────
+function generateBrief() {
+  const body = {
+    keyword: document.getElementById('briefKeyword').value,
+    target_audience: document.getElementById('briefAudience').value,
+    intent: document.getElementById('briefIntent').value,
+    word_count_target: parseInt(document.getElementById('briefWords').value) || 1500,
+  };
+  if (!body.keyword) return alert('Keyword is required');
+
+  fetch(BASE + '/api/brief/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('brief-result').innerHTML = `
+      <div class="card">
+        <div class="card-title">Brief: ${d.keyword}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><strong>Intent:</strong> <span class="badge badge-${d.intent.toLowerCase()}">${d.intent}</span></div>
+          <div><strong>Word count:</strong> ${d.word_count_target}</div>
+          <div><strong>Audience:</strong> ${d.target_audience}</div>
+          <div><strong>Slug:</strong> ${d.seo_requirements.url_slug}</div>
+        </div>
+        <div style="margin-bottom:12px;"><strong>Title suggestions:</strong></div>
+        <ul style="margin-bottom:16px;padding-left:20px;">${d.title_suggestions.map(t => '<li style="margin-bottom:4px;">' + t + '</li>').join('')}</ul>
+        <div style="margin-bottom:12px;"><strong>H2 Outline:</strong></div>
+        <ol style="margin-bottom:16px;padding-left:20px;">${d.h2_outline.map(h => '<li style="margin-bottom:4px;">' + h + '</li>').join('')}</ol>
+        <div style="margin-bottom:12px;"><strong>FAQ Questions:</strong></div>
+        <ul style="margin-bottom:16px;padding-left:20px;">${d.faq_questions.map(q => '<li style="margin-bottom:4px;">' + q + '</li>').join('')}</ul>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-primary" onclick="briefToContent('${d.keyword.replace(/'/g, "\\'")}')">→ Write Content</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function briefToContent(keyword) {
+  showPage('content');
+  document.getElementById('writeKeyword').value = keyword;
+}
+
+// ── Content Writer ───────────────────────────────────────────────────────────
+function writeContent() {
+  const keyword = document.getElementById('writeKeyword').value;
+  if (!keyword) return alert('Keyword is required');
+  let brief = {};
+  const briefText = document.getElementById('writeBrief').value;
+  if (briefText) { try { brief = JSON.parse(briefText); } catch(e) { alert('Invalid brief JSON'); return; } }
+
+  fetch(BASE + '/api/content/write', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ keyword, tone: document.getElementById('writeTone').value, brief, word_count: 1500 }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('content-result').innerHTML = `
+      <div class="card">
+        <div class="card-title">Draft: ${d.keyword}</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;">
+          <span class="badge badge-${d.intent.toLowerCase()}">${d.intent}</span>
+          <span style="font-size:13px;color:var(--text-muted);">${d.full_content.split(' ').length} words</span>
+        </div>
+        <textarea id="draftEditor" style="width:100%;min-height:300px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;color:var(--text);font-family:monospace;font-size:13px;line-height:1.6;resize:vertical;">${d.full_content}</textarea>
+        <div style="display:flex;gap:10px;margin-top:12px;">
+          <button class="btn btn-primary" onclick="contentToValidate('${d.keyword.replace(/'/g, "\\'")}')">→ Validate</button>
+          <button class="btn btn-secondary" onclick="saveDraftChanges('${d.keyword.replace(/'/g, "\\'")}')">Save Changes</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function contentToValidate(keyword) {
+  showPage('validate');
+  document.getElementById('valKeyword').value = keyword;
+  document.getElementById('valTitle').value = keyword;
+  document.getElementById('valSlug').value = keyword.toLowerCase().replace(/ /g, '-');
+  const editor = document.getElementById('draftEditor');
+  if (editor) document.getElementById('valContent').value = editor.value;
+}
+
+function saveDraftChanges(keyword) {
+  const content = document.getElementById('draftEditor').value;
+  fetch(BASE + '/api/content/draft/' + encodeURIComponent(keyword), {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ full_content: content, human_edited: true }),
+  }).then(() => alert('Draft saved!'));
+}
+
+// ── Validation ───────────────────────────────────────────────────────────────
+function runValidation() {
+  const body = {
+    keyword: document.getElementById('valKeyword').value,
+    title: document.getElementById('valTitle').value,
+    content: document.getElementById('valContent').value,
+    url_slug: document.getElementById('valSlug').value,
+    meta_description: document.getElementById('valMeta').value,
+    client: document.getElementById('valClient').value || 'default',
+  };
+  if (!body.keyword || !body.content) return alert('Keyword and content required');
+
+  fetch(BASE + '/api/validate', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  })
+  .then(r => r.json())
+  .then(d => {
+    let html = '<div class="card"><div class="card-title">Validation Results</div>';
+    html += '<div style="display:flex;gap:12px;margin-bottom:16px;">';
+    html += '<span class="badge badge-' + (d.overall_status === 'pass' ? 'approved' : d.overall_status === 'fail' ? 'rejected' : 'needs_review') + '">' + d.overall_status + '</span>';
+    html += '<span style="font-size:13px;color:var(--text-muted);">SEO: ' + d.summary.seo_score + '% | Issues: ' + d.summary.total_issues + '</span></div>';
+
+    for (const [name, agent] of Object.entries(d.agents)) {
+      html += '<div style="margin-bottom:16px;"><div style="font-weight:600;margin-bottom:8px;">' + agent.agent + ' <span class="badge badge-' + (agent.status === 'pass' ? 'approved' : agent.status === 'fail' ? 'rejected' : 'pending') + '">' + agent.status + '</span></div>';
+      if (agent.checks) agent.checks.forEach(c => { html += '<div style="font-size:13px;padding:4px 0;border-bottom:1px solid rgba(46,51,72,0.5);">' + (c.pass ? '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>') + ' ' + c.check + ': ' + c.detail + '</div>'; });
+      if (agent.issues) agent.issues.forEach(i => { html += '<div style="font-size:13px;padding:4px 0;color:var(--yellow);"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg> ' + i.message + '</div>'; });
+      html += '</div>';
+    }
+    html += '<button class="btn btn-primary" onclick="validateToPublish(\'' + body.keyword.replace(/'/g, "\\'") + '\')">→ Publish</button></div>';
+    document.getElementById('validate-result').innerHTML = html;
+  });
+}
+
+function validateToPublish(keyword) {
+  showPage('publish');
+  document.getElementById('pubKeyword').value = keyword;
+  document.getElementById('pubTitle').value = document.getElementById('valTitle').value;
+  document.getElementById('pubSlug').value = document.getElementById('valSlug').value;
+  document.getElementById('pubMeta').value = document.getElementById('valMeta').value;
+  document.getElementById('pubClient').value = document.getElementById('valClient').value;
+  document.getElementById('pubContent').value = document.getElementById('valContent').value;
+}
+
+// ── Publish ──────────────────────────────────────────────────────────────────
+function publishContent(now) {
+  const body = {
+    keyword: document.getElementById('pubKeyword').value,
+    title: document.getElementById('pubTitle').value,
+    content: document.getElementById('pubContent').value,
+    url_slug: document.getElementById('pubSlug').value,
+    meta_description: document.getElementById('pubMeta').value,
+    client: document.getElementById('pubClient').value || 'default',
+    publish_now: now,
+  };
+  fetch(BASE + '/api/publish', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  })
+  .then(r => { if (!r.ok) return r.json().then(d => { throw new Error(d.error); }); return r.json(); })
+  .then(d => {
+    document.getElementById('publish-result').innerHTML = '<div class="card"><div class="alert alert-success">' + d.message + '</div><ul style="padding-left:20px;margin-top:8px;">' + d.next_steps.map(s => '<li style="font-size:13px;margin-bottom:4px;">' + s + '</li>').join('') + '</ul></div>';
+  })
+  .catch(err => {
+    document.getElementById('publish-result').innerHTML = '<div class="card"><div class="alert alert-error">Error: ' + err.message + '</div></div>';
+  });
+}
+
+// ── Monitor ──────────────────────────────────────────────────────────────────
+function loadMonitor() {
+  fetch(BASE + '/api/monitor').then(r => r.json()).then(d => {
+    if (!d.total) { document.getElementById('monitor-content').innerHTML = '<div class="card"><div class="alert alert-info">No published content yet.</div></div>'; return; }
+    let html = '<div class="card"><div class="card-title">Published Content</div><div class="table-wrap"><table><thead><tr><th>Keyword</th><th>Status</th><th>Published</th><th>Actions</th></tr></thead><tbody>';
+    d.published.forEach(p => { html += '<tr><td><strong>' + p.keyword + '</strong></td><td><span class="badge badge-' + (p.status === 'published' ? 'approved' : 'pending') + '">' + p.status + '</span></td><td>' + (p.published_at ? new Date(p.published_at).toLocaleDateString() : 'Scheduled') + '</td><td><button class="btn btn-sm btn-secondary" onclick="requestIndexing(\'' + p.keyword + '\')">Request Indexing</button></td></tr>'; });
+    html += '</tbody></table></div></div>';
+    document.getElementById('monitor-content').innerHTML = html;
+  });
+}
+
+function requestIndexing(keyword) {
+  fetch(BASE + '/api/publish/' + encodeURIComponent(keyword) + '/index', { method: 'POST' }).then(() => { alert('Indexing requested'); loadMonitor(); });
+}
+
+// ── Integrations ─────────────────────────────────────────────────────────────
+const INTEGRATIONS = [
+  { id: "gsc", name: "Google Search Console", icon: icon('search'), desc: "Performance data, indexing status, live query insights", endpoint: "/api/integrations/gsc/status" },
+  { id: "semrush", name: "SEMrush", icon: icon('chart'), desc: "Keyword metrics, competitor analysis, site audit", endpoint: "/api/integrations/semrush/status" },
+  { id: "crawler", name: "Site Crawler", icon: icon('spider'), desc: "Map existing pages, analyze internal links", endpoint: "/api/integrations/crawl" },
+  { id: "cms", name: "CMS Publishing", icon: icon('edit'), desc: "Publish to WordPress, Contentful, Strapi", endpoint: "/api/integrations/cms/status" },
+  { id: "notifications", name: "Notifications", icon: icon('bell'), desc: "Slack and email alerts for key events", endpoint: "/api/integrations/notifications/status" },
+  { id: "analytics", name: "Analytics", icon: icon('graph'), desc: "Track page performance and conversions", endpoint: "/api/integrations/analytics/status" },
+  { id: "sources", name: "Source Ledger", icon: icon('books'), desc: "Fact validation and source tracking", endpoint: "/api/integrations/sources" },
+  { id: "outreach", name: "Outreach Tracker", icon: icon('mail'), desc: "Link building and PR outreach management", endpoint: "/api/integrations/outreach" },
+];
+
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-' + pageId);
+  if (page) page.classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+
+  if (pageId === 'queue') loadQueue();
+  if (pageId === 'calendar') loadCalendar();
+  if (pageId === 'monitor') loadMonitor();
+  if (pageId === 'integrations') loadIntegrations();
+  if (pageId === 'governance') loadGovernance();
+  if (pageId === 'agents') loadAgentRegistry();
+  if (pageId === 'observability') loadObservability();
+  if (pageId === 'approvals') loadApprovals();
+  if (pageId === 'models') loadModelUsage();
+}
+
+function loadIntegrations() {
+  const grid = document.getElementById('integrations-grid');
+  grid.innerHTML = INTEGRATIONS.map(int => `
+    <div class="card" style="cursor:pointer;" onclick="showIntegrationDetail('${int.id}')">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <span style="font-size:24px;">${int.icon}</span>
+        <div>
+          <div style="font-weight:600;">${int.name}</div>
+          <div style="font-size:12px;color:var(--text-muted);">${int.desc}</div>
+        </div>
+      </div>
+      <div id="int-status-${int.id}" style="font-size:12px;color:var(--text-muted);">Loading...</div>
+    </div>
+  `).join('');
+
+  // Load status for each
+  INTEGRATIONS.forEach(int => {
+    fetch(BASE + int.endpoint)
+      .then(r => r.json())
+      .then(d => {
+        const el = document.getElementById('int-status-' + int.id);
+        if (el) {
+          const status = d.status || 'unknown';
+          const color = status === 'configured' ? 'var(--green)' : status === 'mock' ? 'var(--yellow)' : 'var(--text-muted)';
+          el.innerHTML = `<span style="color:${color};">● ${status}</span>`;
+        }
+      })
+      .catch(() => {
+        const el = document.getElementById('int-status-' + int.id);
+        if (el) el.innerHTML = '<span style="color:var(--red);">● offline</span>';
+      });
+  });
+}
+
+function showIntegrationDetail(id) {
+  const int = INTEGRATIONS.find(i => i.id === id);
+  if (!int) return;
+
+  fetch(BASE + int.endpoint)
+    .then(r => r.json())
+    .then(d => {
+      let html = `<div class="card"><div class="card-title">${int.icon} ${int.name}</div>`;
+      html += `<pre style="font-size:12px;background:var(--surface2);padding:12px;border-radius:8px;overflow:auto;max-height:400px;">${JSON.stringify(d, null, 2)}</pre>`;
+      html += `<button class="btn btn-secondary" style="margin-top:8px;" onclick="document.getElementById('integrations-grid').scrollIntoView()">← Back</button></div>`;
+      document.getElementById('integrations-grid').innerHTML = html;
+    });
+}
+
+// ── Governance ───────────────────────────────────────────────────────────────
+function loadGovernance() {
+  loadGates();
+  loadAuditLog();
+}
+
+function loadGates() {
+  fetch(BASE + '/api/governance/gates')
+    .then(r => r.json())
+    .then(d => {
+      const container = document.getElementById('gates-list');
+      if (!d.gates) { container.innerHTML = '<p style="color:var(--text-muted)">No gates configured.</p>'; return; }
+      let html = '<table><thead><tr><th>Gate</th><th>Status</th><th>Approved By</th><th>Actions</th></tr></thead><tbody>';
+      for (const [id, gate] of Object.entries(d.gates)) {
+        const statusColor = gate.status === 'approved' ? 'badge-approved' : gate.status === 'rejected' ? 'badge-rejected' : 'pending';
+        html += '<tr><td><strong>' + gate.label + '</strong><br><span style="font-size:11px;color:var(--text-muted);">' + gate.description + '</span></td>';
+        html += '<td><span class="badge badge-' + statusColor + '">' + gate.status + '</span></td>';
+        html += '<td style="font-size:12px;">' + (gate.approved_by || '—') + '</td>';
+        html += '<td><button class="btn btn-sm btn-success" onclick="approveGate(\'' + id + '\')"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button> ';
+        html += '<button class="btn btn-sm btn-danger" onclick="rejectGate(\'' + id + '\')"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></td></tr>';
+      }
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    });
+}
+
+function approveGate(gateId) {
+  fetch(BASE + '/api/governance/gates/' + gateId + '/approve', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reviewer: 'human', notes: 'Approved via governance page' }),
+  }).then(() => loadGates());
+}
+
+function rejectGate(gateId) {
+  const notes = prompt('Rejection reason:');
+  if (!notes) return;
+  fetch(BASE + '/api/governance/gates/' + gateId + '/reject', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reviewer: 'human', notes }),
+  }).then(() => loadGates());
+}
+
+function submitBriefGov() {
+  const keyword = document.getElementById('govBriefKeyword').value;
+  const action = document.getElementById('govBriefAction').value;
+  const notes = document.getElementById('govBriefNotes').value;
+  if (!keyword) return alert('Keyword required');
+
+  const endpoints = {
+    submit: '/api/governance/brief/' + encodeURIComponent(keyword) + '/submit',
+    approve: '/api/governance/brief/' + encodeURIComponent(keyword) + '/approve',
+    reject: '/api/governance/brief/' + encodeURIComponent(keyword) + '/reject',
+  };
+  const bodies = {
+    submit: { submitted_by: 'human' },
+    approve: { approved_by: 'human', notes },
+    reject: { rejected_by: 'human', notes },
+  };
+
+  fetch(BASE + endpoints[action], {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(bodies[action]),
+  })
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('gov-brief-result').innerHTML = '<div class="alert alert-' + (d.status === 'approved' ? 'success' : d.status === 'rejected' ? 'error' : 'info') + '">' + d.message + '</div>';
+  });
+}
+
+function submitFinalReview() {
+  const keyword = document.getElementById('govFinalKeyword').value;
+  const action = document.getElementById('govFinalAction').value;
+  const notes = document.getElementById('govFinalNotes').value;
+  if (!keyword) return alert('Keyword required');
+
+  const endpoints = {
+    submit: '/api/governance/final-review/' + encodeURIComponent(keyword) + '/submit',
+    approve: '/api/governance/final-review/' + encodeURIComponent(keyword) + '/approve',
+    reject: '/api/governance/final-review/' + encodeURIComponent(keyword) + '/reject',
+  };
+  const bodies = { submit: { submitted_by: 'human' }, approve: { approved_by: 'human', notes }, reject: { rejected_by: 'human', notes } };
+
+  fetch(BASE + endpoints[action], {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodies[action]),
+  })
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('gov-final-result').innerHTML = '<div class="alert alert-' + (d.status === 'approved' ? 'success' : d.status === 'rejected' ? 'error' : 'info') + '">' + d.message + '</div>';
+  });
+}
+
+function checkCompliance(keyword) {
+  if (!keyword) keyword = document.getElementById('govComplianceKeyword').value;
+  if (!keyword) return alert('Keyword required');
+
+  fetch(BASE + '/api/governance/compliance/' + encodeURIComponent(keyword))
+    .then(r => r.json())
+    .then(d => {
+      let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:12px;">';
+      for (const [gate, status] of Object.entries(d.gates)) {
+        html += '<div><strong>' + gate.replace(/_/g, ' ') + '</strong><br><span class="badge badge-' + (status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : 'pending') + '">' + status + '</span></div>';
+      }
+      html += '</div>';
+      html += '<div style="margin-top:12px;"><strong>Ready to publish:</strong> ' + (d.ready_to_publish ? '<span style="color:var(--green);"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Yes</span>' : '<span style="color:var(--red);"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> No</span>') + '</div>';
+      document.getElementById('gov-compliance-result').innerHTML = html;
+    });
+}
+
+function loadAuditLog() {
+  const action = document.getElementById('auditFilterAction').value;
+  let url = BASE + '/api/governance/audit?limit=30';
+  if (action) url += '&action=' + action;
+
+  fetch(url)
+    .then(r => r.json())
+    .then(d => {
+      const container = document.getElementById('audit-log');
+      if (!d.entries.length) { container.innerHTML = '<p style="color:var(--text-muted)">No audit entries yet.</p>'; return; }
+      let html = '<div style="max-height:400px;overflow-y:auto;">';
+      d.entries.forEach(e => {
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(46,51,72,0.5);font-size:12px;">';
+        html += '<span class="badge badge-' + (e.action.includes('approved') || e.action.includes('submit') ? 'approved' : e.action.includes('reject') ? 'rejected' : 'pending') + '">' + e.action + '</span>';
+        html += '<strong>' + e.resource + '</strong>';
+        html += '<span style="color:var(--text-muted);margin-left:auto;">' + e.actor + ' · ' + new Date(e.timestamp).toLocaleString() + '</span></div>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    });
+}
+
+// ── Agent Registry ──────────────────────────────────────────────────────────
+function loadAgentRegistry() {
+  const c = document.getElementById('agent-registry-container');
+  c.innerHTML = '<div style="position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;padding:32px;"><div style="max-width:1200px;margin:0 auto;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;"><button class="btn btn-secondary" onclick="document.getElementById(\'agent-registry-container\').innerHTML=\'\'">← Back</button><h1 style="font-size:24px;font-weight:700;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/></svg> Agent Registry</h1></div><div id="ar-health" class="stats-grid" style="margin-bottom:20px;"></div><div id="ar-groups" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:16px;margin-bottom:20px;"></div><div class="card"><div class="card-title">Capability Catalog</div><div id="ar-caps" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;"></div></div><div class="card"><div class="card-title">Execution Log</div><div id="ar-log" style="max-height:300px;overflow-y:auto;"></div></div></div></div>';
+  fetch(BASE + '/api/registry/health').then(r => r.json()).then(d => { document.getElementById('ar-health').innerHTML = '<div class="stat-card"><div class="stat-value">'+d.summary.total+'</div><div class="stat-label">Total</div></div><div class="stat-card"><div class="stat-value" style="color:var(--green)">'+d.summary.active+'</div><div class="stat-label">Active</div></div><div class="stat-card"><div class="stat-value" style="color:var(--yellow)">'+d.summary.planned+'</div><div class="stat-label">Planned</div></div><div class="stat-card"><div class="stat-value">'+d.summary.healthy_percentage+'%</div><div class="stat-label">Healthy</div></div>'; });
+  fetch(BASE + '/api/registry/groups').then(r => r.json()).then(d => { let h=''; const gi={research:'search',planning:'clipboard',production:'pencil',quality:'check',publishing:'rocket',monitoring:'graph',coordination:'target'}; for(const[g,data] of Object.entries(d.groups)){h+='<div class="card"><div class="card-title">'+icon(gi[g]||'package')+' '+g.charAt(0).toUpperCase()+g.slice(1)+' ('+data.count+')</div>';data.agents.forEach(a=>{h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(46,51,72,0.5);"><span style="color:'+(a.status==='active'?'var(--green)':'var(--yellow)')+';">●</span><div style="flex:1;"><strong>'+a.name+'</strong><br><span style="font-size:11px;color:var(--text-muted);">v'+a.version+'</span></div><span class="badge badge-'+(a.status==='active'?'approved':'pending')+'">'+a.status+'</span></div>';});h+='</div>';} document.getElementById('ar-groups').innerHTML=h; });
+  fetch(BASE + '/api/registry/capabilities').then(r => r.json()).then(d => { let h=''; for(const[cap,info] of Object.entries(d.capabilities)){h+='<div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-weight:600;font-size:13px;">'+info.name+'</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">'+info.agents.map(a=>a.name).join(', ')+'</div></div>';} document.getElementById('ar-caps').innerHTML=h; });
+  fetch(BASE + '/api/registry/executions').then(r => r.json()).then(d => { const c=document.getElementById('ar-log'); if(!d.executions.length){c.innerHTML='<p style="color:var(--text-muted)">No executions yet.</p>';return;} let h=''; d.executions.forEach(e=>{h+='<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(46,51,72,0.5);"><span class="badge badge-'+(e.status==='complete'?'approved':'pending')+'">'+e.status+'</span> <strong>'+e.agent_id+'</strong> — '+e.action+' <span style="color:var(--text-muted);margin-left:8px;">'+new Date(e.timestamp).toLocaleString()+'</span></div>';}); c.innerHTML=h; });
+}
+
+// ── Observability ────────────────────────────────────────────────────────────
+function loadObservability() {
+  const c = document.getElementById('obs-container');
+  if (!c) return;
+  c.innerHTML = '<div style="position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;padding:32px;"><div style="max-width:1200px;margin:0:auto;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;"><button class="btn btn-secondary" onclick="document.getElementById(\'obs-container\').innerHTML=\'\'">← Back</button><h1 style="font-size:24px;font-weight:700;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16h.01"/><path d="M11 12h.01"/><path d="M15 16h.01"/><path d="M19 8h.01"/></svg> Observability</h1></div><div id="obs-metrics" class="stats-grid" style="margin-bottom:20px;"></div><div id="obs-maturity" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:20px;"></div><div class="card"><div class="card-title">Prompt Library</div><div id="obs-prompts"></div></div><div class="card"><div class="card-title">Cost Tracking</div><div id="obs-costs"></div></div></div></div>';
+  fetch(BASE + '/api/observability/metrics').then(r=>r.json()).then(d=>{const m=d.metrics;document.getElementById('obs-metrics').innerHTML='<div class="stat-card"><div class="stat-value">'+m.workflow_runs+'</div><div class="stat-label">Workflow Runs</div></div><div class="stat-card"><div class="stat-value">'+m.agent_executions+'</div><div class="stat-label">Agent Executions</div></div><div class="stat-card"><div class="stat-value">'+m.approvals+'</div><div class="stat-label">Approvals</div></div><div class="stat-card"><div class="stat-value">'+m.tokens_used+'</div><div class="stat-label">Tokens</div></div><div class="stat-card"><div class="stat-value">$'+d.cost_summary.total_cost_usd.toFixed(4)+'</div><div class="stat-label">Est. Cost</div></div>';document.getElementById('obs-costs').innerHTML=d.cost_summary.recent_costs.map(e=>'<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(46,51,72,0.5);">'+e.agent_id+' — '+e.operation+': '+e.tokens+' tokens, $'+e.cost_usd.toFixed(4)+' <span style="color:var(--text-muted);">'+new Date(e.timestamp).toLocaleDateString()+'</span></div>').join('')||'<p style="color:var(--text-muted)">No cost data yet.</p>';});
+  fetch(BASE + '/api/observability/maturity').then(r=>r.json()).then(d=>{let h='';for(const[area,data] of Object.entries(d)){if(typeof data!=='object'||!data.status)continue;h+='<div class="card"><div class="card-title">'+area.replace(/_/g,' ').toUpperCase()+'</div><span class="badge badge-'+(data.status==='pass'?'approved':data.status==='in_progress'?'pending':'rejected')+'">'+data.status+'</span>';if(data.total_agents)h+='<div style="font-size:12px;margin-top:8px;">Agents: '+data.active_agents+'/'+data.total_agents+' active</div>';if(data.total_prompts)h+='<div style="font-size:12px;margin-top:8px;">Prompts: '+data.active_prompts+'/'+data.total_prompts+' active</div>';if(data.total_gates)h+='<div style="font-size:12px;margin-top:8px;">Gates: '+data.approved_gates+'/'+data.total_gates+' approved</div>';h+='</div>';}document.getElementById('obs-maturity').innerHTML=h;});
+  fetch(BASE + '/api/observability/prompts/usage').then(r=>r.json()).then(d=>{let h='<table><thead><tr><th>Prompt</th><th>Version</th><th>Status</th><th>Used By</th></tr></thead><tbody>';for(const[pid,p] of Object.entries(d.prompts)){h+='<tr><td><strong>'+p.name+'</strong></td><td>v'+p.version+'</td><td><span class="badge badge-'+(p.status==='active'?'approved':'pending')+'">'+p.status+'</span></td><td style="font-size:11px;">'+p.used_by.join(', ')+'</td></tr>';}h+='</tbody></table>';document.getElementById('obs-prompts').innerHTML=h;});
+}
+
+// ── Approvals & Roadmap ──────────────────────────────────────────────────────
+function loadApprovals() {
+  const c = document.getElementById('approvals-container');
+  if (!c) return;
+  c.innerHTML = '<div style="position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;padding:32px;"><div style="max-width:1200px;margin:0:auto;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;"><button class="btn btn-secondary" onclick="document.getElementById(\'approvals-container\').innerHTML=\'\'">← Back</button><h1 style="font-size:24px;font-weight:700;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg> Approvals & Roadmap</h1></div><div id="appr-checklist" style="margin-bottom:20px;"></div><div id="appr-roadmap" style="margin-bottom:20px;"></div><div id="appr-criteria" style="margin-bottom:20px;"></div><div id="appr-risks"></div></div></div>';
+
+  // Checklist
+  fetch(BASE + '/api/approvals').then(r=>r.json()).then(d=>{
+    let h='';const s=d.summary;
+    h+='<div class="stats-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-value">'+s.approved+'</div><div class="stat-label">Approved</div></div><div class="stat-card"><div class="stat-value">'+s.pending+'</div><div class="stat-label">Pending</div></div><div class="stat-card"><div class="stat-value">'+s.total+'</div><div class="stat-label">Total</div></div></div>';
+    for(const[cat,catData] of Object.entries(d.approvals)){
+      h+='<div class="card"><div class="card-title">'+cat.charAt(0).toUpperCase()+cat.slice(1)+'</div>';
+      for(const[item,itemData] of Object.entries(catData.items)){
+        const icon=itemData.status==='approved'?'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>':'⬜';
+        h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(46,51,72,0.5);"><span>'+icon+'</span><div style="flex:1;"><strong>'+itemData.label+'</strong><br><span style="font-size:11px;color:var(--text-muted);">by '+(itemData.by||'—')+' at '+(itemData.at||'pending')+'</span></div></div>';
+      }
+      h+='</div>';
+    }
+    document.getElementById('appr-checklist').innerHTML=h;
+  });
+
+  // Roadmap
+  fetch(BASE + '/api/roadmap').then(r=>r.json()).then(d=>{
+    let h='<div class="card"><div class="card-title">Delivery Roadmap</div>';
+    h+='<div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Progress: '+d.summary.progress_percentage+'% ('+d.summary.complete+' complete, '+d.summary.ready+' ready, '+d.summary.planned+' planned)</div>';
+    for(const[stage,stageData] of Object.entries(d.roadmap)){
+      const color=stageData.status==='complete'?'var(--green)':stageData.status==='ready'?'var(--yellow)':'var(--text-muted)';
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(46,51,72,0.5);"><span style="color:'+color+';">●</span><div style="flex:1;"><strong>'+stageData.name+'</strong><br><span style="font-size:11px;color:var(--text-muted);">'+stageData.business_outcome+'</span></div><span class="badge badge-'+(stageData.status==='complete'?'approved':stageData.status==='ready'?'pending':'needs_review')+'">'+stageData.status+'</span></div>';
+    }
+    h+='</div>';
+    document.getElementById('appr-roadmap').innerHTML=h;
+  });
+
+  // Stage 1 Criteria
+  fetch(BASE + '/api/stage1/criteria').then(r=>r.json()).then(d=>{
+    let h='<div class="card"><div class="card-title">Stage 1 Success Criteria ('+d.summary.score+'%)</div>';
+    d.criteria.forEach(c=>{
+      const icon=c.status==='pass'?'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>':c.status==='partial'?'<span class="dot dot-yellow"></span>':'<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>';
+      h+='<div style="padding:6px 0;border-bottom:1px solid rgba(46,51,72,0.5);"><div>'+icon+' <strong>'+c.criterion+'</strong></div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+c.evidence+'</div></div>';
+    });
+    h+='</div>';
+    document.getElementById('appr-criteria').innerHTML=h;
+  });
+
+  // Risks
+  fetch(BASE + '/api/risks').then(r=>r.json()).then(d=>{
+    let h='<div class="card"><div class="card-title">Risk Register ('+d.total+' risks)</div><table><thead><tr><th>Risk</th><th>Impact</th><th>Status</th><th>Owner</th></tr></thead><tbody>';
+    d.risks.forEach(r=>{
+      h+='<tr><td><strong>'+r.risk+'</strong></td><td><span class="badge badge-'+(r.impact==='high'?'rejected':r.impact==='medium'?'pending':'approved')+'">'+r.impact+'</span></td><td><span class="badge badge-'+(r.status==='mitigated'?'approved':r.status==='monitoring'?'pending':'rejected')+'">'+r.status+'</span></td><td style="font-size:12px;">'+r.owner+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+    document.getElementById('appr-risks').innerHTML=h;
+  });
+}
+
+// ── Model Usage & Cost Discipline ────────────────────────────────────────────
+function loadModelUsage() {
+  const c = document.getElementById('models-container');
+  if (!c) return;
+  c.innerHTML = '<div style="position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;padding:32px;"><div style="max-width:1200px;margin:0:auto;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;"><button class="btn btn-secondary" onclick="document.getElementById(\'models-container\').innerHTML=\'\'">← Back</button><h1 style="font-size:24px;font-weight:700;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2z"/></svg> Model Usage & Cost Discipline</h1></div><div id="mu-summary" class="stats-grid" style="margin-bottom:20px;"></div><div id="mu-tiers" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:20px;"></div><div class="card"><div class="card-title">Cost-Saving Tips</div><div id="mu-tips"></div></div><div class="card"><div class="card-title">Usage History</div><div id="mu-history" style="max-height:300px;overflow-y:auto;"></div></div></div></div>';
+
+  // Summary
+  fetch(BASE + '/api/models/usage/summary').then(r=>r.json()).then(d=>{
+    document.getElementById('mu-summary').innerHTML = '<div class="stat-card"><div class="stat-value">$'+d.all_time.cost_usd.toFixed(4)+'</div><div class="stat-label">Total Cost</div></div><div class="stat-card"><div class="stat-value">'+d.all_time.calls+'</div><div class="stat-label">Total Calls</div></div><div class="stat-card"><div class="stat-value">'+d.all_time.tokens+'</div><div class="stat-label">Total Tokens</div></div><div class="stat-card"><div class="stat-value">$'+d.today.cost_usd.toFixed(4)+'</div><div class="stat-label">Today</div></div>';
+  });
+
+  // Tiers
+  fetch(BASE + '/api/models/tiers').then(r=>r.json()).then(d=>{
+    let h='';
+    for(const[tier,tierData] of Object.entries(d.tiers)){
+      h+='<div class="card"><div class="card-title">'+tierData.label+' ($'+tierData.cost_per_1k_tokens+'/1k tokens)</div>';
+      h+='<p style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">'+tierData.description+'</p>';
+      h+='<div style="font-size:12px;"><strong>Use for:</strong><ul style="padding-left:16px;margin-top:4px;">'+tierData.use_cases.map(u=>'<li>'+u+'</li>').join('')+'</ul></div>';
+      h+='<div style="font-size:12px;margin-top:8px;"><strong>Examples:</strong> '+tierData.examples.join(', ')+'</div></div>';
+    }
+    document.getElementById('mu-tiers').innerHTML=h;
+  });
+
+  // Tips
+  fetch(BASE + '/api/models/cost-saving-tips').then(r=>r.json()).then(d=>{
+    document.getElementById('mu-tips').innerHTML = d.tips.map(t=>'<div style="font-size:13px;padding:4px 0;border-bottom:1px solid rgba(46,51,72,0.5);"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> '+t+'</div>').join('');
+  });
+
+  // History
+  fetch(BASE + '/api/models/usage?limit=20').then(r=>r.json()).then(d=>{
+    let h='';
+    d.usage.forEach(u=>{
+      h+='<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(46,51,72,0.5);"><span class="badge badge-'+(u.tier==='premium'?'rejected':u.tier==='standard'?'pending':'approved')+'">'+u.tier+'</span> <strong>'+u.endpoint+'</strong> — '+u.tokens+' tokens, $'+u.cost_usd.toFixed(6)+' <span style="color:var(--text-muted);margin-left:8px;">'+new Date(u.timestamp).toLocaleString()+'</span></div>';
+    });
+    document.getElementById('mu-history').innerHTML = h || '<p style="color:var(--text-muted)">No usage yet.</p>';
+  });
+}
+</script>
+</body>
+</html>

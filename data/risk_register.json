@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "category": "access",
+    "risk": "Missing GSC access",
+    "impact": "high",
+    "likelihood": "low",
+    "mitigation": "CSV upload works as fallback. API integration available when access granted.",
+    "status": "mitigated",
+    "owner": "admin"
+  },
+  {
+    "id": 2,
+    "category": "access",
+    "risk": "Missing SEMrush access",
+    "impact": "medium",
+    "likelihood": "low",
+    "mitigation": "Mock data available. API integration configured and ready for key.",
+    "status": "mitigated",
+    "owner": "admin"
+  },
+  {
+    "id": 3,
+    "category": "integration",
+    "risk": "CMS integration limitations",
+    "impact": "medium",
+    "likelihood": "medium",
+    "mitigation": "Multiple CMS supported (WordPress, Contentful, Strapi). Custom API fallback.",
+    "status": "monitoring",
+    "owner": "developer"
+  },
+  {
+    "id": 4,
+    "category": "process",
+    "risk": "Human approval bottlenecks",
+    "impact": "high",
+    "likelihood": "medium",
+    "mitigation": "Batch approval, review modal with full reasoning, clear SOP.",
+    "status": "monitoring",
+    "owner": "editor"
+  },
+  {
+    "id": 5,
+    "category": "quality",
+    "risk": "Poor content calendar quality",
+    "impact": "medium",
+    "likelihood": "low",
+    "mitigation": "Calendar entries linked to opportunity data with scores and source info.",
+    "status": "mitigated",
+    "owner": "editor"
+  },
+  {
+    "id": 6,
+    "category": "permissions",
+    "risk": "Missing media permissions",
+    "impact": "low",
+    "likelihood": "medium",
+    "mitigation": "Image production agent tracks permissions. Canva integration for original assets.",
+    "status": "planned",
+    "owner": "content_team"
+  }
+]

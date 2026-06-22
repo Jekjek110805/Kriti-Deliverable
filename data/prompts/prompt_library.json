@@ -1,0 +1,88 @@
+{
+  "intent_classification": {
+    "name": "Intent Classification Prompt",
+    "version": "1.0",
+    "status": "active",
+    "description": "Classifies keywords into BOFU/MOFU/TOFU intent categories",
+    "content": "You are an SEO content strategist. Classify the keyword as BOFU (buying/comparing), MOFU (researching/evaluating), or TOFU (learning/educational). Return ONLY the label.",
+    "tags": [
+      "intent",
+      "classification",
+      "seo"
+    ],
+    "used_by": [
+      "intent_classifier",
+      "opportunity_scoring"
+    ],
+    "approved_by": "editor",
+    "approved_at": "2026-06-22T00:00:00"
+  },
+  "content_brief_outline": {
+    "name": "Content Brief Outline Prompt",
+    "version": "1.0",
+    "status": "active",
+    "description": "Generates H2 outline for content briefs based on intent",
+    "content": "You are a content editor. Generate an H2 outline for an article targeting the given keyword and intent. Return ONLY a JSON list of H2 headings.",
+    "tags": [
+      "brief",
+      "outline",
+      "content"
+    ],
+    "used_by": [
+      "content_brief"
+    ],
+    "approved_by": "editor",
+    "approved_at": "2026-06-22T00:00:00"
+  },
+  "seo_explanation": {
+    "name": "SEO Score Explanation Prompt",
+    "version": "1.0",
+    "status": "active",
+    "description": "Generates human-readable explanation for SEO opportunity scores",
+    "content": "You are an SEO analyst explaining results to a marketing manager. Explain why a topic received its scores and what action makes sense. Be concise (2-3 sentences).",
+    "tags": [
+      "seo",
+      "explanation",
+      "scoring"
+    ],
+    "used_by": [
+      "opportunity_scoring"
+    ],
+    "approved_by": "editor",
+    "approved_at": "2026-06-22T00:00:00"
+  },
+  "executive_narrative": {
+    "name": "Executive Summary Narrative Prompt",
+    "version": "1.0",
+    "status": "active",
+    "description": "Generates executive summary narrative from content opportunity data",
+    "content": "You are a content strategist writing an executive summary for a marketing director. Based on the data, write a concise (3-4 sentence) narrative summary of the content opportunity landscape.",
+    "tags": [
+      "summary",
+      "narrative",
+      "executive"
+    ],
+    "used_by": [
+      "executive_summary"
+    ],
+    "approved_by": "editor",
+    "approved_at": "2026-06-22T00:00:00"
+  },
+  "brand_voice_check": {
+    "name": "Brand Voice Compliance Prompt",
+    "version": "1.0",
+    "status": "active",
+    "description": "Checks content against MAAI house style guidelines",
+    "content": "You are a brand editor for MAAI. Check the content against these rules: 1) No em dashes, 2) No AI filler words (streamlined, seamless, leverage, unlock, robust, elevate), 3) No 'it is not X, it is Y' construction, 4) No negative competitor framing, 5) Short paragraphs (max 150 words), 6) Use second person (you/your). Return a JSON list of issues found.",
+    "tags": [
+      "brand",
+      "voice",
+      "compliance"
+    ],
+    "used_by": [
+      "brand_review"
+    ],
+    "approved_by": "editor",
+    "approved_at": "2026-06-22T00:00:00"
+  }
+}
