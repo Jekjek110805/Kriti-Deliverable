@@ -503,53 +503,90 @@ async def analyze_csv(file: UploadFile = File(...)):
     """Upload GSC CSV → queue Hermes analysis job → return job ID for polling."""
     try:
         content = await file.read()
-        # Try UTF-8 first, fall back to latin-1 for Windows-exported CSVs
-        try:
-            csv_text = content.decode("utf-8")
-        except UnicodeDecodeError:
-            csv_text = content.decode("latin-1")
+        filename = file.filename or ""
 
-        # GSC CSV exports may have multiple tab-separated sections with blank lines.
-        # Parse ALL sections and merge into one list of rows.
-        all_rows = []
-        # Split by double-newlines (section separators) and parse each section
-        sections = csv_text.strip().split("\n\n")
-        for section in sections:
-            section = section.strip()
-            if not section:
-                continue
-            lines = section.split("\n")
-            # Skip sections that don't have a header with known columns
-            header_line = lines[0] if lines else ""
-            # GSC exports sometimes use tabs within rows; normalize
-            header_line = header_line.replace("\t", ",")
-            # Check if this looks like a GSC data section
-            if not any(col in header_line.lower() for col in ["query", "page", "clicks", "impressions"]):
-                # Try tab-delimited
-                if "\t" in lines[0]:
-                    normalized = [l.replace("\t", ",") for l in lines]
-                    try:
-                        reader = csv.DictReader(io.StringIO("\n".join(normalized)))
-                        for row in reader:
-                            if any(v for v in row.values() if v):
-                                all_rows.append(row)
-                    except Exception:
-                        pass
-                continue
-            # Parse as comma-delimited
-            normalized_lines = [header_line]
-            for line in lines[1:]:
-                line = line.replace("\t", ",")
-                normalized_lines.append(line)
+        # Handle Excel files (.xlsx)
+        if filename.endswith(".xlsx"):
+            import openpyxl
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+                tmp.write(content)
+                tmp_path = tmp.name
             try:
-                reader = csv.DictReader(io.StringIO("\n".join(normalized_lines)))
-                for row in reader:
-                    if any(v for v in row.values() if v):
-                        all_rows.append(row)
-            except Exception:
-                pass
+                wb = openpyxl.load_workbook(tmp_path, read_only=True)
+                # Prioritize Queries sheet, then Pages, then first sheet
+                sheet_name = None
+                for candidate in ["Queries", "Pages"]:
+                    if candidate in wb.sheetnames:
+                        sheet_name = candidate
+                        break
+                if not sheet_name:
+                    sheet_name = wb.sheetnames[0]
+                ws = wb[sheet_name]
+                rows = []
+                headers = None
+                for row in ws.iter_rows(values_only=True):
+                    if headers is None:
+                        headers = [str(h).strip() if h else "" for h in row]
+                        continue
+                    if all(v is None or str(v).strip() == "" for v in row):
+                        continue
+                    row_dict = {}
+                    for i, h in enumerate(headers):
+                        if h and i < len(row):
+                            row_dict[h] = str(row[i]) if row[i] is not None else ""
+                    if row_dict:
+                        rows.append(row_dict)
+                wb.close()
+                os.unlink(tmp_path)
+                if not rows:
+                    return JSONResponse({"error": f"No data found in sheet '{sheet_name}'"}, status_code=400)
+            except Exception as e:
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+                return JSONResponse({"error": f"Failed to read Excel file: {str(e)}"}, status_code=400)
+        else:
+            # Handle CSV files
+            # Try UTF-8 first, fall back to latin-1 for Windows-exported CSVs
+            try:
+                csv_text = content.decode("utf-8")
+            except UnicodeDecodeError:
+                csv_text = content.decode("latin-1")
 
-        rows = all_rows
+            # GSC CSV exports may have multiple sections with blank lines.
+            all_rows = []
+            sections = csv_text.strip().split("\n\n")
+            for section in sections:
+                section = section.strip()
+                if not section:
+                    continue
+                lines = section.split("\n")
+                header_line = lines[0] if lines else ""
+                header_line = header_line.replace("\t", ",")
+                if not any(col in header_line.lower() for col in ["query", "page", "clicks", "impressions"]):
+                    if "\t" in lines[0]:
+                        normalized = [l.replace("\t", ",") for l in lines]
+                        try:
+                            reader = csv.DictReader(io.StringIO("\n".join(normalized)))
+                            for row in reader:
+                                if any(v for v in row.values() if v):
+                                    all_rows.append(row)
+                        except Exception:
+                            pass
+                    continue
+                normalized_lines = [header_line]
+                for line in lines[1:]:
+                    line = line.replace("\t", ",")
+                    normalized_lines.append(line)
+                try:
+                    reader = csv.DictReader(io.StringIO("\n".join(normalized_lines)))
+                    for row in reader:
+                        if any(v for v in row.values() if v):
+                            all_rows.append(row)
+                except Exception:
+                    pass
+            rows = all_rows
+
         if not rows:
             return JSONResponse({"error": "CSV file is empty or has unrecognized format"}, status_code=400)
 

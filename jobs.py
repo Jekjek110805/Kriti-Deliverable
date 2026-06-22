@@ -46,10 +46,12 @@ def _save_jobs():
 
 def create_job(rows: list) -> str:
     """Create a new analysis job and return job_id."""
-    # Normalize column names to handle various CSV formats
+    # Normalize column names to handle various CSV/XLSX formats
     column_map = {
         "query": "query", "search query": "query", "keyword": "query", "term": "query",
+        "top queries": "query", "top query": "query", "queries": "query",
         "page": "page", "url": "page", "landing page": "page", "address": "page",
+        "top pages": "page", "top page": "page", "pages": "page",
         "clicks": "clicks", "click": "clicks",
         "impressions": "impressions", "impression": "impressions", "imps": "impressions",
         "ctr": "ctr", "click-through rate": "ctr", "click through rate": "ctr",
