@@ -2309,10 +2309,9 @@ async def gsc_integration_status():
     if connected:
         return {
             "status": "connected",
-            "mode": "api_key",
-            "site_url": client.site_url,
+            "mode": "oauth_service_account",
             "capabilities": [
-                "Live query data via API",
+                "Live query data via Search Console API",
                 "Performance metrics (clicks, impressions, CTR, position)",
                 "Index status checking",
                 "Sitemap management",
@@ -2323,16 +2322,20 @@ async def gsc_integration_status():
         "status": "not_connected",
         "mode": "csv_upload",
         "capabilities": [
-            "Upload CSV export (current)",
-            "Live query data (requires API key)",
-            "Index status checking (requires API key)",
+            "Upload CSV export (works today)",
+            "Live query data (requires service account)",
         ],
         "setup_instructions": {
-            "step1": "Go to console.google.com → APIs & Services → Library",
-            "step2": "Search 'Search Console API' → Enable it",
-            "step3": "Go to Credentials → Create API Key",
-            "step4": "Restrict key to Search Console API only",
-            "step5": "POST to /api/integrations/gsc/configure with key + site URL",
+            "method": "service_account",
+            "steps": [
+                "Go to console.google.com → APIs & Services → Library",
+                "Search 'Search Console API' → Enable",
+                "Go to Credentials → Create Service Account",
+                "Download JSON key file",
+                "Add service account email to GSC property as Owner",
+                "Place JSON key in config/gsc_credentials.json",
+            ],
+            "note": "API keys alone do NOT work for Search Console. CSV upload works today.",
         },
     }
 

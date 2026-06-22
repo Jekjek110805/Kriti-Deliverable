@@ -1466,59 +1466,35 @@ function showGSCConfig(int) {
 
       if (isConnected) {
         html += `<div class="alert alert-success">✓ Connected — Live data is being pulled from GSC.</div>`;
-        html += `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Site: <strong>${d.site_url || 'configured'}</strong></p>`;
         html += `<div style="display:flex;gap:10px;">`;
         html += `<button class="btn btn-primary" onclick="validateGSC()">Test Connection</button>`;
-        html += `<button class="btn btn-secondary" onclick="pullGSCData()">Pull Data Now</button>`;
         html += `<button class="btn btn-danger" onclick="disconnectGSC()">Disconnect</button>`;
         html += `</div>`;
         html += `<div id="gsc-config-result" style="margin-top:16px;"></div>`;
       } else {
-        html += `<div class="alert alert-info">Not connected. Enter your API key and site URL below.</div>`;
-        html += `<div style="margin-bottom:16px;"><label>Google Cloud API Key</label><input type="password" id="gscApiKey" placeholder="AIzaSy..." style="font-family:monospace;"></div>`;
-        html += `<div style="margin-bottom:16px;"><label>Site URL</label><input type="text" id="gscSiteUrl" placeholder="https://example.com/"></div>`;
-        html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">`;
-        html += `<strong>How to get an API key:</strong><br>`;
-        `1. Go to <a href="https://console.google.com/apis/library" target="_blank" style="color:var(--accent);">Google Cloud Console → APIs Library</a><br>`;
-        `2. Search "Search Console API" → Enable<br>`;
-        `3. Go to Credentials → Create API Key<br>`;
-        `4. Restrict to Search Console API only`;
+        html += `<div class="alert alert-info">📁 CSV upload works today. Live data requires a Google Service Account.</div>`;
+        html += `<div style="background:var(--surface2);border-radius:var(--radius-md);padding:16px;margin-bottom:16px;">`;
+        html += `<strong style="font-size:13px;color:var(--text);">Option 1: CSV Upload (now)</strong>`;
+        html += `<p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Go to search.google.com/search-console → Performance → Export CSV → Upload to Kriti.</p>`;
         html += `</div>`;
-        html += `<button class="btn btn-primary" onclick="configureGSC()">Connect</button>`;
+        html += `<div style="background:var(--surface2);border-radius:var(--radius-md);padding:16px;margin-bottom:16px;">`;
+        html += `<strong style="font-size:13px;color:var(--text);">Option 2: Live Data (requires setup)</strong>`;
+        html += `<p style="font-size:12px;color:var(--text-muted);margin-top:6px;margin-bottom:10px;">Search Console API requires a Service Account. API keys alone do NOT work.</p>`;
+        html += `<ol style="font-size:12px;color:var(--text-muted);padding-left:20px;margin:0;">`;
+        html += `<li>Go to console.google.com → APIs & Services → Library</li>`;
+        html += `<li>Search 'Search Console API' → Enable</li>`;
+        html += `<li>Go to Credentials → Create Service Account</li>`;
+        html += `<li>Download JSON key file</li>`;
+        html += `<li>Add service account email to GSC property as Owner</li>`;
+        html += `<li>Place JSON key in <code style="background:var(--surface3);padding:2px 6px;border-radius:4px;">config/gsc_credentials.json</code></li>`;
+        html += `</ol>`;
+        html += `</div>`;
         html += `<div id="gsc-config-result" style="margin-top:16px;"></div>`;
       }
 
       html += `<button class="btn btn-secondary" style="margin-top:16px;" onclick="loadIntegrations()">← Back</button></div>`;
       document.getElementById('integrations-grid').innerHTML = html;
     });
-}
-
-async function configureGSC() {
-  const apiKey = document.getElementById('gscApiKey').value.trim();
-  const siteUrl = document.getElementById('gscSiteUrl').value.trim();
-  const resultEl = document.getElementById('gsc-config-result');
-
-  if (!apiKey || !siteUrl) {
-    resultEl.innerHTML = '<div class="alert alert-error">Both API key and site URL are required.</div>';
-    return;
-  }
-
-  try {
-    const res = await fetch(BASE + '/api/integrations/gsc/configure', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ api_key: apiKey, site_url: siteUrl })
-    });
-    const data = await res.json();
-    if (data.status === 'configured') {
-      resultEl.innerHTML = '<div class="alert alert-success">✓ ' + data.message + '</div>';
-      setTimeout(() => showGSCConfig(INTEGRATIONS.find(i => i.id === 'gsc')), 1500);
-    } else {
-      resultEl.innerHTML = '<div class="alert alert-error">' + (data.error || 'Configuration failed') + '</div>';
-    }
-  } catch (e) {
-    resultEl.innerHTML = '<div class="alert alert-error">Connection failed. Check your API key.</div>';
-  }
 }
 
 async function validateGSC() {
@@ -1529,33 +1505,12 @@ async function validateGSC() {
     const res = await fetch(BASE + '/api/integrations/gsc/validate');
     const data = await res.json();
     if (data.valid) {
-      resultEl.innerHTML = `<div class="alert alert-success">✓ ${data.message} (${data.test_rows} test rows)</div>`;
+      resultEl.innerHTML = `<div class="alert alert-success">✓ ${data.message}</div>`;
     } else {
       resultEl.innerHTML = `<div class="alert alert-error">✗ ${data.error}</div>`;
     }
   } catch (e) {
     resultEl.innerHTML = '<div class="alert alert-error">Validation failed.</div>';
-  }
-}
-
-async function pullGSCData() {
-  const resultEl = document.getElementById('gsc-config-result');
-  resultEl.innerHTML = '<div class="loading active"><div class="spinner"></div>Pulling data from GSC...</div>';
-
-  try {
-    const res = await fetch(BASE + '/api/integrations/gsc/pull', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ days: 30, row_limit: 250 })
-    });
-    const data = await res.json();
-    if (data.status === 'live_data') {
-      resultEl.innerHTML = `<div class="alert alert-success">✓ Pulled ${data.rows} rows of live data.</div>`;
-    } else {
-      resultEl.innerHTML = `<div class="alert alert-error">✗ ${data.message}</div>`;
-    }
-  } catch (e) {
-    resultEl.innerHTML = '<div class="alert alert-error">Pull failed.</div>';
   }
 }
 
