@@ -4,3 +4,4 @@ __pycache__/
 config/litellm_key.txt
 *.env
 .env
+*.log

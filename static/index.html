@@ -6,32 +6,38 @@
 <title>Kriti — Content Operations Platform</title>
 <style>
   :root {
-    --bg: #070816;
-    --bg-gradient: linear-gradient(170deg, #070816 0%, #0d0e22 40%, #110f28 100%);
-    --surface: #121528;
-    --surface2: #171A30;
-    --surface3: #1e2240;
-    --border: rgba(124,92,255,0.08);
-    --border-light: rgba(124,92,255,0.15);
+    --bg: #0b0c1c;
+    --bg-gradient: linear-gradient(170deg, #0b0c1c 0%, #101227 45%, #14112b 100%);
+    --surface: #161931;
+    --surface2: #1b1f3a;
+    --surface3: #232847;
+    --border: rgba(124,92,255,0.09);
+    --border-light: rgba(124,92,255,0.16);
     --text: #FFFFFF;
-    --text-secondary: #B4B8C8;
-    --text-muted: #6b6f8a;
+    --text-secondary: #B7BBCE;
+    --text-muted: #6f7392;
     --accent: #7C5CFF;
     --accent-hover: #9B7CFF;
     --accent-glow: rgba(124,92,255,0.15);
     --accent-glow-strong: rgba(124,92,255,0.25);
     --accent-subtle: rgba(124,92,255,0.06);
+    --pink: #FF5CF4;
+    --magenta: #E04CC8;
+    --pink-glow: rgba(255,92,244,0.14);
+    /* Signature purple→magenta gradient lifted from the dashboard charts */
+    --grad-accent: linear-gradient(135deg, #7C5CFF 0%, #A35BF0 55%, #FF5CF4 100%);
+    --grad-accent-soft: linear-gradient(135deg, #6A4FFC 0%, #8B5CF6 100%);
     --green: #3DDC97;
     --green-glow: rgba(61,220,151,0.12);
-    --yellow: #F5B731;
-    --yellow-glow: rgba(245,183,49,0.12);
+    --yellow: #F5C542;
+    --yellow-glow: rgba(245,197,66,0.12);
     --red: #FF4757;
     --red-glow: rgba(255,71,87,0.12);
     --crimson: #FF2D55;
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 20px;
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
     --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
     --shadow-md: 0 4px 20px rgba(0,0,0,0.4), 0 0 0 1px rgba(124,92,255,0.04);
     --shadow-lg: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(124,92,255,0.06);
@@ -48,7 +54,7 @@
   .sidebar.collapsed .sidebar-logo { padding: 8px 0 20px; font-size: 0; text-align: center; }
   .sidebar.collapsed .sidebar-logo span { font-size: 20px; }
   .sidebar.collapsed .sidebar-toggle { right: 50%; transform: translateX(50%) rotate(180deg); }
-  .sidebar.collapsed .nav-item { padding: 12px 0; justify-content: center; margin-right: 0; border-radius: var(--radius-md); gap: 0; }
+  .sidebar.collapsed .nav-item { padding: 12px 0; justify-content: center; margin: 2px 10px; border-radius: var(--radius-md); gap: 0; }
   .sidebar.collapsed .nav-item-text { display: none !important; }
   .sidebar.collapsed .nav-icon { width: 100%; }
   .sidebar.collapsed .nav-icon .icon { width: 20px; height: 20px; }
@@ -64,11 +70,11 @@
   .sidebar-logo span { color: var(--accent); -webkit-text-fill-color: var(--accent); }
   .sidebar-toggle { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; position: absolute; top: 14px; right: 14px; z-index: 10; transition: all .2s; }
   .sidebar-toggle:hover { background: var(--surface3); color: var(--text); border-color: var(--border-light); box-shadow: var(--shadow-glow); }
-  .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 18px; color: var(--text-muted); cursor: pointer; font-size: 13.5px; font-weight: 500; transition: all .2s cubic-bezier(0.4,0,0.2,1); white-space: nowrap; overflow: hidden; border-radius: 0 var(--radius-md) var(--radius-md) 0; margin-right: 14px; position: relative; }
+  .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 16px; color: var(--text-muted); cursor: pointer; font-size: 13.5px; font-weight: 500; transition: all .2s cubic-bezier(0.4,0,0.2,1); white-space: nowrap; overflow: hidden; border-radius: var(--radius-md); margin: 2px 14px; position: relative; }
   .nav-item:hover { background: var(--accent-subtle); color: var(--text-secondary); }
-  .nav-item.active { background: linear-gradient(90deg, var(--accent-glow), transparent); color: var(--accent); }
-  .nav-item.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 60%; background: var(--accent); border-radius: 0 3px 3px 0; box-shadow: 0 0 12px var(--accent-glow-strong); }
-  .nav-item.active .nav-icon .icon { color: var(--accent); filter: drop-shadow(0 0 8px var(--accent-glow-strong)); }
+  .nav-item.active { background: #6A4FFC; background: linear-gradient(135deg, #6A4FFC 0%, #8B5CF6 100%); color: #FFFFFF !important; font-weight: 600; box-shadow: 0 8px 22px rgba(124,92,255,0.35); }
+  .nav-item.active .nav-icon .icon { color: #FFFFFF !important; }
+  .nav-item.active:hover { background: #6A4FFC; background: linear-gradient(135deg, #6A4FFC 0%, #8B5CF6 100%); color: #FFFFFF !important; }
   .nav-icon { width: 20px; text-align: center; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
   .nav-icon .icon { color: var(--text-muted); transition: color .2s; }
   .nav-item:hover .nav-icon .icon { color: var(--text-secondary); }
@@ -88,8 +94,8 @@
 
   /* Buttons */
   .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; border-radius: var(--radius-md); font-size: 13.5px; font-weight: 600; cursor: pointer; border: none; transition: all .2s cubic-bezier(0.4,0,0.2,1); letter-spacing: -0.1px; }
-  .btn-primary { background: linear-gradient(135deg, var(--accent), #6A4FFC); color: white; box-shadow: 0 4px 16px rgba(124,92,255,0.25); }
-  .btn-primary:hover { background: linear-gradient(135deg, var(--accent-hover), #7B5CFF); box-shadow: 0 6px 24px rgba(124,92,255,0.35); transform: translateY(-1px); }
+  .btn-primary { background: var(--grad-accent); color: white; box-shadow: 0 4px 18px rgba(124,92,255,0.3); }
+  .btn-primary:hover { background: linear-gradient(135deg, #9B7CFF 0%, #B96BF5 55%, #FF7CF6 100%); box-shadow: 0 6px 26px rgba(196,79,232,0.4); transform: translateY(-1px); }
   .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
   .btn-secondary:hover { background: var(--surface3); border-color: var(--border-light); transform: translateY(-1px); }
   .btn-sm { padding: 7px 16px; font-size: 12px; border-radius: var(--radius-sm); }
@@ -102,7 +108,7 @@
   /* Stats */
   .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px; }
   .stat-card { background: linear-gradient(135deg, rgba(18,21,40,0.6), rgba(23,26,48,0.4)); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 16px; text-align: center; position: relative; overflow: hidden; backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); }
-  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.4; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--grad-accent); opacity: 0.6; }
   .stat-value { font-size: 28px; font-weight: 800; letter-spacing: -0.8px; }
   .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
   .stat-critical { color: var(--crimson); }
@@ -111,6 +117,7 @@
 
   /* Table */
   .table-wrap { border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-md); }
+  .opportunities-table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; }
   thead { background: var(--surface); }
   th { text-align: left; padding: 14px 14px; color: var(--text-muted); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -125,6 +132,19 @@
   tr:hover td { background: var(--accent-subtle); }
   tr:last-child td { border-bottom: none; }
   td .badge, td .btn { display: inline-flex; align-items: center; }
+  .opportunities-table { min-width: 1120px; }
+  .opportunities-table th:nth-child(1), .opportunities-table td:nth-child(1) { width: 42px; text-align: center; }
+  .opportunities-table th:nth-child(5), .opportunities-table td:nth-child(5),
+  .opportunities-table th:nth-child(6), .opportunities-table td:nth-child(6),
+  .opportunities-table th:nth-child(7), .opportunities-table td:nth-child(7),
+  .opportunities-table th:nth-child(8), .opportunities-table td:nth-child(8) { text-align: right; font-variant-numeric: tabular-nums; }
+  .opportunities-table th:nth-child(9), .opportunities-table td:nth-child(9) { text-align: left; font-weight: 400; color: var(--text-secondary); }
+  .opportunities-table th:nth-child(10), .opportunities-table td:nth-child(10) { text-align: center; font-weight: 800; color: var(--accent); }
+  .opportunities-table th:last-child, .opportunities-table td:last-child { text-align: right; }
+  .opp-keyword-cell { min-width: 220px; color: var(--text); font-weight: 700; }
+  .opp-page-cell { max-width: 300px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .opp-page-cell a { color: var(--text-muted); text-decoration: none; }
+  .opp-page-cell a:hover { color: var(--accent); }
 
   /* Opportunity cards */
   .opp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; transition: all .2s; position: relative; overflow: hidden; }
@@ -253,13 +273,15 @@
   .theme-toggle-track.light .theme-toggle-thumb { left: 18px; background: var(--yellow); }
 
   /* Light mode overrides */
-  body.light { --bg: #F4F2F8; --bg-gradient: linear-gradient(170deg, #F4F2F8 0%, #EDE9F3 50%, #E8E4EF 100%); --surface: #FFFFFF; --surface2: #F8F6FC; --surface3: #EFECF5; --border: rgba(124,92,255,0.1); --border-light: rgba(124,92,255,0.18); --text: #12101F; --text-secondary: #3D3854; --text-muted: #6B6585; --accent-glow: rgba(124,92,255,0.06); --accent-glow-strong: rgba(124,92,255,0.12); --green-glow: rgba(61,220,151,0.06); --yellow-glow: rgba(245,183,49,0.06); --red-glow: rgba(255,71,87,0.06); }
+  body.light { --bg: #F1EFF7; --bg-gradient: linear-gradient(170deg, #F3F1F9 0%, #ECE8F4 50%, #E7E2F0 100%); --surface: #FFFFFF; --surface2: #F7F5FC; --surface3: #EEEAF6; --border: rgba(124,92,255,0.1); --border-light: rgba(124,92,255,0.18); --text: #12101F; --text-secondary: #3D3854; --text-muted: #6B6585; --accent-glow: rgba(124,92,255,0.06); --accent-glow-strong: rgba(124,92,255,0.12); --green-glow: rgba(61,220,151,0.06); --yellow-glow: rgba(245,197,66,0.06); --red-glow: rgba(255,71,87,0.06); }
   body.light .card { background: rgba(255,255,255,0.85); border-color: var(--border); box-shadow: 0 2px 12px rgba(124,92,255,0.04); }
   body.light .card::before { opacity: 0.3; }
   body.light .sidebar { background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); }
   body.light .sidebar::after { background: linear-gradient(180deg, transparent, rgba(124,92,255,0.08), transparent); }
   body.light .nav-item:hover { background: var(--accent-subtle); }
-  body.light .nav-item.active { background: linear-gradient(90deg, var(--accent-glow), transparent); }
+  body.light .nav-item.active { background: #6A4FFC; background: linear-gradient(135deg, #6A4FFC 0%, #8B5CF6 100%); color: #FFFFFF !important; box-shadow: 0 8px 20px rgba(124,92,255,0.28); }
+  body.light .nav-item.active .nav-icon .icon { color: #FFFFFF !important; }
+  body.light .nav-item.active:hover { background: #6A4FFC; background: linear-gradient(135deg, #6A4FFC 0%, #8B5CF6 100%); color: #FFFFFF !important; }
   body.light .sidebar-logo { background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%); -webkit-background-clip: text; background-clip: text; }
   body.light .btn-secondary { background: var(--surface2); border-color: var(--border); }
   body.light .btn-secondary:hover { background: var(--surface3); }
@@ -322,7 +344,7 @@
           <div class="upload-text">Click or drag your CSV or XLSX file here</div>
           <div class="upload-hint">Expected query data: query, clicks, impressions, position</div>
         </div>
-        <input type="file" id="fileInput" accept=".csv,.xlsx" style="display:none" onchange="handleFile(this)">
+        <input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="handleFile(this)">
       </div>
 
       <div class="loading" id="loading">
@@ -768,6 +790,12 @@ uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classL
 function handleFile(input) {
   const file = input.files ? input.files[0] : input;
   if (!file) return;
+  const allowedFile = /\.(csv|tsv|xlsx)$/i.test(file.name || '');
+  if (!allowedFile) {
+    alert('Please upload a CSV, TSV, or XLSX export.');
+    if (input.files) input.value = '';
+    return;
+  }
   const formData = new FormData();
   formData.append('file', file);
 
@@ -794,6 +822,35 @@ function handleFile(input) {
       document.getElementById('loading').classList.remove('active');
       alert('Error: ' + err);
     });
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
+}
+
+function formatNumber(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toLocaleString() : escapeHtml(value || '0');
+}
+
+function scoreValue(o) {
+  return Number(o.total_score ?? o.score ?? 0);
+}
+
+function recommendationBadge(recommendation) {
+  if (recommendation === 'Improve Existing') return 'optimize';
+  if (recommendation === 'Expand Existing') return 'maybe';
+  return 'skip';
+}
+
+function safeBadgeClass(value) {
+  return String(value || 'low').toLowerCase().replace(/[^a-z0-9_]+/g, '_');
 }
 
 function showQueuedStatus(d) {
@@ -827,7 +884,7 @@ function pollJob(jobId) {
 }
 
 // ── Render Results ──────────────────────────────────────────────────────────
-function renderResults(d) {
+function renderResultsCardsDeprecated(d) {
   document.getElementById('results-section').classList.remove('hidden');
 
   const critical = d.opportunities.filter(o => o.priority === 'Critical').length;
@@ -866,6 +923,86 @@ function renderResults(d) {
 }
 
 // ── Quick Decision ──────────────────────────────────────────────────────────
+function renderResults(d) {
+  document.getElementById('results-section').classList.remove('hidden');
+  const rows = Array.isArray(d.opportunities) ? d.opportunities : [];
+  opportunities = rows;
+
+  const critical = rows.filter(o => o.priority === 'Critical').length;
+  const high = rows.filter(o => o.priority === 'High').length;
+  const bofu = rows.filter(o => o.intent === 'BOFU').length;
+  const opportunitiesFound = d.opportunities_found ?? d.summary?.opportunities_found ?? rows.length;
+  const excludedCount = Array.isArray(d.excluded) ? d.excluded.length : (d.excluded ?? 0);
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${opportunitiesFound}</div><div class="stat-label">Opportunities</div></div>
+    <div class="stat-card"><div class="stat-value stat-critical">${critical}</div><div class="stat-label">Critical</div></div>
+    <div class="stat-card"><div class="stat-value stat-high">${high}</div><div class="stat-label">High</div></div>
+    <div class="stat-card"><div class="stat-value">${bofu}</div><div class="stat-label">BOFU</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--text-muted)">${excludedCount}</div><div class="stat-label">Excluded</div></div>
+  `;
+
+  const list = document.getElementById('oppsTable');
+  if (!rows.length) {
+    list.innerHTML = '<div class="alert alert-info">No opportunities matched the Stage 1A filters. Try a wider GSC export or check that the file includes query, impressions, clicks, and position columns.</div>';
+    return;
+  }
+
+  list.innerHTML = `
+    <div class="table-wrap opportunities-table-wrap">
+      <table class="opportunities-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Priority</th>
+            <th>Keyword</th>
+            <th>Page</th>
+            <th>Pos</th>
+            <th>Imp</th>
+            <th>Clicks</th>
+            <th>CTR</th>
+            <th>Intent</th>
+            <th>Score</th>
+            <th>Recommendation</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((o, i) => {
+            const page = o.page || '';
+            const pageIsLink = /^(https?:\/\/|\/)/i.test(page);
+            const pageCell = page && pageIsLink
+              ? `<a href="${escapeHtml(page)}" target="_blank" rel="noopener">${escapeHtml(page)}</a>`
+              : `<span style="color:var(--text-muted);">${escapeHtml(page || 'No page in export')}</span>`;
+            return `
+              <tr>
+                <td>${i + 1}</td>
+                <td><span class="badge badge-${safeBadgeClass(o.priority)}">${escapeHtml(o.priority || 'Low')}</span></td>
+                <td class="opp-keyword-cell">${escapeHtml(o.keyword || '')}</td>
+                <td class="opp-page-cell" title="${escapeHtml(page || 'No page in export')}">${pageCell}</td>
+                <td>${formatNumber(o.position)}</td>
+                <td>${formatNumber(o.impressions)}</td>
+                <td>${formatNumber(o.clicks)}</td>
+                <td>${escapeHtml(o.ctr || '-')}</td>
+                <td><span class="badge badge-${safeBadgeClass(o.intent)}">${escapeHtml(o.intent || 'MOFU')}</span></td>
+                <td>${scoreValue(o)}</td>
+                <td><span class="badge badge-${recommendationBadge(o.recommendation)}">${escapeHtml(o.recommendation || '')}</span></td>
+                <td><button class="btn btn-sm btn-secondary" onclick="quickDecisionFromIndex(${i})">Decide</button></td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function quickDecisionFromIndex(index) {
+  const o = opportunities[index];
+  if (!o) return;
+  quickDecision(o.keyword || '', o.page || '', Number(o.position) || 0, Number(o.impressions) || 0, Number(o.clicks) || 0);
+}
+
 function quickDecision(keyword, page, position, impressions, clicks) {
   showPage('decide');
   document.getElementById('decKeyword').value = keyword;
@@ -1518,7 +1655,7 @@ async function disconnectGSC() {
   const resultEl = document.getElementById('gsc-config-result');
   resultEl.innerHTML = '<div class="alert alert-info">GSC disconnected. CSV upload still available.</div>';
   setTimeout(() => showGSCConfig(INTEGRATIONS.find(i => i.id === 'gsc')), 1500);
-        1 e}
+}
 
 // ── Governance ───────────────────────────────────────────────────────────────
 function loadGovernance() {
