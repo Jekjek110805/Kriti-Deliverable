@@ -117,7 +117,7 @@
   .upload-zone:hover::before, .upload-zone.dragover::before { opacity: 1; transform: scale(1.04); }
   .upload-zone:hover .upload-robot-img, .upload-zone.dragover .upload-robot-img { transform: translateY(-5px) scale(1.04); filter: drop-shadow(0 0 24px rgba(45,212,191,0.24)) drop-shadow(0 0 22px rgba(124,92,255,0.22)); }
   .upload-icon .icon { width: 44px; height: 44px; color: var(--text-muted); }
-  .upload-robot { position: relative; z-index: 1; width: min(118px, 34vw); margin: -2px auto 12px; }
+  .upload-robot { position: relative; z-index: 1; width: min(59px, 17vw); margin: -2px auto 12px; }
   .upload-robot::after { content: ''; position: absolute; left: 21%; right: 21%; bottom: 2px; height: 12px; border-radius: 999px; background: rgba(45,212,191,0.18); filter: blur(10px); }
   .upload-robot-img { display: block; width: 100%; height: auto; object-fit: contain; filter: drop-shadow(0 0 20px rgba(45,212,191,0.18)) drop-shadow(0 0 18px rgba(124,92,255,0.18)); transition: transform .25s cubic-bezier(0.4,0,0.2,1), filter .25s; }
   .upload-zone > :not(.upload-robot) { position: relative; z-index: 1; }
@@ -205,7 +205,10 @@
   .badge-optimize { background: var(--green-glow); color: var(--green); border: 1px solid rgba(61,220,151,0.15); }
   .badge-maybe { background: var(--yellow-glow); color: var(--yellow); border: 1px solid rgba(245,183,49,0.15); }
   .badge-skip { background: var(--red-glow); color: var(--red); border: 1px solid rgba(255,71,87,0.15); }
-  .badge-pass { background: var(--blue-glow, rgba(59,130,246,0.15)); color: var(--blue, #60a5fa); border: 1px solid rgba(59,130,246,0.15); }
+  .badge-nochange { background: rgba(45,212,191,0.12); color: #2DD4BF; border: 1px solid rgba(45,212,191,0.2); }
+  .badge-gap { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(124,92,255,0.2); }
+  .badge-blog { background: rgba(45,212,191,0.08); color: #2DD4BF; border: 1px solid rgba(45,212,191,0.15); }
+  .badge-landingpage { background: rgba(124,92,255,0.08); color: var(--accent); border: 1px solid rgba(124,92,255,0.15); }
   .badge-approved { background: var(--green-glow); color: var(--green); border: 1px solid rgba(61,220,151,0.15); }
   .badge-rejected { background: var(--red-glow); color: var(--red); border: 1px solid rgba(255,71,87,0.15); }
   .badge-blocked { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
@@ -411,9 +414,6 @@
           </div>
           <div id="oppsTable"></div>
         </div>
-
-        <!-- Stage 1B Implementation Summary -->
-        <div id="stage1b-summary" class="hidden" style="margin-top:20px;"></div>
       </div>
     </div>
 
@@ -947,12 +947,17 @@ function scoreValue(o) {
 }
 
 function recommendationBadge(recommendation) {
-  if (recommendation === 'Improve Existing Page') return 'optimize';
+  if (recommendation === 'No Change') return 'nochange';
   if (recommendation === 'Improve Existing') return 'optimize';
   if (recommendation === 'Expand Existing') return 'maybe';
-  if (recommendation === 'Create New Content') return 'skip';
-  if (recommendation === 'No Change') return 'pass';
   return 'skip';
+}
+
+function contentTypeBadge(contentType) {
+  if (!contentType) return 'low';
+  const ct = contentType.toLowerCase();
+  if (ct.includes('blog')) return 'blog';
+  return 'landingpage';
 }
 
 function safeBadgeClass(value) {
@@ -1045,17 +1050,19 @@ function renderResults(d) {
   const rows = Array.isArray(d.opportunities) ? d.opportunities : [];
   opportunities = rows;
 
-  const critical = rows.filter(o => o.priority === 'Critical').length;
-  const high = rows.filter(o => o.priority === 'High').length;
-  const bofu = rows.filter(o => o.intent === 'BOFU').length;
   const opportunitiesFound = d.opportunities_found ?? d.summary?.opportunities_found ?? rows.length;
+  const noChange = d.summary?.no_change ?? rows.filter(o => o.recommendation === 'No Change').length;
+  const improve = d.summary?.improve_existing ?? rows.filter(o => o.recommendation === 'Improve Existing' || o.recommendation === 'Expand Existing').length;
+  const createNew = d.summary?.create_new ?? rows.filter(o => o.recommendation === 'Create New Content').length;
+  const gapCount = d.summary?.gap_keywords ?? rows.filter(o => o.is_gap).length;
   const excludedCount = Array.isArray(d.excluded) ? d.excluded.length : (d.excluded ?? 0);
 
   document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-card"><div class="stat-value">${opportunitiesFound}</div><div class="stat-label">Opportunities</div></div>
-    <div class="stat-card"><div class="stat-value stat-critical">${critical}</div><div class="stat-label">Critical</div></div>
-    <div class="stat-card"><div class="stat-value stat-high">${high}</div><div class="stat-label">High</div></div>
-    <div class="stat-card"><div class="stat-value">${bofu}</div><div class="stat-label">BOFU</div></div>
+    <div class="stat-card"><div class="stat-value">${opportunitiesFound}</div><div class="stat-label">Total Found</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:#2DD4BF">${noChange}</div><div class="stat-label">No Change</div></div>
+    <div class="stat-card"><div class="stat-value stat-high">${improve}</div><div class="stat-label">Improve Existing</div></div>
+    <div class="stat-card"><div class="stat-value stat-critical">${createNew}</div><div class="stat-label">Create New</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--accent)">${gapCount}</div><div class="stat-label">Gap Keywords</div></div>
     <div class="stat-card"><div class="stat-value" style="color:var(--text-muted)">${excludedCount}</div><div class="stat-label">Excluded</div></div>
   `;
 
@@ -1073,17 +1080,15 @@ function renderResults(d) {
             <th>#</th>
             <th>Priority</th>
             <th>Keyword</th>
-            <th>Page</th>
+            <th>Existing Page</th>
             <th>Pos</th>
             <th>Imp</th>
-            <th>Clicks</th>
-            <th>CTR</th>
             <th>Intent</th>
             <th>Score</th>
             <th>Recommendation</th>
             <th>Content Type</th>
             <th>Confidence</th>
-            <th></th>
+            <th>Next Action</th>
           </tr>
         </thead>
         <tbody>
@@ -1092,56 +1097,30 @@ function renderResults(d) {
             const pageIsLink = /^(https?:\/\/|\/)/i.test(page);
             const pageCell = page && pageIsLink
               ? `<a href="${escapeHtml(page)}" target="_blank" rel="noopener">${escapeHtml(page)}</a>`
-              : `<span style="color:var(--text-muted);">${escapeHtml(page || 'No page in export')}</span>`;
+              : `<span style="color:var(--text-muted);">${escapeHtml(page || '—')}</span>`;
+            const gapLabel = o.is_gap ? `<span class="badge badge-gap" style="font-size:9px;padding:2px 7px;margin-left:4px;">GAP</span>` : '';
+            const ctLabel = o.content_type ? `<span class="badge badge-${contentTypeBadge(o.content_type)}">${escapeHtml(o.content_type)}</span>` : '—';
+            const confVal = o.confidence != null ? o.confidence : '—';
+            const confColor = o.confidence >= 85 ? 'var(--green)' : o.confidence >= 70 ? 'var(--yellow)' : 'var(--text-muted)';
             return `
               <tr>
                 <td>${i + 1}</td>
                 <td><span class="badge badge-${safeBadgeClass(o.priority)}">${escapeHtml(o.priority || 'Low')}</span></td>
-                <td class="opp-keyword-cell">${escapeHtml(o.keyword || '')}</td>
-                <td class="opp-page-cell" title="${escapeHtml(page || 'No page in export')}">${pageCell}</td>
+                <td class="opp-keyword-cell">${escapeHtml(o.keyword || '')}${gapLabel}</td>
+                <td class="opp-page-cell" title="${escapeHtml(page || '—')}">${pageCell}</td>
                 <td>${formatNumber(o.position)}</td>
                 <td>${formatNumber(o.impressions)}</td>
-                <td>${formatNumber(o.clicks)}</td>
-                <td>${escapeHtml(o.ctr || '-')}</td>
                 <td><span class="badge badge-${safeBadgeClass(o.intent)}">${escapeHtml(o.intent || 'MOFU')}</span></td>
                 <td>${scoreValue(o)}</td>
                 <td><span class="badge badge-${recommendationBadge(o.recommendation)}">${escapeHtml(o.recommendation || '')}</span></td>
-                <td>${escapeHtml(o.content_type || 'N/A')}</td>
-                <td style="font-size:12px;color:var(--text-muted);">${escapeHtml(o.confidence || 'N/A')}</td>
-                <td><button class="btn btn-sm btn-secondary" onclick="quickDecisionFromIndex(${i})">Decide</button></td>
+                <td>${ctLabel}</td>
+                <td style="color:${confColor};font-weight:700;">${confVal !== '—' ? confVal + '%' : '—'}</td>
+                <td><button class="btn btn-sm btn-secondary" onclick="showReasonModal(${i})">Review</button></td>
               </tr>
             `;
           }).join('')}
         </tbody>
       </table>
-    </div>
-  `;
-
-  // Show Stage 1B summary if applicable
-  showStage1bSummary(rows);
-}
-
-function showStage1bSummary(rows) {
-  // Show Stage 1B summary below the table
-  const noChange = rows.filter(o => o.recommendation === 'No Change').length;
-  const createNew = rows.filter(o => o.recommendation === 'Create New Content').length;
-  const blogType = rows.filter(o => o.content_type === 'Blog').length;
-  const landingType = rows.filter(o => o.content_type === 'Landing Page').length;
-
-  if (noChange === 0 && createNew === 0) return;  // All improve existing — no 1B needed
-
-  const container = document.getElementById('stage1b-summary');
-  if (!container) return;
-  container.classList.remove('hidden');
-  container.innerHTML = `
-    <div class="card">
-      <div class="card-title">Stage 1B Implementation Summary</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-bottom:12px;">
-        <div class="stat-card"><div class="stat-value" style="color:#22c55e">${noChange}</div><div class="stat-label">No Change Needed</div></div>
-        <div class="stat-card"><div class="stat-value" style="color:#f59e0b">${createNew}</div><div class="stat-label">Create New Content</div></div>
-        <div class="stat-card><div class="stat-value">${blogType}</div><div class="stat-label">Blog</div></div>
-        <div class="stat-card"><div class="stat-value">${landingType}</div><div class="stat-label">Landing Page</div></div>
-      </div>
     </div>
   `;
 }
@@ -1150,6 +1129,57 @@ function quickDecisionFromIndex(index) {
   const o = opportunities[index];
   if (!o) return;
   quickDecision(o.keyword || '', o.page || '', Number(o.position) || 0, Number(o.impressions) || 0, Number(o.clicks) || 0);
+}
+
+function showReasonModal(index) {
+  const o = opportunities[index];
+  if (!o) return;
+  const rec = o.recommendation || '';
+  const recColor = rec === 'No Change' ? '#2DD4BF' : rec === 'Improve Existing' ? 'var(--green)' : rec === 'Expand Existing' ? 'var(--yellow)' : 'var(--crimson)';
+  const confColor = (o.confidence || 0) >= 85 ? 'var(--green)' : (o.confidence || 0) >= 70 ? 'var(--yellow)' : 'var(--text-muted)';
+  const existing = document.getElementById('reason-modal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'reason-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:540px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,0.5);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+        <div>
+          <div style="font-size:17px;font-weight:700;margin-bottom:4px;">${escapeHtml(o.keyword || '')}</div>
+          <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(o.page || 'No existing page')}</div>
+        </div>
+        <button onclick="document.getElementById('reason-modal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">RECOMMENDATION</div>
+          <div style="font-weight:700;color:${recColor};">${escapeHtml(rec)}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">CONTENT TYPE</div>
+          <div style="font-weight:700;">${escapeHtml(o.content_type || '—')}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">CONFIDENCE</div>
+          <div style="font-weight:700;font-size:20px;color:${confColor};">${o.confidence != null ? o.confidence + '%' : '—'}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">SCORE</div>
+          <div style="font-weight:700;font-size:20px;color:var(--accent);">${o.score || 0}/100</div>
+        </div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:20px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">REASONING</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${escapeHtml(o.reason || 'No reason available.')}</div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="document.getElementById('reason-modal').remove()">Close</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
 }
 
 function quickDecision(keyword, page, position, impressions, clicks) {
