@@ -205,6 +205,7 @@
   .badge-optimize { background: var(--green-glow); color: var(--green); border: 1px solid rgba(61,220,151,0.15); }
   .badge-maybe { background: var(--yellow-glow); color: var(--yellow); border: 1px solid rgba(245,183,49,0.15); }
   .badge-skip { background: var(--red-glow); color: var(--red); border: 1px solid rgba(255,71,87,0.15); }
+  .badge-pass { background: var(--blue-glow, rgba(59,130,246,0.15)); color: var(--blue, #60a5fa); border: 1px solid rgba(59,130,246,0.15); }
   .badge-approved { background: var(--green-glow); color: var(--green); border: 1px solid rgba(61,220,151,0.15); }
   .badge-rejected { background: var(--red-glow); color: var(--red); border: 1px solid rgba(255,71,87,0.15); }
   .badge-blocked { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
@@ -410,6 +411,9 @@
           </div>
           <div id="oppsTable"></div>
         </div>
+
+        <!-- Stage 1B Implementation Summary -->
+        <div id="stage1b-summary" class="hidden" style="margin-top:20px;"></div>
       </div>
     </div>
 
@@ -943,8 +947,11 @@ function scoreValue(o) {
 }
 
 function recommendationBadge(recommendation) {
+  if (recommendation === 'Improve Existing Page') return 'optimize';
   if (recommendation === 'Improve Existing') return 'optimize';
   if (recommendation === 'Expand Existing') return 'maybe';
+  if (recommendation === 'Create New Content') return 'skip';
+  if (recommendation === 'No Change') return 'pass';
   return 'skip';
 }
 
@@ -1074,6 +1081,8 @@ function renderResults(d) {
             <th>Intent</th>
             <th>Score</th>
             <th>Recommendation</th>
+            <th>Content Type</th>
+            <th>Confidence</th>
             <th></th>
           </tr>
         </thead>
@@ -1097,12 +1106,42 @@ function renderResults(d) {
                 <td><span class="badge badge-${safeBadgeClass(o.intent)}">${escapeHtml(o.intent || 'MOFU')}</span></td>
                 <td>${scoreValue(o)}</td>
                 <td><span class="badge badge-${recommendationBadge(o.recommendation)}">${escapeHtml(o.recommendation || '')}</span></td>
+                <td>${escapeHtml(o.content_type || 'N/A')}</td>
+                <td style="font-size:12px;color:var(--text-muted);">${escapeHtml(o.confidence || 'N/A')}</td>
                 <td><button class="btn btn-sm btn-secondary" onclick="quickDecisionFromIndex(${i})">Decide</button></td>
               </tr>
             `;
           }).join('')}
         </tbody>
       </table>
+    </div>
+  `;
+
+  // Show Stage 1B summary if applicable
+  showStage1bSummary(rows);
+}
+
+function showStage1bSummary(rows) {
+  // Show Stage 1B summary below the table
+  const noChange = rows.filter(o => o.recommendation === 'No Change').length;
+  const createNew = rows.filter(o => o.recommendation === 'Create New Content').length;
+  const blogType = rows.filter(o => o.content_type === 'Blog').length;
+  const landingType = rows.filter(o => o.content_type === 'Landing Page').length;
+
+  if (noChange === 0 && createNew === 0) return;  // All improve existing — no 1B needed
+
+  const container = document.getElementById('stage1b-summary');
+  if (!container) return;
+  container.classList.remove('hidden');
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-title">Stage 1B Implementation Summary</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-bottom:12px;">
+        <div class="stat-card"><div class="stat-value" style="color:#22c55e">${noChange}</div><div class="stat-label">No Change Needed</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#f59e0b">${createNew}</div><div class="stat-label">Create New Content</div></div>
+        <div class="stat-card><div class="stat-value">${blogType}</div><div class="stat-label">Blog</div></div>
+        <div class="stat-card"><div class="stat-value">${landingType}</div><div class="stat-label">Landing Page</div></div>
+      </div>
     </div>
   `;
 }

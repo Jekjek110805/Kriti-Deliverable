@@ -174,8 +174,11 @@ def _save_job_outputs(job_id: str, result: dict):
                 "volume": o.get("volume", "not_available"),
                 "keyword_difficulty": o.get("keyword_difficulty", "not_available"),
                 "score": o.get("score", o.get("total_score", 0)),
-                "recommendation": o["recommendation"],
+                "recommendation": o.get("recommendation", "N/A"),
+                "content_type": o.get("content_type", "N/A"),
+                "confidence": o.get("confidence", "N/A"),
                 "reason": o.get("reason", ""),
+                "next_action": o.get("next_action", "N/A"),
                 "approval_status": o.get("approval_status", "needs_review"),
             }
             if writer is None:

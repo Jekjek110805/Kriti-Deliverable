@@ -340,7 +340,9 @@ def run_pipeline(
 def generate_markdown_report(opportunities: List[Dict], excluded: List[Dict]) -> str:
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
     total = len(opportunities)
-    existing_count = sum(1 for o in opportunities if o["recommendation"] == "Improve Existing")
+    existing_count = sum(1 for o in opportunities if "Improve" in str(o.get("recommendation", "")))
+    no_change_count = sum(1 for o in opportunities if o.get("recommendation") == "No Change")
+    create_count = sum(1 for o in opportunities if o.get("recommendation") == "Create New Content")
     bofu_count = sum(1 for o in opportunities if o["intent"] == "BOFU")
     mofu_count = sum(1 for o in opportunities if o["intent"] == "MOFU")
     tofu_count = sum(1 for o in opportunities if o["intent"] == "TOFU")
@@ -355,20 +357,30 @@ def generate_markdown_report(opportunities: List[Dict], excluded: List[Dict]) ->
     lines.append("## Executive Summary\n")
     lines.append(f"We found **{total}** existing-page SEO opportunities.")
     if top:
-        lines.append(f"Top recommendation: improve **{top['page']}** for \"{top['keyword']}\" (score: {top['total_score']}).")
+        lines.append(f"Top recommendation: **{top['keyword']}** — {top.get('recommendation', 'N/A')} (score: {top['total_score']}).")
     lines.append(f"Intent breakdown: {bofu_count} BOFU, {mofu_count} MOFU, {tofu_count} TOFU.")
     lines.append(f"{existing_count} opportunities have existing pages ready for improvement.")
-    lines.append("No new posts are recommended in Stage 1A unless an existing page clearly cannot satisfy the keyword intent.\n")
+    lines.append(f"{no_change_count} opportunities require no action (page already satisfies intent).")
+    lines.append(f"{create_count} opportunities require new content creation.")
+    lines.append("")
+
+    # Stage 1B Summary
+    lines.append("## Stage 1B Implementation Summary\n")
+    blog_count = sum(1 for o in opportunities if o.get("content_type") == "Blog")
+    landing_count = sum(1 for o in opportunities if o.get("content_type") == "Landing Page")
+    lines.append(f"Content type breakdown: {blog_count} Blog, {landing_count} Landing Page.")
+    high_conf = sum(1 for o in opportunities if "high" in str(o.get("confidence", "")))
+    lines.append(f"High confidence recommendations: {high_conf}/{total}.\n")
 
     # Top Opportunities table
     lines.append("## Top Opportunities\n")
-    lines.append("| # | Priority | Keyword | Page | Position | Impressions | Clicks | Intent | Commercial | Score | Recommendation |")
-    lines.append("|---|----------|---------|------|----------|-------------|--------|--------|------------|-------|----------------|")
+    lines.append("| # | Priority | Keyword | Page | Position | Impressions | Clicks | Intent | Commercial | Score | Recommendation | Content Type | Confidence |")
+    lines.append("|---|----------|---------|------|----------|-------------|--------|--------|------------|-------|----------------|--------------|------------|")
     for i, o in enumerate(opportunities, 1):
         lines.append(
             f"| {i} | {o['priority']} | {o['keyword']} | {o['page']} | {o['position']} "
             f"| {o['impressions']} | {o['clicks']} | {o['intent']} | {o['commercial_potential']} "
-            f"| {o['total_score']} | {o['recommendation']} |"
+            f"| {o['total_score']} | {o.get('recommendation', 'N/A')} | {o.get('content_type', 'N/A')} | {o.get('confidence', 'N/A')} |"
         )
     lines.append("")
 
@@ -383,10 +395,10 @@ def generate_markdown_report(opportunities: List[Dict], excluded: List[Dict]) ->
         lines.append(f"- **Intent:** {o['intent']}")
         lines.append(f"- **Commercial potential:** {o['commercial_potential']}")
         lines.append(f"- **Score:** {o['total_score']}/100")
-        lines.append(f"- **Recommendation:** {o['recommendation']}\n")
-        lines.append(f"**Why this page can win:**")
-        lines.append(f"- It already ranks on page one (position {o['position']}).")
-        lines.append(f"- It has meaningful impressions ({o['impressions']}).")
+        lines.append(f"- **Recommendation:** {o.get('recommendation', 'N/A')}")
+        lines.append(f"- **Content Type:** {o.get('content_type', 'N/A')}")
+        lines.append(f"- **Confidence:** {o.get('confidence', 'N/A')}")
+        lines.append(f"- **Next Action:** {o.get('next_action', 'N/A')}\n")
         lines.append(f"- The query has {o['intent']} intent with {o['commercial_potential'].lower()} commercial potential.\n")
         lines.append(f"**Suggested improvement direction:**")
         lines.append(f"- Strengthen the content to better match {o['intent']} intent.")
@@ -439,8 +451,11 @@ def generate_csv_output(opportunities: List[Dict]) -> str:
             "volume": o["volume"],
             "keyword_difficulty": o["keyword_difficulty"],
             "score": o["total_score"],
-            "recommendation": o["recommendation"],
+            "recommendation": o.get("recommendation", "N/A"),
+            "content_type": o.get("content_type", "N/A"),
+            "confidence": o.get("confidence", "N/A"),
             "reason": o.get("reason", ""),
+            "next_action": o.get("next_action", "N/A"),
             "approval_status": o.get("approval_status", "needs_review"),
         }
         if writer is None:
@@ -456,11 +471,14 @@ def generate_yaml_approval_queue(opportunities: List[Dict]) -> str:
         queue["approved_existing_page_actions"].append({
             "keyword": o["keyword"],
             "page": o["page"],
-            "recommendation": o["recommendation"],
+            "recommendation": o.get("recommendation", "N/A"),
+            "content_type": o.get("content_type", "N/A"),
+            "confidence": o.get("confidence", "N/A"),
             "reason": o.get("reason", ""),
             "score": o["total_score"],
             "approval_status": o.get("approval_status", "needs_review"),
             "next_stage": "Stage 1B or Stage 2 content brief",
+            "next_action": o.get("next_action", "N/A"),
         })
     return yaml.dump(queue, default_flow_style=False, sort_keys=False)
 
@@ -789,6 +807,87 @@ async def get_yaml():
     with open(yaml_path, "r") as f:
         content = f.read()
     return PlainTextResponse(content, media_type="text/yaml")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STAGE 1B — Implementation Recommendation & Keyword Gap Analysis
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/stage1b/analyze")
+async def analyze_stage1b(request: Request):
+    """Run Stage 1B implementation analysis on approved opportunities.
+
+    Body: {
+        "opportunities": [...],  // Stage 1A opportunities with scores
+        "existing_pages": [{"url": "...", "ranking_keywords": ["..."]}]  // optional
+    }
+    """
+    body = await request.json()
+    opportunities = body.get("opportunities", [])
+    existing_pages = body.get("existing_pages", [])
+
+    from hermes_client import compute_stage1b_recommendation, analyze_keyword_gaps
+
+    # Run Stage 1B on each opportunity
+    stage1b_results = []
+    for opp in opportunities:
+        result = compute_stage1b_recommendation(
+            keyword=opp.get("keyword", ""),
+            page=opp.get("page", ""),
+            position=opp.get("position", 0),
+            intent=opp.get("intent", "MOFU"),
+            commercial=opp.get("commercial_potential", "Low"),
+            clicks=opp.get("clicks", 0),
+            impressions=opp.get("impressions", 0),
+        )
+        result["keyword"] = opp.get("keyword", "")
+        result["page"] = opp.get("page", "")
+        result["position"] = opp.get("position", 0)
+        result["score"] = opp.get("score", 0)
+        result["priority"] = opp.get("priority", "Low")
+        stage1b_results.append(result)
+
+    # Keyword gap analysis
+    all_keywords = [o.get("keyword", "") for o in opportunities if o.get("keyword")]
+    gap_analysis = analyze_keyword_gaps(all_keywords, existing_pages)
+
+    # Summary
+    no_change = sum(1 for r in stage1b_results if r["recommendation"] == "No Change")
+    improve = sum(1 for r in stage1b_results if "Improve" in r["recommendation"])
+    create_new = sum(1 for r in stage1b_results if r["recommendation"] == "Create New Content")
+    blog_type = sum(1 for r in stage1b_results if r.get("content_type") == "Blog")
+    landing_type = sum(1 for r in stage1b_results if r.get("content_type") == "Landing Page")
+
+    return {
+        "status": "success",
+        "stage": "1B",
+        "summary": {
+            "total_analyzed": len(stage1b_results),
+            "no_change_required": no_change,
+            "improve_existing": improve,
+            "create_new_content": create_new,
+            "content_type_breakdown": {"Blog": blog_type, "Landing Page": landing_type},
+        },
+        "implementation_plan": stage1b_results,
+        "keyword_gap_analysis": gap_analysis,
+    }
+
+
+@app.post("/api/stage1b/gap-analysis")
+async def keyword_gap_analysis(request: Request):
+    """Standalone keyword gap analysis endpoint.
+
+    Body: {
+        "keywords": ["keyword1", "keyword2", ...],
+        "existing_pages": [{"url": "...", "ranking_keywords": ["..."]}]
+    }
+    """
+    body = await request.json()
+    keywords = body.get("keywords", [])
+    existing_pages = body.get("existing_pages", [])
+
+    from hermes_client import analyze_keyword_gaps
+    return analyze_keyword_gaps(keywords, existing_pages)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

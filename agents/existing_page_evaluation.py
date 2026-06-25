@@ -67,7 +67,23 @@ class ExistingPageEvaluationAgent:
                 "reasoning": reasoning
             }
 
-            # AI enrichment
+            # Stage 1B: Implementation recommendation (pure Python)
+            from hermes_client import compute_stage1b_recommendation, classify_content_type
+            stage1b = compute_stage1b_recommendation(
+                keyword=topic.get("keyword", ""),
+                page=topic.get("existing_page", ""),
+                position=topic.get("gsc_position", 0) or 0,
+                intent=topic.get("intent", "MOFU"),
+                commercial=topic.get("commercial_potential", "Low"),
+                clicks=topic.get("gsc_clicks", 0) or 0,
+                impressions=topic.get("gsc_impressions", 0) or 0,
+            )
+            topic["implementation_recommendation"] = stage1b["recommendation"]
+            topic["content_type"] = stage1b["content_type"]
+            topic["confidence"] = stage1b["confidence"]
+            topic["next_action"] = stage1b["next_action"]
+
+            # AI enrichment (optional — Hermes for language explanation)
             try:
                 explanation = client.generate_explanation(keyword=topic["keyword"], scores_dict=topic["existing_page_evaluation"])
                 if explanation and not explanation.startswith("[LiteLLM"):
