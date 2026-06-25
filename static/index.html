@@ -809,7 +809,7 @@ function handleFile(input) {
       if (d.error) { alert('Error: ' + d.error); return; }
 
       if (d.status === 'queued' && d.job_id) {
-        // Hermes analysis queued -- poll for results
+        // Analysis queued -- poll for results
         showQueuedStatus(d);
         pollJob(d.job_id);
       } else if (d.opportunities) {

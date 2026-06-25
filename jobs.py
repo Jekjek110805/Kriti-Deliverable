@@ -1,10 +1,10 @@
 """
-jobs.py -- Async analysis job queue for Hermes-powered analysis.
+jobs.py -- Async analysis job queue for Stage 1A rule-based analysis.
 
 In-memory job store. Each job has:
   - job_id: unique ID
   - status: pending | running | complete | error
-  - result: Hermes output (when complete)
+  - result: analysis output (when complete)
   - error: error message (when failed)
   - created_at / completed_at: timestamps
 """
@@ -114,7 +114,7 @@ def update_job(job_id: str, status: str = None, result: dict = None, error: str 
 
 
 async def run_job_analysis(job_id: str):
-    """Run Hermes analysis for a background job and save output files on completion."""
+    """Run Stage 1A rule-based analysis for a background job and save output files on completion."""
     from hermes_client import hermes_analyze_stage1a
 
     job = _jobs.get(job_id)
@@ -136,7 +136,7 @@ async def run_job_analysis(job_id: str):
 
 
 def _save_job_outputs(job_id: str, result: dict):
-    """Save Hermes analysis results to standard output files."""
+    """Save analysis results to standard output files."""
     import csv as _csv
     import io
     from datetime import datetime

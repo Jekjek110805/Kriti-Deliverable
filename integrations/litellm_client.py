@@ -1,5 +1,13 @@
 """
 LiteLLM Client for Kriti Agents
+
+Used ONLY for language-generation enrichment features (not Stage 1A scoring):
+  - Executive narrative summary
+  - AI-generated audience questions & H2 headings
+  - SEO score explanations
+
+Stage 1A opportunity scoring is PURE PYTHON (hermes_client.py).
+This client is NOT used for deterministic scoring decisions.
 """
 import os
 import json

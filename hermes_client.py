@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
 hermes_client.py -- Pure Python Stage 1A analysis engine.
-Replaces LLM subprocess calls with deterministic rule-based logic.
+Deterministic rule-based scoring (no LLM calls).
 Returns results in the exact same format the frontend expects.
+
+This is the ONLY analysis engine for Stage 1A. Hermes (LLM) is NOT used here.
+Hermes is reserved for: executive narratives, audience questions, content explanations.
 """
 import json
 import os
