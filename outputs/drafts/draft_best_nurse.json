@@ -1,7 +1,7 @@
 {
   "keyword": "best nurse",
   "intent": "BOFU",
-  "tone": "authoritative",
+  "tone": "professional",
   "word_count_target": 1500,
   "sections": [
     {
@@ -32,6 +32,6 @@
   "status": "draft",
   "ai_generated": true,
   "human_edited": false,
-  "created_at": "2026-06-22T02:21:52.595075",
+  "created_at": "2026-06-22T07:46:15.593751",
   "notes": "This is an AI-generated draft. A human must review, edit fact-check, and approve before publishing."
 }

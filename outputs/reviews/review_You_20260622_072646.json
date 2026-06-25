@@ -1,0 +1,321 @@
+{
+  "keyword": "You",
+  "title": "FOR YOU",
+  "client": "Jake",
+  "url_slug": "Medicine",
+  "meta_description": "None",
+  "submitted_at": "2026-06-22T07:26:46.792196",
+  "automated_checks": {
+    "h1_keyword_rich": true,
+    "keyword_in_first_paragraph": false,
+    "tldr_present": false,
+    "seo_meta_written": true,
+    "heading_hierarchy_clean": null,
+    "no_em_dashes": true,
+    "no_ai_filler": true,
+    "no_ai_filler_details": [],
+    "no_not_x_but_y": true,
+    "short_paragraphs": true,
+    "ai_disclosure": false,
+    "alt_text": false,
+    "original_image": false,
+    "clear_cta": false,
+    "internal_links": false,
+    "tldr_clean": false
+  },
+  "human_checklist": [
+    {
+      "phase": "phase_2_structure",
+      "label": "Phase 2 \u2014 Structure and SEO Foundation",
+      "items": [
+        {
+          "id": "h1_keyword_rich",
+          "label": "H1 is keyword rich and reads naturally",
+          "auto_checked": true,
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "h2_outline_satisfies",
+          "label": "H2 outline fully satisfies the promise of the H1",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "keyword_in_first_paragraph",
+          "label": "Target keyword appears high on the page, ideally in the first paragraph",
+          "auto_checked": false,
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "tldr_present",
+          "label": "TLDR of 2-3 sentences sits at the very top",
+          "auto_checked": false,
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "seo_meta_written",
+          "label": "Page title, meta description, and URL slug are written",
+          "auto_checked": true,
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "heading_hierarchy_clean",
+          "label": "Heading hierarchy is clean: one H1, logical H2s, H3s only where they genuinely nest",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase": "phase_3_voice",
+      "label": "Phase 3 \u2014 Brand Voice and Language (MAAI House Style)",
+      "items": [
+        {
+          "id": "no_em_dashes",
+          "label": "No em dashes anywhere",
+          "auto_checked": true,
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "no_ai_filler",
+          "label": "No AI filler words (streamlined, seamless, leverage, unlock, robust, elevate, etc.)",
+          "auto_checked": true,
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "no_not_x_but_y",
+          "label": "No 'it is not X, it is Y' construction",
+          "auto_checked": true,
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "second_person",
+          "label": "Copy speaks directly to the reader in client's tone",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "no_culturally_misplaced",
+          "label": "No racist, colonial, or culturally misplaced language",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "no_competitor_putdowns",
+          "label": "No negative framing of any competitor",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "short_paragraphs",
+          "label": "Paragraphs are short, easily readable",
+          "auto_checked": true,
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "natural_voice",
+          "label": "Writing sounds like a knowledgeable person talking to a smart friend",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase": "phase_4_accuracy",
+      "label": "Phase 4 \u2014 Accuracy and Hallucination Check",
+      "items": [
+        {
+          "id": "human_read_full",
+          "label": "A human has read the full post line by line",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "stats_verified",
+          "label": "Every statistic, figure, and claim is traced to a real, current source",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "no_invented_quotes",
+          "label": "No invented quotes or attributions",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "no_contradictions",
+          "label": "No misarticulated ideas, no contradictions",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "ai_disclosure",
+          "label": "If substantial AI-written sections, carries visible human-edited disclosure",
+          "auto_checked": false,
+          "status": "pending",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase": "phase_5_media",
+      "label": "Phase 5 \u2014 Media",
+      "items": [
+        {
+          "id": "original_image",
+          "label": "At least one original or genuinely relevant image present",
+          "auto_checked": false,
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "client_logos",
+          "label": "Recognisable client logos appear as social proof, with permission",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "video_embedded",
+          "label": "Video embedded where it adds value",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "alt_text",
+          "label": "Every image has descriptive alt text",
+          "auto_checked": false,
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "images_compressed",
+          "label": "Images are compressed and correctly sized",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase": "phase_6_conversion",
+      "label": "Phase 6 \u2014 Conversion",
+      "items": [
+        {
+          "id": "clear_cta",
+          "label": "Clear call to action to use client's product or service",
+          "auto_checked": false,
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "path_forward_obvious",
+          "label": "The path forward is obvious from the page",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "internal_links",
+          "label": "Internal links point toward client's product or service",
+          "auto_checked": false,
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "dedicated_sections",
+          "label": "Page reads as built for this specific reader",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase": "phase_7_interlinking",
+      "label": "Phase 7 \u2014 Interlinking and Indexing",
+      "items": [
+        {
+          "id": "interlinked_from_2_3_pages",
+          "label": "New post is interlinked from 2-3 existing pages that already rank",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "sensible_architecture",
+          "label": "Post sits in a sensible place in the site architecture",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "submitted_to_gsc",
+          "label": "URL submitted in Google Search Console, indexing requested",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "sitemap_included",
+          "label": "Sitemap includes the new URL",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase": "phase_8_ai_search",
+      "label": "Phase 8 \u2014 AI Search Readiness",
+      "items": [
+        {
+          "id": "answers_natural_questions",
+          "label": "Post answers the way people actually phrase things to AI (long, natural-language questions)",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "query_fanout_language",
+          "label": "Query fan-out language appears in H2s and body copy",
+          "auto_checked": "manual",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "id": "tldr_clean",
+          "label": "TLDR gives AI a clean, liftable summary near the top",
+          "auto_checked": false,
+          "status": "pending",
+          "notes": ""
+        }
+      ]
+    }
+  ],
+  "overall_status": "in_review",
+  "summary": {
+    "auto_passed": 6,
+    "auto_failed": 8,
+    "needs_human_review": 1
+  }
+}
