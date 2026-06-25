@@ -1567,6 +1567,10 @@ function writeContent() {
   const briefText = document.getElementById('writeBrief').value;
   if (briefText) { try { brief = JSON.parse(briefText); } catch(e) { alert('Invalid brief JSON'); return; } }
 
+  // Show loading state
+  const resultEl = document.getElementById('content-result');
+  resultEl.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:12px;padding:20px;"><div class="spinner" style="width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div><span style="color:var(--text-muted);">Generating draft with Hermes LLM...</span></div></div>';
+
   fetch(BASE + '/api/content/write', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ keyword, tone: document.getElementById('writeTone').value, brief, word_count: 1500 }),
