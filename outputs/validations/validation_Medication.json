@@ -1,0 +1,90 @@
+{
+  "keyword": "Medication",
+  "title": "Medicating Skin Disease",
+  "client": "jake",
+  "validated_at": "2026-06-25T03:16:28.455261",
+  "overall_status": "fail",
+  "agents": {
+    "seo_gate": {
+      "agent": "SEO Gate",
+      "passed": 1,
+      "total": 9,
+      "score": 11,
+      "status": "fail",
+      "checks": [
+        {
+          "check": "Keyword in title",
+          "pass": false,
+          "detail": "Title: Medicating Skin Disease"
+        },
+        {
+          "check": "Keyword in first paragraph",
+          "pass": false,
+          "detail": "First 500 characters checked"
+        },
+        {
+          "check": "Keyword in at least one H2",
+          "pass": false,
+          "detail": "H2 headings checked"
+        },
+        {
+          "check": "TLDR at top",
+          "pass": false,
+          "detail": "TLDR section should be at the very top"
+        },
+        {
+          "check": "Meta description provided",
+          "pass": false,
+          "detail": "Length: 5 chars"
+        },
+        {
+          "check": "URL slug provided",
+          "pass": true,
+          "detail": "/best medication"
+        },
+        {
+          "check": "Word count >= 1000",
+          "pass": false,
+          "detail": "Current: 1 words"
+        },
+        {
+          "check": "At least 2 internal links",
+          "pass": false,
+          "detail": "Found: 0 links"
+        },
+        {
+          "check": "Images have alt text",
+          "pass": false,
+          "detail": "Images: 0, Alt texts: 0"
+        }
+      ]
+    },
+    "fact_check": {
+      "agent": "Fact Check",
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "message": "No obvious issues detected"
+    },
+    "brand_review": {
+      "agent": "Brand Review",
+      "status": "review",
+      "issues": [
+        {
+          "type": "no_second_person",
+          "message": "No second person (you/your) found \u2014 MAAI style prefers direct address",
+          "severity": "low"
+        }
+      ],
+      "issue_count": 1,
+      "critical_issues": 0,
+      "message": "1 style issues found"
+    }
+  },
+  "summary": {
+    "seo_score": 11,
+    "fact_issues": 0,
+    "brand_issues": 1,
+    "total_issues": 9
+  }
+}

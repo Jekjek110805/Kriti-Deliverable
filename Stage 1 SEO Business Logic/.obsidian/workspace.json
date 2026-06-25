@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Stage 0 Kriti Blog Agent Architecture and Delivery Blueprint 1.md",
+                "file": "Stage 1A - Problem Diagnosis (Hermes).md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Stage 0 Kriti Blog Agent Architecture and Delivery Blueprint 1"
+              "title": "Stage 1A - Problem Diagnosis (Hermes)"
             }
           }
         ]
@@ -186,8 +186,8 @@
   "active": "9600d3b3dd16e382",
   "lastOpenFiles": [
     "Stage Delivery Plan - Kriti's Blog Agent 2.md",
-    "Stage 1 Kriti's Blog Agent.md",
     "Stage 0 Kriti Blog Agent Architecture and Delivery Blueprint 1.md",
+    "Stage 1 Kriti's Blog Agent.md",
     "First Claude Response.md",
     "Stage 1/Deliverable 2.md",
     "Stage 1/Deliverable 1.md",
