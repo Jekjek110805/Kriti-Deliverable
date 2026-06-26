@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 *.pyo
 config/litellm_key.txt
+config/api_keys.json
 *.env
 .env
 *.log
