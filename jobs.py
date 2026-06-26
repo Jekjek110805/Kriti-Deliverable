@@ -15,7 +15,7 @@ import json
 import os
 from typing import Dict, Any, Optional
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 JOBS_FILE = os.path.join(DATA_DIR, "analysis_jobs.json")
@@ -115,7 +115,7 @@ def update_job(job_id: str, status: str = None, result: dict = None, error: str 
 
 async def run_job_analysis(job_id: str):
     """Run Stage 1A rule-based analysis for a background job and save output files on completion."""
-    from hermes_client import hermes_analyze_stage1a
+    from integrations.hermes_client import hermes_analyze_stage1a
 
     job = _jobs.get(job_id)
     if not job:
@@ -141,7 +141,7 @@ def _save_job_outputs(job_id: str, result: dict):
     import io
     from datetime import datetime
 
-    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base = os.path.dirname(os.path.abspath(__file__))
     reports_dir = os.path.join(base, "reports")
     outputs_dir = os.path.join(base, "outputs")
     os.makedirs(reports_dir, exist_ok=True)

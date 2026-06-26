@@ -1,0 +1,15 @@
+.git/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+*.env
+config/litellm_key.txt
+config/api_keys.json
+data/
+reports/
+outputs/
+docs/
+*.log
+.gitignore

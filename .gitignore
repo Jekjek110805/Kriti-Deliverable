@@ -6,3 +6,9 @@ config/api_keys.json
 *.env
 .env
 *.log
+
+# Ephemeral runtime state (job queue is regenerated on every run)
+data/analysis_jobs.json
+
+# Nested clone of the gitlab testing repo — not part of this deploy repo
+docs/kriti-maai-project-testing/

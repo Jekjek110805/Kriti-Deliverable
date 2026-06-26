@@ -17,7 +17,7 @@ import urllib.error
 
 class LiteLLMClient:
     def __init__(self):
-        self.base_url = os.getenv("LITELLM_BASE_URL", "http://litellm-openrouter:4000")
+        self.base_url = os.getenv("LITELLM_BASE_URL", "")
         self.api_key = self._load_key()
         self.model = os.getenv("LITELLM_MODEL", "fast-model")
 
@@ -38,6 +38,8 @@ class LiteLLMClient:
         return h
 
     def chat(self, messages, temperature=0.3, max_tokens=500):
+        if not self.base_url:
+            return "[LiteLLM not configured: set LITELLM_BASE_URL env var]"
         payload = {
             "model": self.model,
             "messages": messages,

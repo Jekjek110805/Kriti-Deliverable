@@ -34,21 +34,5 @@ def main():
     print(json.dumps(structured_report, indent=2))
     print(f"Structured Stage 1 report saved to {STAGE1_REPORT_PATH}")
 
-@app.get("/stage1/content-calendar.csv")
-def export_content_calendar_csv():
-    report = load_json(STAGE1_REPORT_PATH)
-
-    calendar_items = report.get("content_calendar_export", [])
-
-    exporter = ContentCalendarCSVExportAgent()
-    path = "reports/content_calendar_export.csv"
-
-    exporter.run(calendar_items, path)
-
-    return {
-        "message": "Content calendar CSV exported",
-        "path": path
-    }
-
 if __name__ == "__main__":
     main()
