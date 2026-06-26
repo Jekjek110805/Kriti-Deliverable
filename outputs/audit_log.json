@@ -63,5 +63,93 @@
       "notes": "Approved via governance page",
       "keyword": ""
     }
+  },
+  {
+    "id": 7,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-25T07:32:29.125364",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 8,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-25T07:32:30.068919",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 9,
+    "action": "gate_approved",
+    "resource": "existing_vs_new",
+    "actor": "human",
+    "timestamp": "2026-06-25T07:32:30.839206",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 10,
+    "action": "gate_approved",
+    "resource": "brief_approval",
+    "actor": "human",
+    "timestamp": "2026-06-25T07:32:32.528747",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 11,
+    "action": "gate_approved",
+    "resource": "final_review",
+    "actor": "human",
+    "timestamp": "2026-06-25T07:32:33.502545",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 12,
+    "action": "gate_approved",
+    "resource": "publish_approval",
+    "actor": "human",
+    "timestamp": "2026-06-25T07:32:35.353369",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 13,
+    "action": "gate_approved",
+    "resource": "publish_approval",
+    "actor": "human",
+    "timestamp": "2026-06-25T07:32:38.231254",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 14,
+    "action": "gate_approved",
+    "resource": "final_review",
+    "actor": "human",
+    "timestamp": "2026-06-25T07:32:39.618525",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
   }
 ]

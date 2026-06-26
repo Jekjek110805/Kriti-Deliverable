@@ -6,7 +6,7 @@
     "check_permission": "queue:approve",
     "status": "approved",
     "approved_by": "human",
-    "approved_at": "2026-06-22T02:25:57.268558",
+    "approved_at": "2026-06-25T07:32:30.062915",
     "notes": "Approved via governance page"
   },
   "existing_vs_new": {
@@ -16,7 +16,7 @@
     "check_permission": "queue:approve",
     "status": "approved",
     "approved_by": "human",
-    "approved_at": "2026-06-22T02:25:57.961026",
+    "approved_at": "2026-06-25T07:32:30.832706",
     "notes": "Approved via governance page"
   },
   "brief_approval": {
@@ -26,7 +26,7 @@
     "check_permission": "brief:approve",
     "status": "approved",
     "approved_by": "human",
-    "approved_at": "2026-06-22T02:25:59.030449",
+    "approved_at": "2026-06-25T07:32:32.519087",
     "notes": "Approved via governance page"
   },
   "final_review": {
@@ -36,7 +36,7 @@
     "check_permission": "content:submit",
     "status": "approved",
     "approved_by": "human",
-    "approved_at": "2026-06-22T02:26:00.160824",
+    "approved_at": "2026-06-25T07:32:39.608924",
     "notes": "Approved via governance page"
   },
   "publish_approval": {
@@ -46,7 +46,7 @@
     "check_permission": "publish:execute",
     "status": "approved",
     "approved_by": "human",
-    "approved_at": "2026-06-22T02:26:00.869142",
+    "approved_at": "2026-06-25T07:32:38.223327",
     "notes": "Approved via governance page"
   }
 }
