@@ -1,0 +1,33 @@
+{
+  "keyword": "software development",
+  "intent": "BOFU",
+  "tone": "authoritative",
+  "word_count_target": 1500,
+  "word_count_actual": 51,
+  "sections": [
+    {
+      "type": "tldr",
+      "content": "Key considerations and practical guidance on software development, distilled into actionable insights."
+    },
+    {
+      "type": "h2",
+      "title": "Introduction",
+      "content": "[Software Development \u2014 LLM unavailable for content generation]"
+    },
+    {
+      "type": "h2",
+      "title": "Main Content",
+      "content": "[Software Development \u2014 LLM unavailable for content generation]"
+    },
+    {
+      "type": "cta",
+      "content": "Explore how software development can work for your organisation. Speak with our team to discuss your requirements."
+    }
+  ],
+  "full_content": "TLDR\n\nKey considerations and practical guidance on software development, distilled into actionable insights.\n\nIntroduction\n\n[Software Development \u2014 LLM unavailable for content generation]\n\nMain Content\n\n[Software Development \u2014 LLM unavailable for content generation]\n\nNext Steps\n\nExplore how software development can work for your organisation. Speak with our team to discuss your requirements.\n\n",
+  "status": "draft",
+  "ai_generated": true,
+  "human_edited": false,
+  "created_at": "2026-06-25T08:33:23.500728",
+  "notes": "This draft was written by Hermes (LLM). A human must review, edit, fact-check, and approve before publishing."
+}

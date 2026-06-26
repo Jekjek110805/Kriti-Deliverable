@@ -1,0 +1,84 @@
+{
+  "keyword": "Software Development",
+  "title": "Software Development Guide",
+  "client": "default",
+  "validated_at": "2026-06-25T07:50:20.417100",
+  "overall_status": "fail",
+  "agents": {
+    "seo_gate": {
+      "agent": "SEO Gate",
+      "passed": 3,
+      "total": 9,
+      "score": 33,
+      "status": "fail",
+      "checks": [
+        {
+          "check": "Keyword in title",
+          "pass": true,
+          "detail": "Title: Software Development Guide"
+        },
+        {
+          "check": "Keyword in first paragraph",
+          "pass": false,
+          "detail": "First 500 characters checked"
+        },
+        {
+          "check": "Keyword in at least one H2",
+          "pass": false,
+          "detail": "H2 headings checked"
+        },
+        {
+          "check": "TLDR at top",
+          "pass": true,
+          "detail": "TLDR section should be at the very top"
+        },
+        {
+          "check": "Meta description provided",
+          "pass": false,
+          "detail": "Missing"
+        },
+        {
+          "check": "URL slug provided",
+          "pass": true,
+          "detail": "/Best-Software-Development"
+        },
+        {
+          "check": "Word count >= 1000",
+          "pass": false,
+          "detail": "Current: 121 words"
+        },
+        {
+          "check": "At least 2 internal links",
+          "pass": false,
+          "detail": "Found: 0 links"
+        },
+        {
+          "check": "Images have alt text",
+          "pass": false,
+          "detail": "Images: 0, Alt texts: 0"
+        }
+      ]
+    },
+    "fact_check": {
+      "agent": "Fact Check",
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "message": "No obvious issues detected"
+    },
+    "brand_review": {
+      "agent": "Brand Review",
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "critical_issues": 0,
+      "message": "Brand compliant"
+    }
+  },
+  "summary": {
+    "seo_score": 33,
+    "fact_issues": 0,
+    "brand_issues": 0,
+    "total_issues": 6
+  }
+}
