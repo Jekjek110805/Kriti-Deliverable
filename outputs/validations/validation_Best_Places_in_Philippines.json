@@ -1,0 +1,90 @@
+{
+  "keyword": "Best Places in Philippines",
+  "title": "Best Places in Philippines",
+  "client": "default",
+  "validated_at": "2026-06-25T08:27:31.843363",
+  "overall_status": "fail",
+  "agents": {
+    "seo_gate": {
+      "agent": "SEO Gate",
+      "passed": 4,
+      "total": 9,
+      "score": 44,
+      "status": "fail",
+      "checks": [
+        {
+          "check": "Keyword in title",
+          "pass": true,
+          "detail": "Title: Best Places in Philippines"
+        },
+        {
+          "check": "Keyword in first paragraph",
+          "pass": true,
+          "detail": "First 500 characters checked"
+        },
+        {
+          "check": "Keyword in at least one H2",
+          "pass": false,
+          "detail": "H2 headings checked"
+        },
+        {
+          "check": "TLDR at top",
+          "pass": true,
+          "detail": "TLDR section should be at the very top"
+        },
+        {
+          "check": "Meta description provided",
+          "pass": false,
+          "detail": "Missing"
+        },
+        {
+          "check": "URL slug provided",
+          "pass": true,
+          "detail": "best-places-in-philippines"
+        },
+        {
+          "check": "Word count >= 1000",
+          "pass": false,
+          "detail": "Current: 80 words"
+        },
+        {
+          "check": "At least 2 internal links",
+          "pass": false,
+          "detail": "Found: 0 links"
+        },
+        {
+          "check": "Images have alt text",
+          "pass": false,
+          "detail": "Images: 0, Alt texts: 0"
+        }
+      ]
+    },
+    "fact_check": {
+      "agent": "Fact Check",
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "message": "No obvious issues detected"
+    },
+    "brand_review": {
+      "agent": "Brand Review",
+      "status": "fail",
+      "issues": [
+        {
+          "type": "em_dash",
+          "message": "Em dashes found \u2014 MAAI house style prohibits em dashes",
+          "severity": "high"
+        }
+      ],
+      "issue_count": 1,
+      "critical_issues": 1,
+      "message": "1 style issues found"
+    }
+  },
+  "summary": {
+    "seo_score": 44,
+    "fact_issues": 0,
+    "brand_issues": 1,
+    "total_issues": 6
+  }
+}
