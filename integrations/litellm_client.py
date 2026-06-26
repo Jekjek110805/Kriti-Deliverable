@@ -25,8 +25,8 @@ class LiteLLMClient:
         key = os.getenv("LITELLM_API_KEY", "")
         if key:
             return key
-        key_file = os.getenv("LITELLM_KEY_FILE", "/tmp/kriti-backend/config/litellm_key.txt")
-        if os.path.exists(key_file):
+        key_file = os.getenv("LITELLM_KEY_FILE", "")
+        if key_file and os.path.exists(key_file):
             with open(key_file) as f:
                 return f.read().strip()
         return ""
