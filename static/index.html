@@ -770,7 +770,7 @@
 </div>
 
 <script>
-const BASE = 'http://' + window.location.hostname + ':8000';
+const BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : window.location.origin;
 let opportunities = [];
 let activeJobPoll = null;
 let analysisInProgress = false;
