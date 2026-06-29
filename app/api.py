@@ -14,14 +14,17 @@ import zipfile
 import yaml
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from fastapi import FastAPI, File, UploadFile, Request
+from fastapi import FastAPI, File, UploadFile, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ── App ──────────────────────────────────────────────────────────────────────
 
@@ -737,11 +740,61 @@ async def root_old():
 
 
 @app.post("/api/stage1a/analyze")
-async def analyze_csv(file: UploadFile = File(...)):
-    """Upload GSC CSV → queue Hermes analysis job → return job ID for polling."""
+async def analyze_csv(
+    file: Optional[UploadFile] = File(None),
+    days: int = Form(30),
+    row_limit: int = Form(25000),
+):
+    """Run Stage 1A analysis → queue Hermes job → return job ID for polling.
+
+    Data source selection:
+      • If a CSV/XLSX file is uploaded, that file is always used (CSV path).
+      • If NO file is uploaded and live GSC credentials are configured, the
+        Search Console API is queried for the last ``days`` days.
+      • If live GSC is unavailable or fails, the response explains how to fall
+        back to CSV upload. Existing CSV upload behaviour is unchanged.
+    """
+    source = "csv"
     try:
-        content = await file.read()
-        rows = parse_gsc_upload(content, file.filename or "")
+        rows = None
+
+        # 1. Explicit file upload always wins — preserves existing CSV behaviour.
+        if file is not None and (file.filename or ""):
+            content = await file.read()
+            rows = parse_gsc_upload(content, file.filename or "")
+            source = "csv"
+        else:
+            # 2. No file: try the live Search Console API when configured.
+            client = _get_gsc_client()
+            if client.has_credentials():
+                from integrations.gsc_client import GSCError
+                try:
+                    end_date = datetime.utcnow().date() - timedelta(days=2)  # GSC lags ~2 days
+                    start_date = end_date - timedelta(days=max(int(days), 1) - 1)
+                    rows = client.get_search_analytics(
+                        start_date=start_date,
+                        end_date=end_date,
+                        dimensions=["query", "page"],
+                        row_limit=row_limit,
+                    )
+                    source = "gsc_live"
+                except GSCError as gsc_err:
+                    # 3. API failed → fall back to asking for a CSV upload.
+                    return JSONResponse({
+                        "error": gsc_err.message,
+                        "error_code": gsc_err.code,
+                        "source_attempted": "gsc_live",
+                        "fallback": "Upload a GSC CSV/XLSX export to this endpoint to continue.",
+                        "details": client.status(),
+                    }, status_code=400)
+            else:
+                # 4. No file and no live credentials → instruct CSV fallback.
+                return JSONResponse({
+                    "error": "No file uploaded and live GSC credentials are not configured.",
+                    "error_code": "not_configured",
+                    "fallback": "Upload a GSC CSV/XLSX export, or configure live GSC (see /api/integrations/gsc/status).",
+                }, status_code=400)
+
         if not rows:
             return JSONResponse({
                 "error": "No usable GSC query data found. Upload a CSV with query/clicks/impressions/position columns or a GSC .xlsx export with a Queries sheet."
@@ -756,6 +809,7 @@ async def analyze_csv(file: UploadFile = File(...)):
 
         return JSONResponse({
             "status": "queued",
+            "source": source,
             "job_id": job_id,
             "rows_received": len(rows),
             "message": f"Analysis queued. Poll GET /api/jobs/{job_id} for results.",
@@ -2676,11 +2730,15 @@ async def gsc_integration_status():
     """Check GSC integration status."""
     client = _get_gsc_client()
     connected = client.has_credentials()
+    client_status = client.status()
 
     if connected:
         return {
             "status": "connected",
             "mode": "oauth_service_account",
+            "site_url": client_status.get("site_url"),
+            "service_account_email": client_status.get("service_account_email"),
+            "credentials_file_exists": client_status.get("credentials_file_exists"),
             "capabilities": [
                 "Live query data via Search Console API",
                 "Performance metrics (clicks, impressions, CTR, position)",
@@ -2692,6 +2750,10 @@ async def gsc_integration_status():
     return {
         "status": "not_connected",
         "mode": "csv_upload",
+        "site_url": client_status.get("site_url"),
+        "credentials_path": client_status.get("credentials_path"),
+        "credentials_file_exists": client_status.get("credentials_file_exists"),
+        "service_account_email": client_status.get("service_account_email"),
         "capabilities": [
             "Upload CSV export (works today)",
             "Live query data (requires service account)",
@@ -2723,6 +2785,7 @@ async def configure_gsc(config: GSCConfig):
 
     keys["GSC_API_KEY"] = config.api_key
     keys["GSC_SITE_URL"] = config.site_url
+    keys["GSC_CREDENTIALS_PATH"] = config.credentials_path
 
     os.makedirs(os.path.dirname(keys_path), exist_ok=True)
     with open(keys_path, "w") as f:
@@ -2746,12 +2809,33 @@ async def validate_gsc():
         return JSONResponse({
             "valid": False,
             "error": "GSC not configured",
+            "details": client.status(),
+            "setup_instructions": client.setup_instructions(),
         }, status_code=400)
 
-    data = client.get_performance_data(days=7, row_limit=5)
-    if data is not None:
-        return {"valid": True, "test_rows": len(data), "message": "Connection successful"}
-    return {"valid": False, "error": "Could not fetch data. Check API key and site URL."}
+    from integrations.gsc_client import GSCError
+    try:
+        data = client.get_performance_data(days=7, row_limit=5)
+    except GSCError as e:
+        return JSONResponse({
+            "valid": False,
+            "error": e.message,
+            "error_code": e.code,
+            "details": client.status(),
+        }, status_code=400)
+    except Exception as e:
+        return JSONResponse({
+            "valid": False,
+            "error": str(e),
+            "error_code": "api_error",
+            "details": client.status(),
+        }, status_code=400)
+    return {
+        "valid": True,
+        "test_rows": len(data or []),
+        "site_url": client.site_url,
+        "message": "Connection successful",
+    }
 
 
 @app.post("/api/integrations/gsc/pull")
@@ -2762,23 +2846,48 @@ async def pull_gsc_data(request: Request):
         return JSONResponse({
             "error": "GSC not configured",
             "endpoint": "/api/integrations/gsc/configure",
+            "details": client.status(),
+            "setup_instructions": client.setup_instructions(),
         }, status_code=400)
 
     body = await request.json() if request.headers.get("content-length", "0") != "0" else {}
     days = body.get("days", 30)
     row_limit = body.get("row_limit", 250)
 
-    data = client.get_performance_data(days=days, row_limit=row_limit)
+    from integrations.gsc_client import GSCError
+    try:
+        data = client.get_performance_data(days=days, row_limit=row_limit)
+    except GSCError as e:
+        return JSONResponse({
+            "status": "error",
+            "message": e.message,
+            "error_code": e.code,
+            "details": client.status(),
+        }, status_code=400)
+    except Exception as e:
+        return JSONResponse({
+            "status": "error",
+            "message": str(e),
+            "error_code": "api_error",
+            "details": client.status(),
+        }, status_code=400)
+
     if data is not None:
+        from jobs import create_job, run_job_analysis
+        job_id = create_job(data)
+        asyncio.create_task(run_job_analysis(job_id))
         return {
-            "status": "live_data",
-            "rows": len(data),
-            "data": data,
+            "status": "queued",
+            "source": "gsc_live",
+            "job_id": job_id,
+            "rows_received": len(data),
+            "site_url": client.site_url,
+            "message": f"Pulled {len(data)} live GSC rows. Poll GET /api/jobs/{job_id} for results.",
         }
 
     return {
         "status": "error",
-        "message": "Failed to fetch from GSC API. Check credentials.",
+        "message": "Failed to fetch from GSC API. Check credentials and site URL.",
     }
 
 

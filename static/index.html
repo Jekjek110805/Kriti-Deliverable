@@ -383,7 +383,7 @@
     <!-- PAGE: DISCOVER -->
     <div id="page-discover" class="page active">
       <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Discover Opportunities</h1>
-      <p style="color:var(--text-muted);margin-bottom:24px;">Upload a GSC CSV or XLSX export to find existing-page SEO opportunities.</p>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Upload a GSC CSV or pull live Search Console data to find existing-page SEO opportunities.</p>
 
       <div class="card upload-beam-card" id="upload-card">
         <div class="card-title">Upload GSC Export</div>
@@ -393,6 +393,10 @@
           <div class="upload-hint">Expected query data: query, clicks, impressions, position</div>
         </div>
         <input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="handleFile(this)">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
+          <button class="btn btn-primary" onclick="runLiveGSC()">Pull live GSC</button>
+          <button class="btn btn-secondary" onclick="showPage('integrations')">Configure GSC</button>
+        </div>
       </div>
 
       <div class="loading" id="loading">
@@ -411,6 +415,7 @@
             <div class="results-actions">
               <button class="btn btn-sm btn-secondary" onclick="resetDiscoverUpload()">Cancel</button>
               <button class="btn btn-sm btn-primary" onclick="uploadAnotherFile()">Upload another file</button>
+              <button class="btn btn-sm btn-primary" onclick="runLiveGSC()">Pull live GSC</button>
             </div>
           </div>
           <div id="oppsTable"></div>
@@ -925,6 +930,46 @@ function handleFile(input) {
       document.getElementById('loading').classList.remove('active');
       resetDiscoverUpload();
       alert('Error: ' + err);
+    });
+}
+
+function runLiveGSC(days = 30, rowLimit = 500) {
+  if (analysisInProgress || hasVisibleResults()) {
+    alert('Please cancel the current results before pulling live GSC data.');
+    return;
+  }
+
+  analysisInProgress = true;
+  setUploadCardVisible(false);
+  document.getElementById('loading').classList.add('active');
+  document.getElementById('results-section').classList.add('hidden');
+
+  fetch(BASE + '/api/integrations/gsc/pull', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ days, row_limit: rowLimit })
+  })
+    .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+    .then(({ ok, data }) => {
+      document.getElementById('loading').classList.remove('active');
+      if (!ok || data.error || data.status === 'error') {
+        alert('GSC pull failed: ' + (data.error || data.message || 'Check GSC configuration.'));
+        resetDiscoverUpload();
+        return;
+      }
+
+      if (data.status === 'queued' && data.job_id) {
+        showQueuedStatus(data);
+        pollJob(data.job_id);
+      } else {
+        alert('No live GSC analysis job was returned.');
+        resetDiscoverUpload();
+      }
+    })
+    .catch(err => {
+      document.getElementById('loading').classList.remove('active');
+      resetDiscoverUpload();
+      alert('GSC pull failed: ' + err);
     });
 }
 
@@ -1746,7 +1791,7 @@ function loadIntegrations() {
         const el = document.getElementById('int-status-' + int.id);
         if (el) {
           const status = d.status || 'unknown';
-          const color = status === 'configured' ? 'var(--green)' : status === 'mock' ? 'var(--yellow)' : 'var(--text-muted)';
+          const color = (status === 'configured' || status === 'connected') ? 'var(--green)' : status === 'mock' ? 'var(--yellow)' : 'var(--text-muted)';
           el.innerHTML = `<span style="color:${color};">● ${status}</span>`;
         }
       })
@@ -1789,6 +1834,7 @@ function showGSCConfig(int) {
         html += `<div class="alert alert-success">✓ Connected — Live data is being pulled from GSC.</div>`;
         html += `<div style="display:flex;gap:10px;">`;
         html += `<button class="btn btn-primary" onclick="validateGSC()">Test Connection</button>`;
+        html += `<button class="btn btn-primary" onclick="showPage('discover'); runLiveGSC();">Pull Live Data</button>`;
         html += `<button class="btn btn-danger" onclick="disconnectGSC()">Disconnect</button>`;
         html += `</div>`;
         html += `<div id="gsc-config-result" style="margin-top:16px;"></div>`;
@@ -1801,6 +1847,11 @@ function showGSCConfig(int) {
         html += `<div style="background:var(--surface2);border-radius:var(--radius-md);padding:16px;margin-bottom:16px;">`;
         html += `<strong style="font-size:13px;color:var(--text);">Option 2: Live Data (requires setup)</strong>`;
         html += `<p style="font-size:12px;color:var(--text-muted);margin-top:6px;margin-bottom:10px;">Search Console API requires a Service Account. API keys alone do NOT work.</p>`;
+        html += `<div style="display:grid;gap:10px;margin-bottom:12px;">`;
+        html += `<div><label>Verified GSC property</label><input type="text" id="gscSiteUrl" placeholder="https://example.com/ or sc-domain:example.com" value="${escapeHtml(d.site_url || '')}"></div>`;
+        html += `<div><label>Service account JSON path</label><input type="text" id="gscCredentialsPath" placeholder="config/gsc_credentials.json" value="${escapeHtml(d.credentials_path || 'config/gsc_credentials.json')}"></div>`;
+        html += `<button class="btn btn-primary" onclick="saveGSCConfig()">Save GSC Config</button>`;
+        html += `</div>`;
         html += `<ol style="font-size:12px;color:var(--text-muted);padding-left:20px;margin:0;">`;
         html += `<li>Go to console.google.com → APIs & Services → Library</li>`;
         html += `<li>Search 'Search Console API' → Enable</li>`;
@@ -1816,6 +1867,39 @@ function showGSCConfig(int) {
       html += `<button class="btn btn-secondary" style="margin-top:16px;" onclick="loadIntegrations()">← Back</button></div>`;
       document.getElementById('integrations-grid').innerHTML = html;
     });
+}
+
+async function saveGSCConfig() {
+  const resultEl = document.getElementById('gsc-config-result');
+  const siteUrl = document.getElementById('gscSiteUrl')?.value.trim() || '';
+  const credentialsPath = document.getElementById('gscCredentialsPath')?.value.trim() || '';
+
+  if (!siteUrl || !credentialsPath) {
+    resultEl.innerHTML = '<div class="alert alert-error">Enter the verified property and credential path.</div>';
+    return;
+  }
+
+  resultEl.innerHTML = '<div class="alert alert-info">Saving GSC configuration...</div>';
+  try {
+    const res = await fetch(BASE + '/api/integrations/gsc/configure', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        site_url: siteUrl,
+        credentials_path: credentialsPath,
+        api_key: ''
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      resultEl.innerHTML = `<div class="alert alert-error">${escapeHtml(data.error || 'Could not save GSC config.')}</div>`;
+      return;
+    }
+    resultEl.innerHTML = '<div class="alert alert-success">GSC configuration saved. Test the connection next.</div>';
+    setTimeout(() => showGSCConfig(INTEGRATIONS.find(i => i.id === 'gsc')), 900);
+  } catch (e) {
+    resultEl.innerHTML = '<div class="alert alert-error">Could not save GSC config.</div>';
+  }
 }
 
 async function validateGSC() {
