@@ -12,11 +12,14 @@ Stage 1B additions:
 """
 import json
 import os
+import re
 from typing import Any, Dict, List
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUTS_DIR = os.path.join(BASE_DIR, "outputs")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
+DATA_DIR = os.path.join(os.path.dirname(BASE_DIR), "data")
+EXISTING_PAGES_FILE = os.path.join(DATA_DIR, "existing_pages.json")
 
 
 # ── Intent classification ────────────────────────────────────────────────────
@@ -228,6 +231,92 @@ def build_reason(keyword: str, page: str, position: int, impressions: int,
     return ". ".join(parts) + "."
 
 
+# ── Landing page suggestion & matching (deterministic) ──────────────────────
+
+# Common URL stop-words stripped from generated slugs so paths stay clean.
+_SLUG_STOPWORDS = {"a", "an", "the", "for", "to", "of", "and", "in", "on", "is"}
+
+
+def slugify(text: str) -> str:
+    """Deterministic kebab-case slug for a keyword (no AI, fully predictable)."""
+    words = re.sub(r"[^a-z0-9\s-]", "", (text or "").lower()).split()
+    words = [w for w in words if w not in _SLUG_STOPWORDS] or words
+    slug = "-".join(words)
+    slug = re.sub(r"-{2,}", "-", slug).strip("-")
+    return slug or "page"
+
+
+def load_existing_pages() -> List[Dict]:
+    """Load the known site pages used to match keywords to real landing pages."""
+    try:
+        with open(EXISTING_PAGES_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def suggest_landing_page(keyword: str, intent: str, content_type: str) -> str:
+    """Deterministically suggest an ideal landing-page path for a keyword.
+
+    Section is chosen from intent / content type — no LLM involved:
+      • Blog content        → /blog/<slug>
+      • BOFU (commercial)   → /solutions/<slug>
+      • everything else     → /services/<slug>
+    """
+    slug = slugify(keyword)
+    if "Blog" in (content_type or ""):
+        return f"/blog/{slug}"
+    if intent == "BOFU":
+        return f"/solutions/{slug}"
+    return f"/services/{slug}"
+
+
+def match_existing_page(keyword: str, gsc_page: str, existing_pages: List[Dict]) -> str:
+    """Return the existing landing page that best matches this keyword, or "".
+
+    Match priority (deterministic):
+      1. The page GSC already ranks for this query (the export's Page column).
+      2. A known site page whose ranking_keywords contains the keyword.
+      3. A known site page whose URL slug contains the keyword slug.
+    """
+    if gsc_page and gsc_page.strip():
+        return gsc_page.strip()
+
+    kw = (keyword or "").lower().strip()
+    for page in existing_pages:
+        ranking = [str(k).lower().strip() for k in page.get("ranking_keywords", [])]
+        if kw in ranking:
+            return page.get("url", "")
+
+    kw_slug = slugify(keyword)
+    for page in existing_pages:
+        url = page.get("url", "")
+        if kw_slug and kw_slug in slugify(url):
+            return url
+    return ""
+
+
+def resolve_landing_page(keyword: str, gsc_page: str, intent: str,
+                         content_type: str, existing_pages: List[Dict]) -> Dict[str, str]:
+    """Combine suggestion + matching into the final landing-page decision."""
+    suggested = suggest_landing_page(keyword, intent, content_type)
+    matched = match_existing_page(keyword, gsc_page, existing_pages)
+    if matched:
+        return {
+            "landing_page": matched,
+            "landing_page_type": "existing",
+            "suggested_landing_page": suggested,
+            "matched_existing_page": matched,
+        }
+    return {
+        "landing_page": suggested,
+        "landing_page_type": "suggested_new",
+        "suggested_landing_page": suggested,
+        "matched_existing_page": "",
+    }
+
+
 # ── Main analysis ────────────────────────────────────────────────────────────
 
 def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
@@ -238,6 +327,7 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
     total_rows = len(rows)
     opportunities = []
     excluded = []
+    existing_pages = load_existing_pages()
 
     for row in rows:
         keyword = (row.get("query") or row.get("Query") or row.get("keyword") or "").strip()
@@ -304,10 +394,16 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
 
         ctr_display = f"{ctr_val:.1f}%"
 
+        landing = resolve_landing_page(keyword, page, intent, content_type, existing_pages)
+
         opportunities.append({
             "priority": priority,
             "keyword": keyword,
-            "page": page,
+            "page": page,  # raw GSC ranking URL (kept for backward compatibility)
+            "landing_page": landing["landing_page"],
+            "landing_page_type": landing["landing_page_type"],
+            "suggested_landing_page": landing["suggested_landing_page"],
+            "matched_existing_page": landing["matched_existing_page"],
             "position": position,
             "impressions": impressions,
             "clicks": clicks,
@@ -315,6 +411,7 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
             "intent": intent,
             "commercial_potential": commercial,
             "score": total_score,
+            "opportunity_score": total_score,  # alias per Stage 1 spec
             "recommendation": recommendation,
             "content_type": content_type,
             "confidence": confidence,

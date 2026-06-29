@@ -1126,7 +1126,7 @@ function renderResults(d) {
             <th>#</th>
             <th>Priority</th>
             <th>Keyword</th>
-            <th>Existing Page</th>
+            <th>Landing Page</th>
             <th>Pos</th>
             <th>Imp</th>
             <th>Intent</th>
@@ -1139,11 +1139,19 @@ function renderResults(d) {
         </thead>
         <tbody>
           ${rows.map((o, i) => {
-            const page = o.page || '';
-            const pageIsLink = /^(https?:\/\/|\/)/i.test(page);
-            const pageCell = page && pageIsLink
-              ? `<a href="${escapeHtml(page)}" target="_blank" rel="noopener">${escapeHtml(page)}</a>`
-              : `<span style="color:var(--text-muted);">${escapeHtml(page || '—')}</span>`;
+            const landingPage = o.landing_page || o.page || '';
+            const lpType = o.landing_page_type || '';
+            const lpIsExternal = /^https?:\/\//i.test(landingPage);
+            const lpInner = landingPage && lpIsExternal
+              ? `<a href="${escapeHtml(landingPage)}" target="_blank" rel="noopener">${escapeHtml(landingPage)}</a>`
+              : `<span>${escapeHtml(landingPage || '—')}</span>`;
+            const lpBadge = lpType === 'existing'
+              ? `<span style="font-size:9px;padding:2px 7px;margin-left:6px;border-radius:4px;background:rgba(45,212,191,0.12);color:#2DD4BF;">existing</span>`
+              : lpType === 'suggested_new'
+                ? `<span style="font-size:9px;padding:2px 7px;margin-left:6px;border-radius:4px;background:rgba(124,92,255,0.1);color:var(--accent);">suggested</span>`
+                : '';
+            const pageCell = `${lpInner}${lpBadge}`;
+            const page = landingPage;
             const gapLabel = o.is_gap ? `<span class="badge badge-gap" style="font-size:9px;padding:2px 7px;margin-left:4px;">GAP</span>` : '';
             const ctLabel = o.content_type ? `<span class="badge badge-${contentTypeBadge(o.content_type)}">${escapeHtml(o.content_type)}</span>` : '—';
             const confVal = o.confidence != null ? o.confidence : '—';
