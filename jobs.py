@@ -166,6 +166,7 @@ def _save_job_outputs(job_id: str, result: dict):
                 "priority": o["priority"],
                 "keyword": o["keyword"],
                 "landing_page": o.get("landing_page", o.get("page", "")),
+                "landing_page_url": o.get("landing_page_url", ""),
                 "landing_page_type": o.get("landing_page_type", ""),
                 "existing_page": o.get("page", ""),
                 "position": o["position"],

@@ -1141,9 +1141,9 @@ function renderResults(d) {
           ${rows.map((o, i) => {
             const landingPage = o.landing_page || o.page || '';
             const lpType = o.landing_page_type || '';
-            const lpIsExternal = /^https?:\/\//i.test(landingPage);
-            const lpInner = landingPage && lpIsExternal
-              ? `<a href="${escapeHtml(landingPage)}" target="_blank" rel="noopener">${escapeHtml(landingPage)}</a>`
+            const lpUrl = o.landing_page_url || (/^https?:\/\//i.test(landingPage) ? landingPage : '');
+            const lpInner = lpUrl
+              ? `<a href="${escapeHtml(lpUrl)}" target="_blank" rel="noopener">${escapeHtml(landingPage)}</a>`
               : `<span>${escapeHtml(landingPage || '—')}</span>`;
             const lpBadge = lpType === 'existing'
               ? `<span style="font-size:9px;padding:2px 7px;margin-left:6px;border-radius:4px;background:rgba(45,212,191,0.12);color:#2DD4BF;">existing</span>`

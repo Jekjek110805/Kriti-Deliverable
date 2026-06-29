@@ -246,6 +246,37 @@ def slugify(text: str) -> str:
     return slug or "page"
 
 
+def _site_base_url() -> str:
+    """Best-effort absolute site origin for resolving relative landing pages.
+
+    Reads the configured GSC property and normalises it to an https origin:
+      https://example.com/      -> https://example.com
+      sc-domain:example.com     -> https://example.com
+    Returns "" when no property is configured (relative paths stay relative).
+    """
+    try:
+        from integrations.gsc_client import GSCClient
+        raw = (GSCClient().site_url or "").strip()
+    except Exception:
+        raw = ""
+    if not raw:
+        return ""
+    if raw.startswith("sc-domain:"):
+        return "https://" + raw[len("sc-domain:"):].strip().strip("/")
+    return raw.rstrip("/")
+
+
+def absolutize(path_or_url: str, base: str) -> str:
+    """Turn a page path into a clickable absolute URL when possible."""
+    if not path_or_url:
+        return ""
+    if re.match(r"^https?://", path_or_url, re.IGNORECASE):
+        return path_or_url
+    if not base:
+        return ""  # cannot build an absolute URL without a site domain
+    return base.rstrip("/") + "/" + path_or_url.lstrip("/")
+
+
 def load_existing_pages() -> List[Dict]:
     """Load the known site pages used to match keywords to real landing pages."""
     try:
@@ -298,19 +329,27 @@ def match_existing_page(keyword: str, gsc_page: str, existing_pages: List[Dict])
 
 
 def resolve_landing_page(keyword: str, gsc_page: str, intent: str,
-                         content_type: str, existing_pages: List[Dict]) -> Dict[str, str]:
-    """Combine suggestion + matching into the final landing-page decision."""
+                         content_type: str, existing_pages: List[Dict],
+                         base_url: str = "") -> Dict[str, str]:
+    """Combine suggestion + matching into the final landing-page decision.
+
+    ``landing_page``     human-readable path/URL of the chosen page.
+    ``landing_page_url`` absolute, clickable URL (resolved against base_url for
+                          relative paths); "" when it cannot be made absolute.
+    """
     suggested = suggest_landing_page(keyword, intent, content_type)
     matched = match_existing_page(keyword, gsc_page, existing_pages)
     if matched:
         return {
             "landing_page": matched,
+            "landing_page_url": absolutize(matched, base_url),
             "landing_page_type": "existing",
             "suggested_landing_page": suggested,
             "matched_existing_page": matched,
         }
     return {
         "landing_page": suggested,
+        "landing_page_url": absolutize(suggested, base_url),
         "landing_page_type": "suggested_new",
         "suggested_landing_page": suggested,
         "matched_existing_page": "",
@@ -328,6 +367,7 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
     opportunities = []
     excluded = []
     existing_pages = load_existing_pages()
+    site_base = _site_base_url()
 
     for row in rows:
         keyword = (row.get("query") or row.get("Query") or row.get("keyword") or "").strip()
@@ -394,13 +434,15 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
 
         ctr_display = f"{ctr_val:.1f}%"
 
-        landing = resolve_landing_page(keyword, page, intent, content_type, existing_pages)
+        landing = resolve_landing_page(keyword, page, intent, content_type,
+                                       existing_pages, site_base)
 
         opportunities.append({
             "priority": priority,
             "keyword": keyword,
             "page": page,  # raw GSC ranking URL (kept for backward compatibility)
             "landing_page": landing["landing_page"],
+            "landing_page_url": landing["landing_page_url"],
             "landing_page_type": landing["landing_page_type"],
             "suggested_landing_page": landing["suggested_landing_page"],
             "matched_existing_page": landing["matched_existing_page"],
