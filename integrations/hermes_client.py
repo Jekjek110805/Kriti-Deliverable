@@ -356,135 +356,6 @@ def resolve_landing_page(keyword: str, gsc_page: str, intent: str,
     }
 
 
-# ── owl-alpha (LLM) analysis layer — optional, deterministic is the fallback ──
-
-_ALLOWED_RECS = {"No Change", "Improve Existing", "Expand Existing", "Create New Content"}
-_ALLOWED_INTENT = {"BOFU", "MOFU", "TOFU"}
-_ALLOWED_COMMERCIAL = {"High", "Medium", "Low"}
-
-_HERMES_SYSTEM_PROMPT = (
-    "You are Hermes, an SEO analyst for Stage 1A existing-page opportunity "
-    "analysis. You judge whether a client's page ranking for a keyword should "
-    "be optimized, expanded, left unchanged, or whether new content is needed. "
-    "You never invent external URLs. Respond ONLY with a JSON object."
-)
-
-_llm_singleton = None
-
-
-def _llm_client():
-    global _llm_singleton
-    if _llm_singleton is None:
-        from integrations.openrouter_client import OpenRouterClient
-        _llm_singleton = OpenRouterClient()
-    return _llm_singleton
-
-
-def _llm_active() -> bool:
-    """LLM analysis runs when HERMES_MODE allows it AND OpenRouter is configured."""
-    mode = os.getenv("HERMES_MODE", "auto").strip().lower()
-    if mode == "deterministic":
-        return False
-    try:
-        return _llm_client().is_configured()
-    except Exception:
-        return False
-
-
-def _llm_cap() -> int:
-    try:
-        return max(0, int(os.getenv("OPENROUTER_MAX_ENRICH", "40")))
-    except ValueError:
-        return 40
-
-
-def llm_analyze_opportunity(client, opp: Dict, base_url: str):
-    """Ask owl-alpha to (re)analyze one opportunity. Returns override dict or None.
-
-    Returns None on any error or invalid output so the caller keeps the
-    deterministic result (fallback). Never raises.
-    """
-    from integrations.openrouter_client import OpenRouterError
-
-    existing_page = opp.get("matched_existing_page") or opp.get("page") or ""
-    user_prompt = (
-        "Analyze this Google Search Console keyword/page opportunity and return JSON.\n\n"
-        f"keyword: {opp.get('keyword','')}\n"
-        f"existing_page: {existing_page or '(none — no client page ranks yet)'}\n"
-        f"position: {opp.get('position')}\n"
-        f"impressions: {opp.get('impressions')}\n"
-        f"clicks: {opp.get('clicks')}\n"
-        f"ctr: {opp.get('ctr')}\n\n"
-        "Return a JSON object with EXACTLY these keys:\n"
-        '{"score": <int 0-100>, "recommendation": <one of '
-        '"No Change","Improve Existing","Expand Existing","Create New Content">, '
-        '"intent": <"BOFU"|"MOFU"|"TOFU">, '
-        '"commercial_potential": <"High"|"Medium"|"Low">, '
-        '"reason": <1-2 sentence justification>, '
-        '"suggested_title": <page title if creating/improving>, '
-        '"suggested_slug": <a URL path on the CLIENT\'S OWN site, e.g. /services/foo, '
-        'ONLY when no existing_page; never an external URL>}\n'
-        "Do not include any text outside the JSON object."
-    )
-    try:
-        data = client.chat_json(
-            [
-                {"role": "system", "content": _HERMES_SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.2,
-            max_tokens=500,
-        )
-    except OpenRouterError:
-        return None
-    except Exception:
-        return None
-
-    rec = str(data.get("recommendation", "")).strip()
-    if rec not in _ALLOWED_RECS:
-        return None
-    try:
-        score = int(round(float(data.get("score"))))
-    except (TypeError, ValueError):
-        return None
-    score = min(max(score, 0), 100)
-
-    intent = str(data.get("intent", "")).strip().upper()
-    if intent not in _ALLOWED_INTENT:
-        intent = opp.get("intent", "MOFU")
-    commercial = str(data.get("commercial_potential", "")).strip().title()
-    if commercial not in _ALLOWED_COMMERCIAL:
-        commercial = opp.get("commercial_potential", "Medium")
-    reason = str(data.get("reason", "")).strip() or opp.get("reason", "")
-
-    content_type = classify_content_type(opp.get("keyword", ""), existing_page, rec, intent)
-    overrides = {
-        "score": score,
-        "opportunity_score": score,
-        "priority": compute_priority(score),
-        "recommendation": rec,
-        "intent": intent,
-        "commercial_potential": commercial,
-        "reason": reason,
-        "content_type": content_type,
-    }
-
-    # Only let the LLM propose a path when there is no real existing page.
-    if opp.get("landing_page_type") == "suggested_new":
-        slug = str(data.get("suggested_slug", "")).strip()
-        # Reject anything that looks like an external URL — guard against hallucinated domains.
-        if slug and not re.match(r"^https?://", slug, re.IGNORECASE):
-            if not slug.startswith("/"):
-                slug = "/" + slug.lstrip("/")
-            overrides["landing_page"] = slug
-            overrides["suggested_landing_page"] = slug
-            overrides["landing_page_url"] = absolutize(slug, base_url)
-    title = str(data.get("suggested_title", "")).strip()
-    if title:
-        overrides["suggested_title"] = title
-    return overrides
-
-
 # ── Main analysis ────────────────────────────────────────────────────────────
 
 def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
@@ -600,34 +471,6 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
     opportunities = list(seen.values())
     opportunities.sort(key=lambda o: o["score"], reverse=True)
 
-    # ── owl-alpha layer: primary analyzer, deterministic stays the fallback ──
-    engine_used = "deterministic"
-    llm_stats = {"analyzed": 0, "failed": 0, "capped": 0}
-    if _llm_active():
-        client = _llm_client()
-        cap = _llm_cap()
-        for idx, opp in enumerate(opportunities):
-            if idx >= cap:
-                opp["analysis_engine"] = "deterministic"
-                llm_stats["capped"] += 1
-                continue
-            overrides = llm_analyze_opportunity(client, opp, site_base)
-            if overrides:
-                opp.update(overrides)
-                opp["analysis_engine"] = client.model
-                llm_stats["analyzed"] += 1
-            else:
-                opp["analysis_engine"] = "deterministic"
-                llm_stats["failed"] += 1
-        opportunities.sort(key=lambda o: o["score"], reverse=True)
-        if llm_stats["analyzed"] and (llm_stats["failed"] or llm_stats["capped"]):
-            engine_used = "mixed"
-        elif llm_stats["analyzed"]:
-            engine_used = client.model
-    else:
-        for opp in opportunities:
-            opp["analysis_engine"] = "deterministic"
-
     no_change = sum(1 for o in opportunities if o["recommendation"] == "No Change")
     improve = sum(1 for o in opportunities if o["recommendation"] in ("Improve Existing", "Expand Existing"))
     create_new = sum(1 for o in opportunities if o["recommendation"] == "Create New Content")
@@ -645,10 +488,6 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
             "improve_existing": improve,
             "create_new": create_new,
             "gap_keywords": gap_count,
-            "analysis_engine": engine_used,
-            "llm_analyzed": llm_stats["analyzed"],
-            "llm_failed": llm_stats["failed"],
-            "llm_capped": llm_stats["capped"],
         },
         "outputs": {
             "csv_file": "outputs/stage_1a_existing_page_opportunities.csv",
