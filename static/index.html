@@ -165,19 +165,19 @@
   tr:hover td { background: var(--accent-subtle); }
   tr:last-child td { border-bottom: none; }
   td .badge, td .btn { display: inline-flex; align-items: center; }
-  .opportunities-table { min-width: 1240px; }
+  .opportunities-table { min-width: 1400px; }
   .opportunities-table th:nth-child(1), .opportunities-table td:nth-child(1) { width: 42px; text-align: center; }
-  /* numeric columns: Pos(5) Imp(6) Clicks(7) CTR(8) Score(10) */
+  /* numeric columns: Pos(5) Imp(6) Clicks(7) CTR(8) Score(11) */
   .opportunities-table th:nth-child(5), .opportunities-table td:nth-child(5),
   .opportunities-table th:nth-child(6), .opportunities-table td:nth-child(6),
   .opportunities-table th:nth-child(7), .opportunities-table td:nth-child(7),
   .opportunities-table th:nth-child(8), .opportunities-table td:nth-child(8),
-  .opportunities-table th:nth-child(10), .opportunities-table td:nth-child(10) { text-align: right; font-variant-numeric: tabular-nums; }
-  /* Recommendation(11) */
-  .opportunities-table th:nth-child(11), .opportunities-table td:nth-child(11) { text-align: left; font-weight: 400; color: var(--text-secondary); }
-  /* Content Type(12) */
-  .opportunities-table th:nth-child(12), .opportunities-table td:nth-child(12) { text-align: center; font-weight: 800; color: var(--accent); }
-  .opportunities-table th:last-child, .opportunities-table td:last-child { text-align: right; }
+  .opportunities-table th:nth-child(11), .opportunities-table td:nth-child(11) { text-align: right; font-variant-numeric: tabular-nums; }
+  /* Content Type(13) */
+  .opportunities-table th:nth-child(13), .opportunities-table td:nth-child(13) { text-align: center; }
+  /* Reason (last) — truncated, click opens detail */
+  .opp-reason-cell { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; color: var(--text-secondary); }
+  .opp-reason-cell:hover { color: var(--text); text-decoration: underline; }
   .opp-keyword-cell { min-width: 220px; color: var(--text); font-weight: 700; }
   .opp-page-cell { max-width: 300px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .opp-page-cell a { color: var(--text-muted); text-decoration: none; }
@@ -1108,19 +1108,21 @@ function renderResults(d) {
   opportunities = rows;
 
   const opportunitiesFound = d.opportunities_found ?? d.summary?.opportunities_found ?? rows.length;
-  const noChange = d.summary?.no_change ?? rows.filter(o => o.recommendation === 'No Change').length;
-  const improve = d.summary?.improve_existing ?? rows.filter(o => o.recommendation === 'Improve Existing' || o.recommendation === 'Expand Existing').length;
-  const createNew = d.summary?.create_new ?? rows.filter(o => o.recommendation === 'Create New Content').length;
-  const gapCount = d.summary?.gap_keywords ?? rows.filter(o => o.is_gap).length;
-  const excludedCount = Array.isArray(d.excluded) ? d.excluded.length : (d.excluded ?? 0);
+  const critical = rows.filter(o => o.priority === 'Critical').length;
+  const high = rows.filter(o => o.priority === 'High').length;
+  const noChange = rows.filter(o => o.recommendation === 'No Change').length;
+  const improveExisting = rows.filter(o => o.recommendation === 'Improve Existing').length;
+  const expandExisting = rows.filter(o => o.recommendation === 'Expand Existing').length;
+  const createNew = rows.filter(o => o.recommendation === 'Create New Content').length;
 
   document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-card"><div class="stat-value">${opportunitiesFound}</div><div class="stat-label">Total Found</div></div>
+    <div class="stat-card"><div class="stat-value">${opportunitiesFound}</div><div class="stat-label">Total Opportunities</div></div>
+    <div class="stat-card"><div class="stat-value stat-critical">${critical}</div><div class="stat-label">Critical</div></div>
+    <div class="stat-card"><div class="stat-value stat-high">${high}</div><div class="stat-label">High</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--green)">${improveExisting}</div><div class="stat-label">Improve Existing</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--yellow)">${expandExisting}</div><div class="stat-label">Expand Existing</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--crimson)">${createNew}</div><div class="stat-label">Create New</div></div>
     <div class="stat-card"><div class="stat-value" style="color:#2DD4BF">${noChange}</div><div class="stat-label">No Change</div></div>
-    <div class="stat-card"><div class="stat-value stat-high">${improve}</div><div class="stat-label">Improve Existing</div></div>
-    <div class="stat-card"><div class="stat-value stat-critical">${createNew}</div><div class="stat-label">Create New</div></div>
-    <div class="stat-card"><div class="stat-value" style="color:var(--accent)">${gapCount}</div><div class="stat-label">Gap Keywords</div></div>
-    <div class="stat-card"><div class="stat-value" style="color:var(--text-muted)">${excludedCount}</div><div class="stat-label">Excluded</div></div>
   `;
 
   const list = document.getElementById('oppsTable');
@@ -1143,11 +1145,12 @@ function renderResults(d) {
             <th>Clicks</th>
             <th>CTR</th>
             <th>Intent</th>
+            <th>Commercial</th>
             <th>Score</th>
             <th>Recommendation</th>
             <th>Content Type</th>
             <th>Confidence</th>
-            <th>Next Action</th>
+            <th>Reason</th>
           </tr>
         </thead>
         <tbody>
@@ -1169,6 +1172,9 @@ function renderResults(d) {
             const ctLabel = o.content_type ? `<span class="badge badge-${contentTypeBadge(o.content_type)}">${escapeHtml(o.content_type)}</span>` : '—';
             const confVal = o.confidence != null ? o.confidence : '—';
             const confColor = o.confidence >= 85 ? 'var(--green)' : o.confidence >= 70 ? 'var(--yellow)' : 'var(--text-muted)';
+            const commercial = o.commercial_potential || '—';
+            const commColor = commercial === 'High' ? 'var(--green)' : commercial === 'Medium' ? 'var(--yellow)' : 'var(--text-muted)';
+            const reasonText = o.reason || '';
             return `
               <tr>
                 <td>${i + 1}</td>
@@ -1180,11 +1186,12 @@ function renderResults(d) {
                 <td>${formatNumber(o.clicks)}</td>
                 <td>${(o.ctr != null && o.ctr !== '') ? escapeHtml(String(o.ctr)) : '—'}</td>
                 <td><span class="badge badge-${safeBadgeClass(o.intent)}">${escapeHtml(o.intent || 'MOFU')}</span></td>
+                <td style="color:${commColor};font-weight:600;">${escapeHtml(commercial)}</td>
                 <td>${scoreValue(o)}</td>
                 <td><span class="badge badge-${recommendationBadge(o.recommendation)}">${escapeHtml(recommendationLabel(o.recommendation))}</span></td>
                 <td>${ctLabel}</td>
                 <td style="color:${confColor};font-weight:700;">${confVal !== '—' ? confVal + '%' : '—'}</td>
-                <td><button class="btn btn-sm btn-secondary" onclick="showReasonModal(${i})">Review</button></td>
+                <td class="opp-reason-cell" title="${escapeHtml(reasonText)}" onclick="showReasonModal(${i})">${escapeHtml(reasonText || '—')}</td>
               </tr>
             `;
           }).join('')}
