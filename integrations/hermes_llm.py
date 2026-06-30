@@ -8,7 +8,8 @@ import subprocess
 import os
 import re
 
-HERMES_BIN = "/opt/hermes/bin/hermes"
+import shutil
+HERMES_BIN = shutil.which("hermes") or "/opt/hermes/bin/hermes"
 DEFAULT_MODEL = os.environ.get("HERMES_MODEL", "owl-alpha")
 
 
@@ -36,10 +37,40 @@ def _clean_output(text):
     return '\n'.join(lines).strip()
 
 
+def _openrouter_fallback(prompt, model):
+    """Fallback: call OpenRouter API directly when Hermes binary is not available."""
+    import urllib.request as _urllib
+    import json as _json
+
+    api_key = os.environ.get("LITELLM_API_KEY") or os.environ.get("OPENROUTER_API_KEY", "")
+    if not api_key:
+        return "[Hermes not found and no OpenRouter API key set]"
+
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    payload = {
+        "model": model or DEFAULT_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 1000,
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+
+    try:
+        req = _urllib.Request(url, data=_json.dumps(payload).encode(), headers=headers, method="POST")
+        with _urllib.urlopen(req, timeout=60) as resp:
+            data = _json.loads(resp.read().decode())
+        return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"[OpenRouter fallback error: {e}]"
+
+
 def hermes_generate(prompt, model=None, max_tokens=500):
     """Call Hermes agent with a prompt and return the response text."""
     if not os.path.exists(HERMES_BIN):
-        return "[Hermes agent not found at /opt/hermes/bin/hermes]"
+        # Fallback: try OpenRouter API directly
+        return _openrouter_fallback(prompt, model)
 
     cmd = [
         HERMES_BIN, "chat", "-q", prompt,
