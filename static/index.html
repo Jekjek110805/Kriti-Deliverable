@@ -62,7 +62,7 @@
 
   /* Layout */
   .app { display: flex; min-height: 100vh; }
-  .sidebar { width: 260px; background: var(--glass); border-right: 1px solid var(--glass-border); padding: 20px 0; flex-shrink: 0; transition: width 0.3s cubic-bezier(0.4,0,0.2,1); position: relative; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
+  .sidebar { width: 260px; background: var(--glass); border-right: 1px solid var(--glass-border); padding: 20px 0; flex-shrink: 0; transition: width 0.3s cubic-bezier(0.4,0,0.2,1); position: relative; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
   .sidebar::after { content: none; }
   .sidebar.collapsed { width: 64px; }
   .sidebar.collapsed .sidebar-logo { min-height: 70px; padding: 10px 6px 18px; justify-content: center; }
@@ -90,7 +90,8 @@
   .nav-item.active { background: var(--accent); color: #FFFFFF !important; font-weight: 700; }
   .nav-item.active .nav-icon .icon { color: #FFFFFF !important; }
   .nav-item.active:hover { background: var(--accent-hover); color: #FFFFFF !important; }
-  .sidebar-section-label { padding: 0 18px 8px; color: var(--accent); font-size: 10px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; }
+  .sidebar-section-label { padding: 0 18px 8px; color: var(--accent); font-size: 10px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; flex-shrink: 0; }
+  .sidebar-nav-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; }
   .sidebar-feature-nav { padding-bottom: 12px; }
   .nav-icon { width: 20px; text-align: center; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
   .nav-icon .icon { color: var(--text-muted); transition: color .2s; }
@@ -504,7 +505,9 @@
     </div>
     <div class="sidebar-toggle" onclick="toggleSidebar()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-7-7 7-7"/><path d="M4 12h16"/></svg></div>
     <div class="sidebar-section-label" id="sidebarGroupTitle">Discover</div>
-    <div class="sidebar-feature-nav" id="sidebarFeatureNav"></div>
+    <div class="sidebar-nav-scroll">
+      <div class="sidebar-feature-nav" id="sidebarFeatureNav"></div>
+    </div>
     <div class="theme-toggle-wrap">
       <div class="theme-toggle" onclick="toggleTheme()">
         <span class="theme-toggle-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></span>
