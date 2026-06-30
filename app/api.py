@@ -61,9 +61,9 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(REPORTS_DIR, exist_ok=True)
 os.makedirs(OUTPUTS_DIR, exist_ok=True)
 
-DEFAULT_MIN_IMPRESSIONS = 50
+DEFAULT_MIN_IMPRESSIONS = 10
 DEFAULT_MIN_POSITION = 3
-DEFAULT_MAX_POSITION = 20
+DEFAULT_MAX_POSITION = 50
 
 # ── Column aliases ───────────────────────────────────────────────────────────
 
@@ -161,8 +161,12 @@ def score_opportunity(row: Dict) -> Dict:
         impressions_score = 12
     elif impressions >= 200:
         impressions_score = 9
-    elif impressions >= 50:
+    elif impressions >= 100:
         impressions_score = 5
+    elif impressions >= 50:
+        impressions_score = 3
+    elif impressions >= 10:
+        impressions_score = 1
     else:
         impressions_score = 0
 
@@ -195,7 +199,22 @@ def score_opportunity(row: Dict) -> Dict:
     else:
         kd_score = 0
 
-    total = existing_page_score + position_score + impressions_score + intent_score + commercial_score + kd_score
+    # 7. Clicks signal (10) — rewards proven demand
+    clicks = row.get("clicks", 0)
+    if clicks >= 100:
+        clicks_score = 10
+    elif clicks >= 50:
+        clicks_score = 8
+    elif clicks >= 20:
+        clicks_score = 6
+    elif clicks >= 10:
+        clicks_score = 4
+    elif clicks >= 1:
+        clicks_score = 2
+    else:
+        clicks_score = 0
+
+    total = existing_page_score + position_score + impressions_score + intent_score + commercial_score + kd_score + clicks_score
 
     if total >= 80:
         priority = "Critical"
@@ -292,11 +311,13 @@ def run_pipeline(
         if not query or not page:
             excluded.append({"reason": "missing query or page", "row": query or "(empty)"})
             continue
+        is_gap = position > 20
         if position < min_position or position > max_position:
             excluded.append({"reason": f"position {position} outside {min_position}-{max_position}", "row": query})
             continue
-        if impressions < min_impressions:
-            excluded.append({"reason": f"impressions {impressions} below min {min_impressions}", "row": query})
+        effective_min = min_impressions if not is_gap else max(min_impressions, 100)
+        if impressions < effective_min:
+            excluded.append({"reason": f"impressions {impressions} below min {effective_min}", "row": query})
             continue
 
         intent = classify_intent(query)
