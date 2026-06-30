@@ -375,9 +375,13 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
         clicks_str = str(row.get("clicks") or row.get("Clicks") or 0)
         impressions_str = str(row.get("impressions") or row.get("Impressions") or 0)
         position_str = str(row.get("position") or row.get("Position") or 0)
-        # GSC exports CTR as "2.33%" (percent) or "0.0233" (fraction); strip
-        # the % / commas so both parse correctly.
-        ctr_str = str(row.get("ctr") or row.get("CTR") or "0").strip().replace("%", "").replace(",", "")
+        # GSC exports CTR as "2.33%" (already a percent) or "0.0233" (fraction).
+        # Remember whether a % sign was present so we don't double-scale: a value
+        # written with "%" is already a percentage (e.g. "0.6%" = 0.6%), while a
+        # bare fraction < 1 (e.g. "0.006") must be multiplied by 100.
+        ctr_raw_str = str(row.get("ctr") or row.get("CTR") or "0").strip()
+        ctr_had_percent = "%" in ctr_raw_str
+        ctr_str = ctr_raw_str.replace("%", "").replace(",", "")
 
         try:
             clicks = int(float(clicks_str))
@@ -393,7 +397,10 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
             position = 0
         try:
             ctr_raw = float(ctr_str)
-            ctr_val = ctr_raw * 100 if ctr_raw < 1 else ctr_raw
+            if ctr_had_percent:
+                ctr_val = ctr_raw  # already a percentage
+            else:
+                ctr_val = ctr_raw * 100 if ctr_raw < 1 else ctr_raw
         except (ValueError, TypeError):
             ctr_val = 0.0
 
