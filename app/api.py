@@ -61,7 +61,7 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(REPORTS_DIR, exist_ok=True)
 os.makedirs(OUTPUTS_DIR, exist_ok=True)
 
-DEFAULT_MIN_IMPRESSIONS = 10
+DEFAULT_MIN_IMPRESSIONS = 1
 DEFAULT_MIN_POSITION = 3
 DEFAULT_MAX_POSITION = 50
 
