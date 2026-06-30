@@ -2409,56 +2409,49 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
             return result
         return None
 
-    # TLDR — Hermes
-    tldr = _gen(f"Write a 2-3 sentence TLDR summary about '{keyword}' for {intent} intent. Keep it factual and actionable.")
-    if tldr:
-        sections.append({"type": "tldr", "content": tldr})
+    # Helper: extract section between two markers
+    def _extract_section(text, start_marker, end_marker):
+        try:
+            start_idx = text.index(start_marker)
+            text_after = text[start_idx + len(start_marker):]
+            if end_marker:
+                end_idx = text_after.index(end_marker)
+                return text_after[:end_idx].strip()
+            return text_after.strip()
+        except (ValueError, IndexError):
+            return None
+
+    # Generate ALL content in ONE Hermes call (faster than 5 separate calls)
+    full_prompt = (
+        f"Write a complete article about '{keyword}' for {intent} intent. Tone: {tone}.\n"
+        f"Target audience: {brief.get('target_audience', 'general audience')}.\n"
+        f"Word count target: ~{word_count} words total.\n\n"
+        f"Output format (use these exact section headers):\n"
+        f"TLDR: [2-3 sentence summary]\n"
+        f"INTRODUCTION: [engaging intro paragraph]\n"
+        f"MAIN CONTENT: [detailed body with multiple paragraphs covering the topic]\n"
+        f"FAQ: [3 common questions and answers about {keyword}]\n"
+        f"CTA: [1-2 sentence call to action]\n\n"
+        f"Write factual, original content. No markdown headers (#). No placeholders."
+    )
+
+    full_content_raw = _gen(full_prompt, min_len=100)
+
+    if full_content_raw:
+        # Parse the sections from the output
+        sections.append({"type": "tldr", "content": _extract_section(full_content_raw, "TLDR", "INTRODUCTION") or f"Key considerations and practical guidance on {keyword}."})
+        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": _extract_section(full_content_raw, "INTRODUCTION", "MAIN CONTENT") or f"[{keyword} — content generated]"})
+        sections.append({"type": "h2", "title": "Main Content", "content": _extract_section(full_content_raw, "MAIN CONTENT", "FAQ") or f"[{keyword} — content generated]"})
+        sections.append({"type": "h2", "title": "Frequently Asked Questions", "content": _extract_section(full_content_raw, "FAQ", "CTA") or ""})
+        sections.append({"type": "cta", "content": _extract_section(full_content_raw, "CTA", "") or f"Explore how {keyword} can work for your needs."})
     else:
+        # Fallback
         sections.append({"type": "tldr", "content": f"Key considerations and practical guidance on {keyword}, distilled into actionable insights."})
+        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": f"[{keyword} — Hermes unavailable]"})
+        sections.append({"type": "h2", "title": "Main Content", "content": f"[{keyword} — Hermes unavailable]"})
+        sections.append({"type": "cta", "content": f"Explore how {keyword} can work for your organisation."})
 
-    # Introduction — Hermes
-    intro_title = h2_outline[0] if h2_outline else "Introduction"
-    intro = _gen(f"Write an engaging introduction section for an article about '{keyword}'. Title: '{intro_title}'. Intent: {intent}. Tone: {tone}. Write ~{words_per_section} words. No markdown headers — just natural prose.")
-    if intro:
-        sections.append({"type": "h2", "title": intro_title, "content": intro})
-    else:
-        sections.append({"type": "h2", "title": intro_title,
-                         "content": f"[{keyword.title()} — Hermes unavailable for content generation]"})
-
-    # Body sections — each generated uniquely by Hermes
-    for h2 in h2_outline[1:]:
-        if h2.lower() in ("frequently asked questions", "faq", "next steps", "conclusion"):
-            continue
-        content = _gen(f"Write a detailed section for an article about '{keyword}'. Section heading: '{h2}'. Intent: {intent}. Tone: {tone}. Write ~{words_per_section} words. No markdown headers — just natural prose with paragraphs.")
-        if content:
-            sections.append({"type": "h2", "title": h2, "content": content})
-        else:
-            sections.append({"type": "h2", "title": h2,
-                             "content": f"[{keyword.title()} — Hermes unavailable for content generation]"})
-
-    # FAQ section — each answer generated uniquely by Hermes
-    if faq:
-        faq_parts = []
-        for q in faq:
-            answer = _gen(f"Answer this question about '{keyword}': {q}. Tone: {tone}. Write 2-3 sentences.", min_len=10)
-            if answer:
-                faq_parts.append(f"**Q: {q}**\n\nA: {answer}")
-            else:
-                faq_parts.append(f"**Q: {q}**\n\nA: [Answer unavailable — Hermes not available]")
-        sections.append({
-            "type": "h2",
-            "title": "Frequently Asked Questions",
-            "content": "\n\n".join(faq_parts),
-        })
-
-    # CTA — Hermes
-    cta = _gen(f"Write a call-to-action for '{keyword}'. Intent: {intent}. Tone: {tone}. 1-2 sentences. Encourage the reader to take the next step.", min_len=15)
-    if cta:
-        sections.append({"type": "cta", "content": cta})
-    else:
-        sections.append({"type": "cta", "content": f"Explore how {keyword} can work for your organisation. Speak with our team to discuss your requirements."})
-
-    # Compile full content — NO # headers in the output, just clean prose
+    # Compile full content
     full_content = ""
     for section in sections:
         if section["type"] == "tldr":
