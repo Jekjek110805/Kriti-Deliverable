@@ -2388,7 +2388,7 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
     Hermes writes ALL content. The output is formal, original, and natural.
     If Hermes is unavailable, falls back to a clear message.
     """
-    from integrations.litellm_client import client as llm_client
+    from integrations.hermes_llm import hermes_generate
 
     h2_outline = brief.get("h2_outline", ["Introduction", "Main Content", "Conclusion"])
     faq = brief.get("faq_questions", [])
@@ -2402,45 +2402,49 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
 
     sections = []
 
-    # Always try Hermes first — attempt the call regardless of key check
-    tldr = llm_client.generate_tldr(keyword, intent, tone)
-    tldr = _clean_llm_output(tldr)
-    if tldr and not tldr.startswith("[LiteLLM") and len(tldr) > 30:
+    # Helper: generate text via Hermes agent
+    def _gen(prompt, min_len=30):
+        result = hermes_generate(prompt)
+        if result and not result.startswith("[Hermes") and len(result) > min_len:
+            return result
+        return None
+
+    # TLDR — Hermes
+    tldr = _gen(f"Write a 2-3 sentence TLDR summary about '{keyword}' for {intent} intent. Keep it factual and actionable.")
+    if tldr:
         sections.append({"type": "tldr", "content": tldr})
     else:
         sections.append({"type": "tldr", "content": f"Key considerations and practical guidance on {keyword}, distilled into actionable insights."})
 
     # Introduction — Hermes
-    intro = llm_client.generate_content_section(keyword, intent, h2_outline[0] if h2_outline else "Introduction", tone, words_per_section)
-    intro = _clean_llm_output(intro)
-    if intro and not intro.startswith("[LiteLLM") and len(intro) > 50:
-        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": intro})
+    intro_title = h2_outline[0] if h2_outline else "Introduction"
+    intro = _gen(f"Write an engaging introduction section for an article about '{keyword}'. Title: '{intro_title}'. Intent: {intent}. Tone: {tone}. Write ~{words_per_section} words. No markdown headers — just natural prose.")
+    if intro:
+        sections.append({"type": "h2", "title": intro_title, "content": intro})
     else:
-        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction",
-                         "content": f"[{keyword.title()} — LLM unavailable for content generation]"})
+        sections.append({"type": "h2", "title": intro_title,
+                         "content": f"[{keyword.title()} — Hermes unavailable for content generation]"})
 
     # Body sections — each generated uniquely by Hermes
     for h2 in h2_outline[1:]:
         if h2.lower() in ("frequently asked questions", "faq", "next steps", "conclusion"):
             continue
-        content = llm_client.generate_content_section(keyword, intent, h2, tone, words_per_section)
-        content = _clean_llm_output(content)
-        if content and not content.startswith("[LiteLLM") and len(content) > 50:
+        content = _gen(f"Write a detailed section for an article about '{keyword}'. Section heading: '{h2}'. Intent: {intent}. Tone: {tone}. Write ~{words_per_section} words. No markdown headers — just natural prose with paragraphs.")
+        if content:
             sections.append({"type": "h2", "title": h2, "content": content})
         else:
             sections.append({"type": "h2", "title": h2,
-                             "content": f"[{keyword.title()} — LLM unavailable for content generation]"})
+                             "content": f"[{keyword.title()} — Hermes unavailable for content generation]"})
 
     # FAQ section — each answer generated uniquely by Hermes
     if faq:
         faq_parts = []
         for q in faq:
-            answer = llm_client.generate_faq_answer(keyword, q, tone)
-            answer = _clean_llm_output(answer)
-            if answer and not answer.startswith("[LiteLLM") and len(answer) > 10:
+            answer = _gen(f"Answer this question about '{keyword}': {q}. Tone: {tone}. Write 2-3 sentences.", min_len=10)
+            if answer:
                 faq_parts.append(f"**Q: {q}**\n\nA: {answer}")
             else:
-                faq_parts.append(f"**Q: {q}**\n\nA: [Answer unavailable — LLM not configured]")
+                faq_parts.append(f"**Q: {q}**\n\nA: [Answer unavailable — Hermes not available]")
         sections.append({
             "type": "h2",
             "title": "Frequently Asked Questions",
@@ -2448,9 +2452,8 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
         })
 
     # CTA — Hermes
-    cta = llm_client.generate_cta(keyword, intent, tone)
-    cta = _clean_llm_output(cta)
-    if cta and not cta.startswith("[LiteLLM") and len(cta) > 15:
+    cta = _gen(f"Write a call-to-action for '{keyword}'. Intent: {intent}. Tone: {tone}. 1-2 sentences. Encourage the reader to take the next step.", min_len=15)
+    if cta:
         sections.append({"type": "cta", "content": cta})
     else:
         sections.append({"type": "cta", "content": f"Explore how {keyword} can work for your organisation. Speak with our team to discuss your requirements."})
