@@ -551,6 +551,34 @@ def gsc_headers_are_usable(headers: List[str]) -> bool:
     return has_query and has_metrics
 
 
+def gsc_headers_have_page(headers: List[str]) -> bool:
+    """True when this header set carries a Page/URL column (combined export)."""
+    return "page" in {normalize_gsc_header(h) for h in headers if h}
+
+
+# Standard GSC "Performance" export sheet name → canonical overview section.
+# A GSC export has SEPARATE per-dimension sheets (Queries, Pages, …); they are
+# NOT joined row-level, so they are surfaced as independent raw sections — never
+# paired together (pairing by row order or word overlap fabricates attribution).
+GSC_SECTION_SHEETS = {
+    "chart": "Chart",
+    "dates": "Chart",
+    "queries": "Queries",
+    "pages": "Pages",
+    "countries": "Countries",
+    "devices": "Devices",
+    "search appearance": "Search Appearance",
+}
+GSC_SECTION_ORDER = ["Chart", "Queries", "Pages", "Countries", "Devices", "Search Appearance"]
+GSC_SECTION_ROW_LIMIT = 1000
+
+PAGE_MISSING_WARNING = (
+    "Landing pages are not available because this export only contains "
+    "query-level data. Please export Search Console data with both Query "
+    "and Page dimensions."
+)
+
+
 def parse_gsc_csv_upload(content: bytes) -> List[Dict[str, str]]:
     csv_text = None
     for encoding in ("utf-8-sig", "utf-8", "latin-1"):
@@ -673,36 +701,227 @@ def rows_from_xlsx_grid(grid: List[List[str]]) -> List[Dict[str, str]]:
     return []
 
 
-def parse_gsc_xlsx_upload(content: bytes) -> List[Dict[str, str]]:
+def grid_header_index(grid: List[List[str]]) -> int:
+    """Index of the first row that looks like a header (has a recognised label)."""
+    for header_index, header_row in enumerate(grid[:20]):
+        normalised = {normalize_gsc_header(v) for v in header_row if v}
+        if normalised & {"query", "page", "clicks", "impressions", "ctr", "position"}:
+            return header_index
+        if any(str(v).strip() for v in header_row):
+            return header_index
+    return 0
+
+
+def extract_overview_section(label: str, grid: List[List[str]]) -> Optional[Dict[str, Any]]:
+    """Turn a raw worksheet grid into a display section with ORIGINAL headers.
+
+    Values pass through verbatim (real URLs included) so the frontend can render
+    and linkify them — nothing is joined, paired, or invented here.
+    """
+    if not grid:
+        return None
+    header_index = grid_header_index(grid)
+    columns = [str(h).strip() for h in grid[header_index]]
+    while columns and not columns[-1]:
+        columns.pop()
+    if not columns:
+        return None
+
+    rows = []
+    for data_row in grid[header_index + 1:]:
+        if not any(str(v).strip() for v in data_row):
+            continue
+        rows.append({col: (data_row[i] if i < len(data_row) else "") for i, col in enumerate(columns)})
+
+    return {
+        "key": re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_"),
+        "label": label,
+        "columns": columns,
+        "rows": rows[:GSC_SECTION_ROW_LIMIT],
+        "total_rows": len(rows),
+    }
+
+
+def topic_from_page_url(url: str) -> str:
+    """Readable topic derived from a page's OWN URL path (not a guessed query).
+
+    e.g. https://site.com/blog/best-places → "blog best places". Used as the
+    keyword for page-level analysis so intent classification has signal and each
+    real page stays distinct (dedupe is by keyword). The page URL itself is real.
+    """
+    clean = (url or "").strip()
+    match = re.match(r"^https?://[^/]+(/.*)?$", clean)
+    path = (match.group(1) if match and match.group(1) else "")
+    path = path.split("?")[0].split("#")[0].strip("/")
+    path = re.sub(r"\.(html?|php|aspx?)$", "", path, flags=re.I)
+    words = re.sub(r"[-_/]+", " ", path).strip()
+    return words or "homepage"
+
+
+def page_metric_rows_from_grid(grid: List[List[str]]) -> List[Dict[str, str]]:
+    """Build analysis rows from a Pages-style grid: REAL page URL + real metrics.
+
+    The keyword is derived from each page's own URL so the existing keyword-based
+    Stage 1A scorer runs — but the landing page is the genuine, visitable URL
+    from the worksheet, never an invented slug or a cross-sheet pairing.
+    """
+    if not grid:
+        return []
+    header_index = grid_header_index(grid)
+    headers = [normalize_gsc_header(v) for v in grid[header_index]]
+    if "page" not in set(headers):
+        return []
+
+    rows = []
+    for data_row in grid[header_index + 1:]:
+        raw = {}
+        for index, header in enumerate(headers):
+            if header:
+                raw[header] = data_row[index] if index < len(data_row) else ""
+        normalized = normalize_gsc_row(raw)
+        page = normalized.get("page", "").strip()
+        if not page:
+            continue
+        normalized["query"] = topic_from_page_url(page)
+        rows.append(normalized)
+    return rows
+
+
+def parse_gsc_xlsx_workbook(content: bytes) -> Dict[str, Any]:
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as workbook:
             shared_strings = read_xlsx_shared_strings(workbook)
             sheets = read_xlsx_sheet_paths(workbook)
-            sheets.sort(key=lambda sheet: (
-                0 if sheet["name"].strip().lower() == "queries" else
-                1 if "query" in sheet["name"].strip().lower() else
-                2
-            ))
+
+            grids = []
             for sheet in sheets:
                 grid = read_xlsx_grid(workbook, sheet["path"], shared_strings)
-                rows = rows_from_xlsx_grid(grid)
-                if rows:
-                    return rows
+                if grid:
+                    grids.append((sheet["name"], grid))
+
+            # 1. A single sheet carrying BOTH Query and Page columns is a true
+            #    row-level export — keyword↔page is genuine, use it directly.
+            analysis_rows = []
+            for _name, grid in grids:
+                header_row = grid[grid_header_index(grid)]
+                if gsc_headers_have_page(header_row) and gsc_headers_are_usable(header_row):
+                    combined = [r for r in rows_from_xlsx_grid(grid) if r.get("query") and r.get("page")]
+                    if combined:
+                        analysis_rows = combined
+                        break
+
+            # 2. No combined sheet, but a Pages sheet exists → run Stage 1A on the
+            #    REAL pages (real URLs + real metrics, keyword derived from each
+            #    page's own URL). This fills the Landing Page column with genuine,
+            #    visitable URLs instead of invented slugs.
+            if not analysis_rows:
+                for name, grid in grids:
+                    if GSC_SECTION_SHEETS.get(name.strip().lower()) == "Pages":
+                        page_rows = page_metric_rows_from_grid(grid)
+                        if page_rows:
+                            analysis_rows = page_rows
+                            break
+
+            # Raw overview sections for the standard per-dimension sheets.
+            sections_by_label = {}
+            for name, grid in grids:
+                label = GSC_SECTION_SHEETS.get(name.strip().lower())
+                if not label or label in sections_by_label:
+                    continue
+                section = extract_overview_section(label, grid)
+                if section and section["rows"]:
+                    sections_by_label[label] = section
+            sections = [sections_by_label[l] for l in GSC_SECTION_ORDER if l in sections_by_label]
+
+            has_page_data = bool(analysis_rows)
+            return {
+                "analysis_rows": analysis_rows,
+                "has_page_data": has_page_data,
+                "warning": None if has_page_data else PAGE_MISSING_WARNING,
+                "sections": sections,
+            }
     except zipfile.BadZipFile as exc:
         raise ValueError("That file is not a valid .xlsx workbook. Please upload CSV or XLSX.") from exc
     except KeyError as exc:
         raise ValueError("That .xlsx workbook is missing worksheet data. Please re-export from GSC.") from exc
-    return []
 
 
-def parse_gsc_upload(content: bytes, filename: str = "") -> List[Dict[str, str]]:
+def parse_gsc_csv_workbook(content: bytes) -> Dict[str, Any]:
+    """Structured parse of a single-table CSV/TSV export.
+
+    A CSV holds one table. If it has both Query and Page columns it can power
+    landing-page analysis; otherwise it is surfaced as a raw section with the
+    missing-page warning — query and page are never joined across sections.
+    """
+    csv_text = None
+    for encoding in ("utf-8-sig", "utf-8", "latin-1"):
+        try:
+            csv_text = content.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    if csv_text is None:
+        raise ValueError("Could not decode CSV file. Please export it as UTF-8 CSV or upload .xlsx.")
+
+    csv_text = csv_text.replace("\r\n", "\n").replace("\r", "\n")
+    analysis_rows = []
+    page_only_rows = []
+    sections = []
+    for raw in re.split(r"\n\s*\n", csv_text.strip()):
+        lines = [line for line in raw.split("\n") if line.strip()]
+        if not lines:
+            continue
+        header_line = lines[0]
+        delimiter = "\t" if "\t" in header_line and header_line.count("\t") >= header_line.count(",") else ","
+        grid = [list(row) for row in csv.reader(io.StringIO("\n".join(lines)), delimiter=delimiter)]
+        if not grid:
+            continue
+        headers = grid[0]
+        norm = {normalize_gsc_header(h) for h in headers if h}
+
+        if gsc_headers_have_page(headers) and gsc_headers_are_usable(headers):
+            # Combined query+page table → genuine keyword↔page rows.
+            reader = csv.DictReader(io.StringIO("\n".join(lines)), delimiter=delimiter)
+            for row in reader:
+                normalized = normalize_gsc_row(row)
+                if normalized.get("query") and normalized.get("page"):
+                    analysis_rows.append(normalized)
+        elif "page" in norm and "query" not in norm:
+            # Page-only table → analyse the REAL pages (keyword from URL).
+            page_only_rows.extend(page_metric_rows_from_grid(grid))
+
+        label = "Pages" if ("page" in norm and "query" not in norm) else "Queries"
+        section = extract_overview_section(label, grid)
+        if section and section["rows"]:
+            sections.append(section)
+
+    # Prefer genuine combined rows; otherwise fall back to real page rows.
+    if not analysis_rows and page_only_rows:
+        analysis_rows = page_only_rows
+
+    has_page_data = bool(analysis_rows)
+    return {
+        "analysis_rows": analysis_rows,
+        "has_page_data": has_page_data,
+        "warning": None if has_page_data else PAGE_MISSING_WARNING,
+        "sections": sections,
+    }
+
+
+def parse_gsc_workbook(content: bytes, filename: str = "") -> Dict[str, Any]:
+    """Parse an uploaded GSC export into analysis rows + raw overview sections."""
     filename_lower = (filename or "").lower()
     is_xlsx = filename_lower.endswith(".xlsx") or content.startswith(b"PK\x03\x04")
     if filename_lower.endswith(".xls") and not filename_lower.endswith(".xlsx"):
         raise ValueError("Old .xls files are not supported. Please save the export as .xlsx or CSV.")
     if is_xlsx:
-        return parse_gsc_xlsx_upload(content)
-    return parse_gsc_csv_upload(content)
+        return parse_gsc_xlsx_workbook(content)
+    return parse_gsc_csv_workbook(content)
+
+
+def parse_gsc_upload(content: bytes, filename: str = "") -> List[Dict[str, str]]:
+    """Backward-compatible helper: return only the query+page analysis rows."""
+    return parse_gsc_workbook(content, filename)["analysis_rows"]
 
 
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -757,12 +976,33 @@ async def analyze_csv(
     source = "csv"
     try:
         rows = None
+        gsc_overview = []
 
         # 1. Explicit file upload always wins — preserves existing CSV behaviour.
         if file is not None and (file.filename or ""):
             content = await file.read()
-            rows = parse_gsc_upload(content, file.filename or "")
+            parsed = parse_gsc_workbook(content, file.filename or "")
+            gsc_overview = parsed["sections"]
             source = "csv"
+
+            # Without row-level Query+Page data we CANNOT attribute keywords to
+            # landing pages. Show the raw sections + warning instead of faking it.
+            if not parsed["has_page_data"]:
+                if not gsc_overview:
+                    return JSONResponse({
+                        "error": "No usable GSC data found. Upload a GSC export (CSV or XLSX) "
+                                 "with at least a Queries or Pages sheet.",
+                    }, status_code=400)
+                return JSONResponse({
+                    "status": "overview_only",
+                    "source": source,
+                    "warning": parsed["warning"],
+                    "gsc_overview": gsc_overview,
+                    "message": "GSC Overview loaded. Landing-page opportunity analysis needs "
+                               "an export with both Query and Page dimensions.",
+                })
+
+            rows = parsed["analysis_rows"]
         else:
             # 2. No file: try the live Search Console API when configured.
             client = _get_gsc_client()
@@ -797,7 +1037,8 @@ async def analyze_csv(
 
         if not rows:
             return JSONResponse({
-                "error": "No usable GSC query data found. Upload a CSV with query/clicks/impressions/position columns or a GSC .xlsx export with a Queries sheet."
+                "error": "No usable GSC query data found. Upload a CSV/XLSX export with "
+                         "row-level query, page, clicks, impressions, ctr and position columns."
             }, status_code=400)
 
         # Create async job
@@ -812,6 +1053,7 @@ async def analyze_csv(
             "source": source,
             "job_id": job_id,
             "rows_received": len(rows),
+            "gsc_overview": gsc_overview,
             "message": f"Analysis queued. Poll GET /api/jobs/{job_id} for results.",
         })
     except ValueError as e:

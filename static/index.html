@@ -297,6 +297,8 @@
   .alert-info { background: var(--accent-glow); border: 1px solid rgba(124,92,255,0.15); color: var(--accent); }
   .alert-success { background: var(--green-glow); border: 1px solid rgba(61,220,151,0.15); color: var(--green); }
   .alert-error { background: var(--red-glow); border: 1px solid rgba(255,71,87,0.15); color: var(--red); }
+  .alert-warning { background: rgba(245,178,7,0.08); border: 1px solid rgba(245,178,7,0.28); color: #c98a00; }
+  body.light .alert-warning { color: #8a6200; }
 
   /* Icons */
   .icon { width: 18px; height: 18px; display: inline-block; vertical-align: middle; flex-shrink: 0; }
@@ -421,7 +423,7 @@
         <!-- Opportunities -->
         <div class="card">
           <div class="results-card-header">
-            <div class="card-title">Ranked Opportunities</div>
+            <div class="card-title" id="resultsCardTitle">Ranked Opportunities</div>
             <div class="results-actions">
               <button class="btn btn-sm btn-secondary" onclick="resetDiscoverUpload()">Cancel</button>
               <button class="btn btn-sm btn-primary" onclick="uploadAnotherFile()">Upload another file</button>
@@ -790,6 +792,12 @@ const BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : wi
 let opportunities = [];
 let activeJobPoll = null;
 let analysisInProgress = false;
+let oppCurrentPage = 1;
+const OPP_PAGE_SIZE = 100;
+// GSC Overview pagination — 100 rows per page per section.
+let gscOverviewSections = [];
+let gscSectionPages = {};
+const GSC_PAGE_SIZE = 100;
 
 // ── Icon helper ──────────────────────────────────────────────────────────────
 function icon(name) {
@@ -882,6 +890,11 @@ function resetDiscoverUpload() {
   }
   analysisInProgress = false;
   opportunities = [];
+  oppCurrentPage = 1;
+  gscOverviewSections = [];
+  gscSectionPages = {};
+  const titleEl = document.getElementById('resultsCardTitle');
+  if (titleEl) titleEl.textContent = 'Ranked Opportunities';
   document.getElementById('loading').classList.remove('active');
   document.getElementById('results-section').classList.add('hidden');
   document.getElementById('statsGrid').innerHTML = '';
@@ -927,6 +940,10 @@ function handleFile(input) {
         // Analysis queued -- poll for results
         showQueuedStatus(d);
         pollJob(d.job_id);
+      } else if (d.status === 'overview_only') {
+        // Query-only export: show raw GSC sections (real URLs), no fake pages.
+        analysisInProgress = false;
+        renderGscOverview(d);
       } else if (d.opportunities) {
         // Synchronous result (fallback)
         analysisInProgress = false;
@@ -1111,8 +1128,11 @@ function renderResults(d) {
   analysisInProgress = false;
   setUploadCardVisible(false);
   document.getElementById('results-section').classList.remove('hidden');
+  const titleEl = document.getElementById('resultsCardTitle');
+  if (titleEl) titleEl.textContent = 'Ranked Opportunities';
   const rows = Array.isArray(d.opportunities) ? d.opportunities : [];
   opportunities = rows;
+  oppCurrentPage = 1;
 
   const opportunitiesFound = d.opportunities_found ?? d.summary?.opportunities_found ?? rows.length;
   const critical = rows.filter(o => o.priority === 'Critical').length;
@@ -1151,7 +1171,7 @@ function renderOppFilters() {
   el.innerHTML = `
     <div class="opp-filters">
       <div class="flt"><label>Recommendation</label>
-        <select id="fltRec" onchange="applyOppFilters()">
+        <select id="fltRec" onchange="applyOppFilters(true)">
           <option value="">All</option>
           <option value="No Change">No Change</option>
           <option value="Improve Existing">Improve Existing Page</option>
@@ -1159,22 +1179,22 @@ function renderOppFilters() {
           <option value="Create New Content">Create New Content</option>
         </select></div>
       <div class="flt"><label>Intent</label>
-        <select id="fltIntent" onchange="applyOppFilters()">
+        <select id="fltIntent" onchange="applyOppFilters(true)">
           <option value="">All</option><option>BOFU</option><option>MOFU</option><option>TOFU</option>
         </select></div>
       <div class="flt"><label>Priority</label>
-        <select id="fltPriority" onchange="applyOppFilters()">
+        <select id="fltPriority" onchange="applyOppFilters(true)">
           <option value="">All</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option>
         </select></div>
       <div class="flt"><label>Landing Page</label>
-        <input id="fltLanding" type="text" placeholder="search url…" oninput="applyOppFilters()"></div>
+        <input id="fltLanding" type="text" placeholder="search url…" oninput="applyOppFilters(true)"></div>
       <div class="flt"><label>Position</label>
         <div style="display:flex;gap:6px;">
-          <input id="fltPosMin" class="flt-num" type="number" placeholder="min" oninput="applyOppFilters()">
-          <input id="fltPosMax" class="flt-num" type="number" placeholder="max" oninput="applyOppFilters()">
+          <input id="fltPosMin" class="flt-num" type="number" placeholder="min" oninput="applyOppFilters(true)">
+          <input id="fltPosMax" class="flt-num" type="number" placeholder="max" oninput="applyOppFilters(true)">
         </div></div>
       <div class="flt"><label>Min Score</label>
-        <input id="fltScoreMin" class="flt-num" type="number" placeholder="0" oninput="applyOppFilters()"></div>
+        <input id="fltScoreMin" class="flt-num" type="number" placeholder="0" oninput="applyOppFilters(true)"></div>
       <button class="btn btn-sm btn-secondary" onclick="resetOppFilters()">Reset</button>
       <span class="flt-count" id="fltCount"></span>
     </div>
@@ -1185,10 +1205,12 @@ function resetOppFilters() {
   ['fltRec','fltIntent','fltPriority','fltLanding','fltPosMin','fltPosMax','fltScoreMin'].forEach(id => {
     const e = document.getElementById(id); if (e) e.value = '';
   });
+  oppCurrentPage = 1;
   applyOppFilters();
 }
 
-function applyOppFilters() {
+function applyOppFilters(resetPage = false) {
+  if (resetPage) oppCurrentPage = 1;
   const g = id => document.getElementById(id);
   const rec = g('fltRec') ? g('fltRec').value : '';
   const intent = g('fltIntent') ? g('fltIntent').value : '';
@@ -1213,9 +1235,12 @@ function applyOppFilters() {
     if (!isNaN(scoreMin) && sc < scoreMin) return false;
     return true;
   });
-  const cnt = g('fltCount');
-  if (cnt) cnt.textContent = `Showing ${filtered.length} of ${all.length}`;
   renderOppsTable(filtered);
+}
+
+function changeOppPage(delta) {
+  oppCurrentPage = Math.max(1, oppCurrentPage + delta);
+  applyOppFilters();
 }
 
 function renderOppsTable(rows) {
@@ -1225,6 +1250,14 @@ function renderOppsTable(rows) {
     list.innerHTML = '<div class="alert alert-info">No opportunities match the current filters.</div>';
     return;
   }
+  const totalPages = Math.max(1, Math.ceil(rows.length / OPP_PAGE_SIZE));
+  if (oppCurrentPage > totalPages) oppCurrentPage = totalPages;
+  const start = (oppCurrentPage - 1) * OPP_PAGE_SIZE;
+  const pageRows = rows.slice(start, start + OPP_PAGE_SIZE);
+  const end = start + pageRows.length;
+  const cnt = document.getElementById('fltCount');
+  if (cnt) cnt.textContent = `Showing ${start + 1}-${end} of ${rows.length}`;
+
   list.innerHTML = `
     <div class="table-wrap opportunities-table-wrap">
       <table class="opportunities-table">
@@ -1248,7 +1281,7 @@ function renderOppsTable(rows) {
           </tr>
         </thead>
         <tbody>
-          ${rows.map((o, i) => {
+          ${pageRows.map((o, i) => {
             const idx = opportunities.indexOf(o);
             const landingPage = o.landing_page || o.page || '';
             const lpType = o.landing_page_type || '';
@@ -1272,7 +1305,7 @@ function renderOppsTable(rows) {
             const reasonText = o.reason || '';
             return `
               <tr>
-                <td>${i + 1}</td>
+                <td>${start + i + 1}</td>
                 <td><span class="badge badge-${safeBadgeClass(o.priority)}">${escapeHtml(o.priority || 'Low')}</span></td>
                 <td class="opp-keyword-cell">${escapeHtml(o.keyword || '')}${gapLabel}${approvalBadge(o.approval_status)}</td>
                 <td class="opp-page-cell" title="${escapeHtml(page || '—')}">${pageCell}</td>
@@ -1293,7 +1326,119 @@ function renderOppsTable(rows) {
         </tbody>
       </table>
     </div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:14px;">
+      <span style="font-size:12px;color:var(--text-muted);">Page ${oppCurrentPage} of ${totalPages}</span>
+      <button class="btn btn-sm btn-secondary" onclick="changeOppPage(-1)" ${oppCurrentPage <= 1 ? 'disabled' : ''}>Prev</button>
+      <button class="btn btn-sm btn-primary" onclick="changeOppPage(1)" ${oppCurrentPage >= totalPages ? 'disabled' : ''}>Next</button>
+    </div>
   `;
+}
+
+// ── GSC Overview (raw Search Console sections, real URLs, paginated) ──────────
+function isUrl(value) {
+  return /^https?:\/\//i.test(String(value || '').trim());
+}
+
+// Renders one cell. Real URLs (e.g. the Pages "Top pages" column) become
+// clickable links; GSC's raw numbers are tidied for display.
+function renderGscCell(value, column) {
+  const text = String(value ?? '').trim();
+  if (!text) return '—';
+  if (isUrl(text)) {
+    return `<a href="${escapeHtml(text)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>`;
+  }
+  const col = String(column || '').toLowerCase();
+  const num = Number(text);
+  if (Number.isFinite(num)) {
+    if (col === 'ctr') return (num <= 1 ? num * 100 : num).toFixed(2) + '%';
+    if (col === 'position') return num.toFixed(2);
+    if (col === 'clicks' || col === 'impressions') return Math.round(num).toLocaleString();
+  }
+  return escapeHtml(text);
+}
+
+function renderGscOverview(d) {
+  analysisInProgress = false;
+  setUploadCardVisible(false);
+  document.getElementById('loading').classList.remove('active');
+  document.getElementById('results-section').classList.remove('hidden');
+  opportunities = [];
+
+  const titleEl = document.getElementById('resultsCardTitle');
+  if (titleEl) titleEl.textContent = 'GSC Overview';
+
+  gscOverviewSections = Array.isArray(d.gsc_overview) ? d.gsc_overview : [];
+  gscSectionPages = {};
+  gscOverviewSections.forEach((_, i) => { gscSectionPages[i] = 1; });
+
+  const findSection = label => gscOverviewSections.find(s => String(s.label || '').toLowerCase() === label);
+  const queries = findSection('queries');
+  const pages = findSection('pages');
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${gscOverviewSections.length}</div><div class="stat-label">GSC Sections</div></div>
+    <div class="stat-card"><div class="stat-value">${queries ? formatNumber(queries.total_rows || 0) : 0}</div><div class="stat-label">Queries</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--green)">${pages ? formatNumber(pages.total_rows || 0) : 0}</div><div class="stat-label">Pages</div></div>
+  `;
+
+  const filters = document.getElementById('oppsFilters');
+  if (filters) filters.innerHTML = '';
+
+  document.getElementById('oppsTable').innerHTML = `
+    ${d.warning ? `<div class="alert alert-warning">${escapeHtml(d.warning)}</div>` : ''}
+    <div id="gscSections"></div>
+  `;
+  renderGscSections();
+}
+
+function renderGscSections() {
+  const host = document.getElementById('gscSections');
+  if (!host) return;
+  if (!gscOverviewSections.length) {
+    host.innerHTML = '<div class="alert alert-info">No GSC sections were found in this export.</div>';
+    return;
+  }
+  host.innerHTML = gscOverviewSections.map((section, idx) => {
+    const columns = Array.isArray(section.columns) ? section.columns : [];
+    const rows = Array.isArray(section.rows) ? section.rows : [];
+    if (!columns.length || !rows.length) return '';
+    const total = rows.length;                                  // rows present client-side
+    const totalPages = Math.max(1, Math.ceil(total / GSC_PAGE_SIZE));
+    let page = gscSectionPages[idx] || 1;
+    if (page > totalPages) { page = totalPages; gscSectionPages[idx] = page; }
+    const start = (page - 1) * GSC_PAGE_SIZE;
+    const pageRows = rows.slice(start, start + GSC_PAGE_SIZE);
+    const end = start + pageRows.length;
+    const grandTotal = section.total_rows != null ? section.total_rows : total;
+    const truncNote = grandTotal > total ? ` (first ${formatNumber(total)} of ${formatNumber(grandTotal)})` : '';
+
+    const head = columns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
+    const body = pageRows.map(r => `<tr>${columns.map(c => `<td title="${escapeHtml(r[c] ?? '')}">${renderGscCell(r[c], c)}</td>`).join('')}</tr>`).join('');
+    return `
+      <div class="card">
+        <div class="results-card-header">
+          <div class="card-title">${escapeHtml(section.label || 'GSC Data')}</div>
+          <span style="font-size:12px;color:var(--text-muted);">Showing ${formatNumber(start + 1)}-${formatNumber(end)} of ${formatNumber(total)}${truncNote}</span>
+        </div>
+        <div class="table-wrap opportunities-table-wrap">
+          <table>
+            <thead><tr>${head}</tr></thead>
+            <tbody>${body}</tbody>
+          </table>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:14px;">
+          <span style="font-size:12px;color:var(--text-muted);">Page ${page} of ${totalPages}</span>
+          <button class="btn btn-sm btn-secondary" onclick="changeGscPage(${idx}, -1)" ${page <= 1 ? 'disabled' : ''}>Prev</button>
+          <button class="btn btn-sm btn-primary" onclick="changeGscPage(${idx}, 1)" ${page >= totalPages ? 'disabled' : ''}>Next</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function changeGscPage(idx, delta) {
+  const cur = gscSectionPages[idx] || 1;
+  gscSectionPages[idx] = Math.max(1, cur + delta);
+  renderGscSections();
 }
 
 function quickDecisionFromIndex(index) {
