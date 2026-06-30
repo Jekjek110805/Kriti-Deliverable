@@ -1,0 +1,33 @@
+{
+  "keyword": "best clinic software",
+  "intent": "BOFU",
+  "tone": "professional",
+  "word_count_target": 500,
+  "word_count_actual": 55,
+  "sections": [
+    {
+      "type": "tldr",
+      "content": "Key considerations and practical guidance on best clinic software, distilled into actionable insights."
+    },
+    {
+      "type": "h2",
+      "title": "Introduction",
+      "content": "[Best Clinic Software \u2014 LLM unavailable for content generation]"
+    },
+    {
+      "type": "h2",
+      "title": "Main Content",
+      "content": "[Best Clinic Software \u2014 LLM unavailable for content generation]"
+    },
+    {
+      "type": "cta",
+      "content": "Explore how best clinic software can work for your organisation. Speak with our team to discuss your requirements."
+    }
+  ],
+  "full_content": "TLDR\n\nKey considerations and practical guidance on best clinic software, distilled into actionable insights.\n\nIntroduction\n\n[Best Clinic Software \u2014 LLM unavailable for content generation]\n\nMain Content\n\n[Best Clinic Software \u2014 LLM unavailable for content generation]\n\nNext Steps\n\nExplore how best clinic software can work for your organisation. Speak with our team to discuss your requirements.\n\n",
+  "status": "draft",
+  "ai_generated": true,
+  "human_edited": false,
+  "created_at": "2026-06-30T08:09:25.204364",
+  "notes": "This draft was written by Hermes (LLM). A human must review, edit, fact-check, and approve before publishing."
+}

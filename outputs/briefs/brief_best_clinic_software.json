@@ -1,0 +1,60 @@
+{
+  "keyword": "best clinic software",
+  "intent": "BOFU",
+  "target_audience": "clinic managers",
+  "word_count_target": 1500,
+  "title_suggestions": [
+    "Best Clinic Software: The Complete Guide",
+    "Best Best Clinic Software for clinic managers",
+    "How to Choose Best Clinic Software in 2026"
+  ],
+  "h1": "Best Clinic Software: The Complete Guide",
+  "h2_outline": [
+    "What is best clinic software?",
+    "Why best clinic software matters for your business",
+    "Key features to look for",
+    "How to choose the right best clinic software",
+    "Top best clinic software options compared",
+    "Implementation best practices",
+    "Common mistakes to avoid",
+    "Next steps"
+  ],
+  "faq_questions": [
+    "What is best clinic software and why does it matter?",
+    "How do I get started with best clinic software?",
+    "What are the best best clinic software options?",
+    "How much does best clinic software cost?",
+    "What mistakes should I avoid with best clinic software?"
+  ],
+  "competitor_angles": [
+    "Comparison posts (vs. alternatives)",
+    "Review-style content",
+    "Case studies and results",
+    "Problem-solution framing"
+  ],
+  "internal_link_suggestions": [
+    "Link from related service pages",
+    "Link from blog category page",
+    "Link from resource/guide pages"
+  ],
+  "seo_requirements": {
+    "keyword_in_title": true,
+    "keyword_in_first_paragraph": true,
+    "keyword_in_h2": true,
+    "meta_description_length": "150-160 characters",
+    "url_slug": "best-clinic-software",
+    "alt_text_keyword": true,
+    "internal_links_min": 3,
+    "word_count_min": 1500
+  },
+  "content_guidelines": {
+    "tldr_required": true,
+    "tldr_length": "2-3 sentences",
+    "paragraph_max_length": "150 words",
+    "use_second_person": true,
+    "cta_required": true,
+    "image_required": true
+  },
+  "approval_status": "draft",
+  "created_at": "2026-06-30T07:56:19.484655"
+}
