@@ -1302,27 +1302,59 @@ function quickDecisionFromIndex(index) {
   quickDecision(o.keyword || '', o.page || '', Number(o.position) || 0, Number(o.impressions) || 0, Number(o.clicks) || 0);
 }
 
+function suggestedAction(o) {
+  switch (o.recommendation) {
+    case 'No Change': return 'Leave this page as-is — it already performs well. Re-check in your next GSC review.';
+    case 'Improve Existing': return 'Optimize the existing page (title, on-page content, internal links) to push it into the top 5.';
+    case 'Expand Existing': return 'Expand the existing page with more depth and sections to move it from page 2 onto page 1.';
+    case 'Create New Content': return 'Create a new ' + (o.content_type || 'page') + ' targeting this keyword and its intent.';
+    default: return 'Review the data and decide the next step.';
+  }
+}
+
+function nextStep(o) {
+  const s = o.approval_status || 'needs_review';
+  if (s === 'approved') return 'Approved — ready to move to the next stage.';
+  if (s === 'rejected') return 'Rejected — no action will be taken.';
+  if (s === 'blocked') return 'Blocked — needs more information before deciding.';
+  return 'Send to the approval queue for human review.';
+}
+
 function showReasonModal(index) {
   const o = opportunities[index];
   if (!o) return;
   const rec = o.recommendation || '';
   const recColor = rec === 'No Change' ? '#2DD4BF' : rec === 'Improve Existing' ? 'var(--green)' : rec === 'Expand Existing' ? 'var(--yellow)' : 'var(--crimson)';
   const confColor = (o.confidence || 0) >= 85 ? 'var(--green)' : (o.confidence || 0) >= 70 ? 'var(--yellow)' : 'var(--text-muted)';
+  const landingPage = o.landing_page || o.page || '';
+  const lpUrl = o.landing_page_url || (/^https?:\/\//i.test(landingPage) ? landingPage : '');
+  const lpHtml = landingPage
+    ? (lpUrl ? `<a href="${escapeHtml(lpUrl)}" target="_blank" rel="noopener">${escapeHtml(landingPage)}</a>` : escapeHtml(landingPage))
+    : 'No existing page — new content';
+  const metric = (label, val) => `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;"><div style="font-size:10px;color:var(--text-muted);">${label}</div><div style="font-weight:700;font-size:15px;">${val}</div></div>`;
   const existing = document.getElementById('reason-modal');
   if (existing) existing.remove();
   const modal = document.createElement('div');
   modal.id = 'reason-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;';
   modal.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:540px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,0.5);">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:600px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,0.5);max-height:90vh;overflow:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
         <div>
           <div style="font-size:17px;font-weight:700;margin-bottom:4px;">${escapeHtml(o.keyword || '')}</div>
-          <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(o.page || 'No existing page')}</div>
+          <div style="font-size:12px;color:var(--text-muted);">Landing page: ${lpHtml}</div>
         </div>
         <button onclick="document.getElementById('reason-modal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1;">×</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+        ${metric('Position', formatNumber(o.position))}
+        ${metric('Impressions', formatNumber(o.impressions))}
+        ${metric('Clicks', formatNumber(o.clicks))}
+        ${metric('CTR', (o.ctr != null && o.ctr !== '') ? escapeHtml(String(o.ctr)) : '—')}
+        ${metric('Intent', escapeHtml(o.intent || '—'))}
+        ${metric('Commercial', escapeHtml(o.commercial_potential || '—'))}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
         <div style="background:var(--surface2);border-radius:10px;padding:14px;">
           <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">RECOMMENDATION</div>
           <div style="font-weight:700;color:${recColor};">${escapeHtml(recommendationLabel(rec))}</div>
@@ -1340,9 +1372,17 @@ function showReasonModal(index) {
           <div style="font-weight:700;font-size:20px;color:var(--accent);">${o.score || 0}/100</div>
         </div>
       </div>
-      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:20px;">
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">REASONING</div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">WHY THIS RECOMMENDATION</div>
         <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${escapeHtml(o.reason || 'No reason available.')}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">SUGGESTED ACTION</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${escapeHtml(suggestedAction(o))}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:20px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">NEXT STEP</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${escapeHtml(nextStep(o))}</div>
       </div>
       <div style="display:flex;justify-content:flex-end;">
         <button class="btn btn-primary" onclick="document.getElementById('reason-modal').remove()">Close</button>
