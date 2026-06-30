@@ -435,7 +435,7 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
             continue
 
         # Gap keywords need stronger signal to be worth surfacing
-        min_impressions = 100 if is_gap else 10
+        min_impressions = 100 if is_gap else 1
         if impressions < min_impressions:
             excluded.append({"keyword": keyword, "reason": f"impressions {impressions} below {min_impressions}"})
             continue
