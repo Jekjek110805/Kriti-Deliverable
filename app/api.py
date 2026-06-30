@@ -2416,8 +2416,20 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
             text_after = text[start_idx + len(start_marker):]
             if end_marker:
                 end_idx = text_after.index(end_marker)
-                return text_after[:end_idx].strip()
-            return text_after.strip()
+                section = text_after[:end_idx]
+            else:
+                section = text_after
+            # Clean up: remove leading ":", "+", newlines; strip Hermes chatter
+            lines = []
+            for line in section.split('\n'):
+                line = line.strip()
+                if line.startswith('+'):
+                    line = line[1:].strip()
+                if line.startswith(':'):
+                    line = line[1:].strip()
+                if line and not line.startswith('Article written') and not line.startswith("Here's the full"):
+                    lines.append(line)
+            return '\n'.join(lines).strip()
         except (ValueError, IndexError):
             return None
 
