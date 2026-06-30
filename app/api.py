@@ -787,6 +787,44 @@ def page_metric_rows_from_grid(grid: List[List[str]]) -> List[Dict[str, str]]:
     return rows
 
 
+def page_url_rows_from_grid(grid: List[List[str]]) -> List[Dict[str, str]]:
+    """Extract real URL rows from a Pages-style worksheet."""
+    if not grid:
+        return []
+    header_index = grid_header_index(grid)
+    headers = [normalize_gsc_header(v) for v in grid[header_index]]
+    if "page" not in set(headers):
+        return []
+
+    rows = []
+    for data_row in grid[header_index + 1:]:
+        raw = {}
+        for index, header in enumerate(headers):
+            if header:
+                raw[header] = data_row[index] if index < len(data_row) else ""
+        normalized = normalize_gsc_row(raw)
+        if normalized.get("page"):
+            rows.append(normalized)
+    return rows
+
+
+def attach_page_urls_by_row_order(query_rows: List[Dict[str, str]],
+                                  page_rows: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    """Keep Queries-sheet keywords, but use real Pages-sheet URLs by row order."""
+    if not query_rows or not page_rows:
+        return query_rows
+
+    enriched = []
+    for index, row in enumerate(query_rows):
+        enriched_row = dict(row)
+        page = page_rows[index].get("page", "") if index < len(page_rows) else ""
+        if page and not enriched_row.get("page"):
+            enriched_row["page"] = page
+            enriched_row["page_match_source"] = "xlsx_pages_sheet_row_order"
+        enriched.append(enriched_row)
+    return enriched
+
+
 def parse_gsc_xlsx_workbook(content: bytes) -> Dict[str, Any]:
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as workbook:
@@ -815,11 +853,22 @@ def parse_gsc_xlsx_workbook(content: bytes) -> Dict[str, Any]:
             #    page's own URL). This fills the Landing Page column with genuine,
             #    visitable URLs instead of invented slugs.
             if not analysis_rows:
+                query_rows = []
+                page_rows = []
+                for name, grid in grids:
+                    label = GSC_SECTION_SHEETS.get(name.strip().lower())
+                    if label == "Queries" and not query_rows:
+                        query_rows = rows_from_xlsx_grid(grid)
+                    elif label == "Pages" and not page_rows:
+                        page_rows = page_url_rows_from_grid(grid)
+                if query_rows and page_rows:
+                    analysis_rows = attach_page_urls_by_row_order(query_rows, page_rows)
+
+            if not analysis_rows:
                 for name, grid in grids:
                     if GSC_SECTION_SHEETS.get(name.strip().lower()) == "Pages":
-                        page_rows = page_metric_rows_from_grid(grid)
-                        if page_rows:
-                            analysis_rows = page_rows
+                        analysis_rows = page_metric_rows_from_grid(grid)
+                        if analysis_rows:
                             break
 
             # Raw overview sections for the standard per-dimension sheets.

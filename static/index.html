@@ -433,6 +433,9 @@
           <div id="oppsFilters"></div>
           <div id="oppsTable"></div>
         </div>
+
+        <!-- Raw GSC data (all rows, unfiltered) — populated when an export carries raw sections -->
+        <div id="rawSections" class="hidden"></div>
       </div>
     </div>
 
@@ -798,6 +801,9 @@ const OPP_PAGE_SIZE = 100;
 let gscOverviewSections = [];
 let gscSectionPages = {};
 const GSC_PAGE_SIZE = 100;
+// Raw GSC sections shown beneath the scored opportunities (all rows, unfiltered).
+let pendingGscOverview = [];
+let rawSectionPages = {};
 
 // ── Icon helper ──────────────────────────────────────────────────────────────
 function icon(name) {
@@ -893,12 +899,16 @@ function resetDiscoverUpload() {
   oppCurrentPage = 1;
   gscOverviewSections = [];
   gscSectionPages = {};
+  pendingGscOverview = [];
+  rawSectionPages = {};
   const titleEl = document.getElementById('resultsCardTitle');
   if (titleEl) titleEl.textContent = 'Ranked Opportunities';
   document.getElementById('loading').classList.remove('active');
   document.getElementById('results-section').classList.add('hidden');
   document.getElementById('statsGrid').innerHTML = '';
   document.getElementById('oppsTable').innerHTML = '';
+  const rawHost = document.getElementById('rawSections');
+  if (rawHost) { rawHost.classList.add('hidden'); rawHost.innerHTML = ''; }
   document.getElementById('fileInput').value = '';
   setUploadCardVisible(true);
 }
@@ -937,7 +947,10 @@ function handleFile(input) {
       if (d.error) { alert('Error: ' + d.error); resetDiscoverUpload(); return; }
 
       if (d.status === 'queued' && d.job_id) {
-        // Analysis queued -- poll for results
+        // Analysis queued -- poll for results. Keep the raw sections (all rows)
+        // so we can show them, unfiltered, beneath the scored opportunities.
+        pendingGscOverview = Array.isArray(d.gsc_overview) ? d.gsc_overview : [];
+        rawSectionPages = {};
         showQueuedStatus(d);
         pollJob(d.job_id);
       } else if (d.status === 'overview_only') {
@@ -987,6 +1000,8 @@ function runLiveGSC(days = 30, rowLimit = 500) {
       }
 
       if (data.status === 'queued' && data.job_id) {
+        pendingGscOverview = Array.isArray(data.gsc_overview) ? data.gsc_overview : [];
+        rawSectionPages = {};
         showQueuedStatus(data);
         pollJob(data.job_id);
       } else {
@@ -1151,6 +1166,9 @@ function renderResults(d) {
     <div class="stat-card"><div class="stat-value" style="color:var(--crimson)">${createNew}</div><div class="stat-label">Create New</div></div>
     <div class="stat-card"><div class="stat-value" style="color:#2DD4BF">${noChange}</div><div class="stat-label">No Change</div></div>
   `;
+
+  // Raw, unfiltered GSC rows (e.g. every page) shown below the scored list.
+  renderRawSections();
 
   const oppsFilters = document.getElementById('oppsFilters');
   const list = document.getElementById('oppsTable');
@@ -1390,21 +1408,16 @@ function renderGscOverview(d) {
   renderGscSections();
 }
 
-function renderGscSections() {
-  const host = document.getElementById('gscSections');
-  if (!host) return;
-  if (!gscOverviewSections.length) {
-    host.innerHTML = '<div class="alert alert-info">No GSC sections were found in this export.</div>';
-    return;
-  }
-  host.innerHTML = gscOverviewSections.map((section, idx) => {
+// Shared builder: one paginated card per GSC section (100 rows/page).
+function gscSectionsHtml(sections, pageState, changeFnName) {
+  return sections.map((section, idx) => {
     const columns = Array.isArray(section.columns) ? section.columns : [];
     const rows = Array.isArray(section.rows) ? section.rows : [];
     if (!columns.length || !rows.length) return '';
     const total = rows.length;                                  // rows present client-side
     const totalPages = Math.max(1, Math.ceil(total / GSC_PAGE_SIZE));
-    let page = gscSectionPages[idx] || 1;
-    if (page > totalPages) { page = totalPages; gscSectionPages[idx] = page; }
+    let page = pageState[idx] || 1;
+    if (page > totalPages) { page = totalPages; pageState[idx] = page; }
     const start = (page - 1) * GSC_PAGE_SIZE;
     const pageRows = rows.slice(start, start + GSC_PAGE_SIZE);
     const end = start + pageRows.length;
@@ -1427,18 +1440,54 @@ function renderGscSections() {
         </div>
         <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:14px;">
           <span style="font-size:12px;color:var(--text-muted);">Page ${page} of ${totalPages}</span>
-          <button class="btn btn-sm btn-secondary" onclick="changeGscPage(${idx}, -1)" ${page <= 1 ? 'disabled' : ''}>Prev</button>
-          <button class="btn btn-sm btn-primary" onclick="changeGscPage(${idx}, 1)" ${page >= totalPages ? 'disabled' : ''}>Next</button>
+          <button class="btn btn-sm btn-secondary" onclick="${changeFnName}(${idx}, -1)" ${page <= 1 ? 'disabled' : ''}>Prev</button>
+          <button class="btn btn-sm btn-primary" onclick="${changeFnName}(${idx}, 1)" ${page >= totalPages ? 'disabled' : ''}>Next</button>
         </div>
       </div>
     `;
   }).join('');
 }
 
+function renderGscSections() {
+  const host = document.getElementById('gscSections');
+  if (!host) return;
+  if (!gscOverviewSections.length) {
+    host.innerHTML = '<div class="alert alert-info">No GSC sections were found in this export.</div>';
+    return;
+  }
+  host.innerHTML = gscSectionsHtml(gscOverviewSections, gscSectionPages, 'changeGscPage');
+}
+
 function changeGscPage(idx, delta) {
   const cur = gscSectionPages[idx] || 1;
   gscSectionPages[idx] = Math.max(1, cur + delta);
   renderGscSections();
+}
+
+// Raw, UNFILTERED GSC data shown below the scored opportunities (all rows,
+// e.g. every page from the Pages sheet) — separate from the 1A opportunity list.
+function renderRawSections() {
+  const host = document.getElementById('rawSections');
+  if (!host) return;
+  const sections = Array.isArray(pendingGscOverview) ? pendingGscOverview : [];
+  if (!sections.length) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+  const totalRows = sections.reduce((n, s) => n + (s.total_rows || (s.rows ? s.rows.length : 0)), 0);
+  host.classList.remove('hidden');
+  host.innerHTML = `
+    <div class="results-card-header" style="margin:24px 0 12px;">
+      <div class="card-title">Raw GSC Data — all rows, unfiltered</div>
+      <span style="font-size:12px;color:var(--text-muted);">${formatNumber(totalRows)} rows across ${sections.length} section${sections.length === 1 ? '' : 's'}</span>
+    </div>
+    <div class="alert alert-info">These are the exact rows from your export (every page/query), before the Stage 1A opportunity filters. The scored list above is a curated subset.</div>
+    <div id="rawSectionsBody"></div>
+  `;
+  document.getElementById('rawSectionsBody').innerHTML = gscSectionsHtml(sections, rawSectionPages, 'changeRawPage');
+}
+
+function changeRawPage(idx, delta) {
+  const cur = rawSectionPages[idx] || 1;
+  rawSectionPages[idx] = Math.max(1, cur + delta);
+  document.getElementById('rawSectionsBody').innerHTML = gscSectionsHtml(pendingGscOverview, rawSectionPages, 'changeRawPage');
 }
 
 function quickDecisionFromIndex(index) {
