@@ -375,7 +375,9 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
         clicks_str = str(row.get("clicks") or row.get("Clicks") or 0)
         impressions_str = str(row.get("impressions") or row.get("Impressions") or 0)
         position_str = str(row.get("position") or row.get("Position") or 0)
-        ctr_str = str(row.get("ctr") or row.get("CTR") or "0")
+        # GSC exports CTR as "2.33%" (percent) or "0.0233" (fraction); strip
+        # the % / commas so both parse correctly.
+        ctr_str = str(row.get("ctr") or row.get("CTR") or "0").strip().replace("%", "").replace(",", "")
 
         try:
             clicks = int(float(clicks_str))

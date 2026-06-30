@@ -165,14 +165,18 @@
   tr:hover td { background: var(--accent-subtle); }
   tr:last-child td { border-bottom: none; }
   td .badge, td .btn { display: inline-flex; align-items: center; }
-  .opportunities-table { min-width: 1120px; }
+  .opportunities-table { min-width: 1240px; }
   .opportunities-table th:nth-child(1), .opportunities-table td:nth-child(1) { width: 42px; text-align: center; }
+  /* numeric columns: Pos(5) Imp(6) Clicks(7) CTR(8) Score(10) */
   .opportunities-table th:nth-child(5), .opportunities-table td:nth-child(5),
   .opportunities-table th:nth-child(6), .opportunities-table td:nth-child(6),
   .opportunities-table th:nth-child(7), .opportunities-table td:nth-child(7),
-  .opportunities-table th:nth-child(8), .opportunities-table td:nth-child(8) { text-align: right; font-variant-numeric: tabular-nums; }
-  .opportunities-table th:nth-child(9), .opportunities-table td:nth-child(9) { text-align: left; font-weight: 400; color: var(--text-secondary); }
-  .opportunities-table th:nth-child(10), .opportunities-table td:nth-child(10) { text-align: center; font-weight: 800; color: var(--accent); }
+  .opportunities-table th:nth-child(8), .opportunities-table td:nth-child(8),
+  .opportunities-table th:nth-child(10), .opportunities-table td:nth-child(10) { text-align: right; font-variant-numeric: tabular-nums; }
+  /* Recommendation(11) */
+  .opportunities-table th:nth-child(11), .opportunities-table td:nth-child(11) { text-align: left; font-weight: 400; color: var(--text-secondary); }
+  /* Content Type(12) */
+  .opportunities-table th:nth-child(12), .opportunities-table td:nth-child(12) { text-align: center; font-weight: 800; color: var(--accent); }
   .opportunities-table th:last-child, .opportunities-table td:last-child { text-align: right; }
   .opp-keyword-cell { min-width: 220px; color: var(--text); font-weight: 700; }
   .opp-page-cell { max-width: 300px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1129,6 +1133,8 @@ function renderResults(d) {
             <th>Landing Page</th>
             <th>Pos</th>
             <th>Imp</th>
+            <th>Clicks</th>
+            <th>CTR</th>
             <th>Intent</th>
             <th>Score</th>
             <th>Recommendation</th>
@@ -1164,6 +1170,8 @@ function renderResults(d) {
                 <td class="opp-page-cell" title="${escapeHtml(page || '—')}">${pageCell}</td>
                 <td>${formatNumber(o.position)}</td>
                 <td>${formatNumber(o.impressions)}</td>
+                <td>${formatNumber(o.clicks)}</td>
+                <td>${(o.ctr != null && o.ctr !== '') ? escapeHtml(String(o.ctr)) : '—'}</td>
                 <td><span class="badge badge-${safeBadgeClass(o.intent)}">${escapeHtml(o.intent || 'MOFU')}</span></td>
                 <td>${scoreValue(o)}</td>
                 <td><span class="badge badge-${recommendationBadge(o.recommendation)}">${escapeHtml(o.recommendation || '')}</span></td>
