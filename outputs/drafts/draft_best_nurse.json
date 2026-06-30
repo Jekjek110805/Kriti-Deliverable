@@ -3,35 +3,31 @@
   "intent": "BOFU",
   "tone": "conversational",
   "word_count_target": 1500,
+  "word_count_actual": 51,
   "sections": [
     {
       "type": "tldr",
-      "content": "This guide covers everything you need to know about best nurse. Learn the key factors, best practices, and how to choose the right solution for your needs."
+      "content": "Key considerations and practical guidance on best nurse, distilled into actionable insights."
     },
     {
       "type": "h2",
       "title": "Introduction",
-      "content": "Understanding best nurse is essential for making informed decisions. In this guide, we cover the key aspects you need to know."
+      "content": "[Best Nurse \u2014 LLM unavailable for content generation]"
     },
     {
       "type": "h2",
       "title": "Main Content",
-      "content": "[Content for: Main Content]\n\nThis section should cover main content in detail, focusing on best nurse. Include specific examples, data, and actionable advice."
-    },
-    {
-      "type": "h2",
-      "title": "Conclusion",
-      "content": "[Content for: Conclusion]\n\nThis section should cover conclusion in detail, focusing on best nurse. Include specific examples, data, and actionable advice."
+      "content": "[Best Nurse \u2014 LLM unavailable for content generation]"
     },
     {
       "type": "cta",
-      "content": "Ready to get started with best nurse? Contact us today to learn how we can help."
+      "content": "Explore how best nurse can work for your organisation. Speak with our team to discuss your requirements."
     }
   ],
-  "full_content": "## TLDR\n\nThis guide covers everything you need to know about best nurse. Learn the key factors, best practices, and how to choose the right solution for your needs.\n\n---\n\n## Introduction\n\nUnderstanding best nurse is essential for making informed decisions. In this guide, we cover the key aspects you need to know.\n\n## Main Content\n\n[Content for: Main Content]\n\nThis section should cover main content in detail, focusing on best nurse. Include specific examples, data, and actionable advice.\n\n## Conclusion\n\n[Content for: Conclusion]\n\nThis section should cover conclusion in detail, focusing on best nurse. Include specific examples, data, and actionable advice.\n\n## Next Steps\n\nReady to get started with best nurse? Contact us today to learn how we can help.\n\n",
+  "full_content": "TLDR\n\nKey considerations and practical guidance on best nurse, distilled into actionable insights.\n\nIntroduction\n\n[Best Nurse \u2014 LLM unavailable for content generation]\n\nMain Content\n\n[Best Nurse \u2014 LLM unavailable for content generation]\n\nNext Steps\n\nExplore how best nurse can work for your organisation. Speak with our team to discuss your requirements.\n\n",
   "status": "draft",
   "ai_generated": true,
   "human_edited": false,
-  "created_at": "2026-06-25T07:50:33.816163",
-  "notes": "This is an AI-generated draft. A human must review, edit fact-check, and approve before publishing."
+  "created_at": "2026-06-30T05:54:44.042709",
+  "notes": "This draft was written by Hermes (LLM). A human must review, edit, fact-check, and approve before publishing."
 }
