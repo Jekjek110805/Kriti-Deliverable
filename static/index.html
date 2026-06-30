@@ -1274,7 +1274,7 @@ function renderOppsTable(rows) {
               <tr>
                 <td>${i + 1}</td>
                 <td><span class="badge badge-${safeBadgeClass(o.priority)}">${escapeHtml(o.priority || 'Low')}</span></td>
-                <td class="opp-keyword-cell">${escapeHtml(o.keyword || '')}${gapLabel}</td>
+                <td class="opp-keyword-cell">${escapeHtml(o.keyword || '')}${gapLabel}${approvalBadge(o.approval_status)}</td>
                 <td class="opp-page-cell" title="${escapeHtml(page || '—')}">${pageCell}</td>
                 <td>${formatNumber(o.position)}</td>
                 <td>${formatNumber(o.impressions)}</td>
@@ -1318,6 +1318,37 @@ function nextStep(o) {
   if (s === 'rejected') return 'Rejected — no action will be taken.';
   if (s === 'blocked') return 'Blocked — needs more information before deciding.';
   return 'Send to the approval queue for human review.';
+}
+
+function approvalBadge(status) {
+  const s = status || 'needs_review';
+  const map = {
+    needs_review: ['Needs Review', 'var(--text-muted)', 'rgba(148,163,184,0.12)'],
+    approved: ['Approved', '#2DD4BF', 'rgba(45,212,191,0.14)'],
+    rejected: ['Rejected', 'var(--crimson)', 'rgba(244,63,94,0.14)'],
+    blocked: ['Blocked', 'var(--yellow)', 'rgba(234,179,8,0.14)'],
+  };
+  const [label, color, bg] = map[s] || map.needs_review;
+  return `<span style="font-size:9px;padding:2px 7px;margin-left:6px;border-radius:4px;background:${bg};color:${color};">${label}</span>`;
+}
+
+async function setApproval(index, action) {
+  const o = opportunities[index];
+  if (!o) return;
+  const statusMap = { approve: 'approved', reject: 'rejected', block: 'blocked' };
+  try {
+    await fetch(BASE + '/api/queue/' + encodeURIComponent(o.keyword) + '/' + action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: '' }),
+    });
+    o.approval_status = statusMap[action] || o.approval_status;
+  } catch (e) {
+    alert('Could not update approval: ' + e);
+    return;
+  }
+  applyOppFilters();
+  showReasonModal(index);
 }
 
 function showReasonModal(index) {
@@ -1380,11 +1411,19 @@ function showReasonModal(index) {
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">SUGGESTED ACTION</div>
         <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${escapeHtml(suggestedAction(o))}</div>
       </div>
-      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:20px;">
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:18px;">
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">NEXT STEP</div>
         <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${escapeHtml(nextStep(o))}</div>
       </div>
-      <div style="display:flex;justify-content:flex-end;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span style="font-size:11px;color:var(--text-muted);">APPROVAL</span>${approvalBadge(o.approval_status)}
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-sm" style="background:var(--green);color:#06281f;border:none;" onclick="setApproval(${index},'approve')">Approve</button>
+          <button class="btn btn-sm" style="background:var(--crimson);color:#fff;border:none;" onclick="setApproval(${index},'reject')">Reject</button>
+          <button class="btn btn-sm" style="background:var(--yellow);color:#3a2e05;border:none;" onclick="setApproval(${index},'block')">Block</button>
+        </div>
         <button class="btn btn-primary" onclick="document.getElementById('reason-modal').remove()">Close</button>
       </div>
     </div>
