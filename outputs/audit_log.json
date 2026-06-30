@@ -151,5 +151,104 @@
       "notes": "Approved via governance page",
       "keyword": ""
     }
+  },
+  {
+    "id": 15,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-30T05:45:53.608659",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 16,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-30T05:45:56.321762",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 17,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-30T05:45:56.722110",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 18,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-30T05:45:56.945912",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 19,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-30T05:45:57.135997",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 20,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-30T05:45:57.305058",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 21,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-30T05:45:57.462498",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 22,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-30T05:45:57.752612",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 23,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-30T05:45:57.999521",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
   }
 ]
