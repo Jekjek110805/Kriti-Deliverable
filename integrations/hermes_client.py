@@ -91,13 +91,13 @@ def classify_content_type(keyword: str, page: str, recommendation: str, intent: 
 
 
 def compute_confidence(score: int, has_page: bool, impressions: int,
-                       recommendation: str, is_gap: bool) -> int:
+                       recommendation: str, is_gap: bool, clicks: int = 0) -> int:
     """Confidence percentage (45–97) for the recommendation."""
-    if score >= 80:
+    if score >= 85:
         base = 88
-    elif score >= 65:
+    elif score >= 70:
         base = 78
-    elif score >= 50:
+    elif score >= 55:
         base = 68
     else:
         base = 55
@@ -142,8 +142,12 @@ def score_impressions(impressions: int) -> int:
         return 12
     elif impressions >= 200:
         return 9
-    elif impressions >= 50:
+    elif impressions >= 100:
         return 5
+    elif impressions >= 50:
+        return 3
+    elif impressions >= 10:
+        return 1
     return 0
 
 
@@ -167,12 +171,28 @@ def score_kd() -> int:
     return 5  # no SEMrush data available
 
 
+def score_clicks(clicks: int) -> int:
+    """Score click-through signal (0-10). Rewards keywords that already
+    prove users want them; penalises zero-click high-impression rows."""
+    if clicks >= 100:
+        return 10
+    elif clicks >= 50:
+        return 8
+    elif clicks >= 20:
+        return 6
+    elif clicks >= 10:
+        return 4
+    elif clicks >= 1:
+        return 2
+    return 0  # zero clicks — no real demand signal
+
+
 def compute_priority(score: int) -> str:
-    if score >= 80:
+    if score >= 85:
         return "Critical"
-    elif score >= 65:
+    elif score >= 70:
         return "High"
-    elif score >= 50:
+    elif score >= 55:
         return "Medium"
     return "Low"
 
@@ -415,7 +435,7 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
             continue
 
         # Gap keywords need stronger signal to be worth surfacing
-        min_impressions = 300 if is_gap else 50
+        min_impressions = 100 if is_gap else 10
         if impressions < min_impressions:
             excluded.append({"keyword": keyword, "reason": f"impressions {impressions} below {min_impressions}"})
             continue
@@ -429,14 +449,15 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
         s_intent = score_intent(intent)
         s_commercial = score_commercial(commercial)
         s_kd = score_kd()
+        s_clicks = score_clicks(clicks)
         total_score = (s_existing + s_position + s_impressions +
-                       s_intent + s_commercial + s_kd)
+                       s_intent + s_commercial + s_kd + s_clicks)
 
         priority = compute_priority(total_score)
         recommendation = compute_recommendation(page, position, intent, ctr_val)
         content_type = classify_content_type(keyword, page, recommendation, intent)
         confidence = compute_confidence(total_score, bool(page), impressions,
-                                        recommendation, is_gap)
+                                        recommendation, is_gap, clicks)
         reason = build_reason(keyword, page, position, impressions, intent,
                               total_score, recommendation, commercial,
                               content_type, is_gap)

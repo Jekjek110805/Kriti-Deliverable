@@ -1,0 +1,60 @@
+{
+  "keyword": "accountant software",
+  "intent": "BOFU",
+  "target_audience": "Business owners and decision-makers",
+  "word_count_target": 1500,
+  "title_suggestions": [
+    "Accountant Software: The Complete Guide",
+    "Best Accountant Software for Your Business",
+    "How to Choose Accountant Software in 2026"
+  ],
+  "h1": "Accountant Software: The Complete Guide",
+  "h2_outline": [
+    "What is accountant software?",
+    "Why accountant software matters for your business",
+    "Key features to look for",
+    "How to choose the right accountant software",
+    "Top accountant software options compared",
+    "Implementation best practices",
+    "Common mistakes to avoid",
+    "Next steps"
+  ],
+  "faq_questions": [
+    "What is accountant software and why does it matter?",
+    "How do I get started with accountant software?",
+    "What are the best accountant software options?",
+    "How much does accountant software cost?",
+    "What mistakes should I avoid with accountant software?"
+  ],
+  "competitor_angles": [
+    "Comparison posts (vs. alternatives)",
+    "Review-style content",
+    "Case studies and results",
+    "Problem-solution framing"
+  ],
+  "internal_link_suggestions": [
+    "Link from related service pages",
+    "Link from blog category page",
+    "Link from resource/guide pages"
+  ],
+  "seo_requirements": {
+    "keyword_in_title": true,
+    "keyword_in_first_paragraph": true,
+    "keyword_in_h2": true,
+    "meta_description_length": "150-160 characters",
+    "url_slug": "accountant-software",
+    "alt_text_keyword": true,
+    "internal_links_min": 3,
+    "word_count_min": 1500
+  },
+  "content_guidelines": {
+    "tldr_required": true,
+    "tldr_length": "2-3 sentences",
+    "paragraph_max_length": "150 words",
+    "use_second_person": true,
+    "cta_required": true,
+    "image_required": true
+  },
+  "approval_status": "draft",
+  "created_at": "2026-06-30T02:57:52.161021"
+}
