@@ -7,6 +7,9 @@ __pycache__/
 *.env
 config/litellm_key.txt
 config/api_keys.json
+config/gsc_credentials.json
+*.json.key
+*-service-account*.json
 data/
 reports/
 outputs/

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="O182aYvFAIKuxSyAtPiBuEbPnGmBgJpS4eaOhwZ0W4Y" />
 <title>MAAI — Content Operations Platform</title>
 <link rel="icon" type="image/png" sizes="64x64" href="/static/favicon.png?v=kriti-logo">
 <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png?v=kriti-logo">
@@ -164,15 +165,25 @@
   tr:hover td { background: var(--accent-subtle); }
   tr:last-child td { border-bottom: none; }
   td .badge, td .btn { display: inline-flex; align-items: center; }
-  .opportunities-table { min-width: 1120px; }
+  .opportunities-table { min-width: 1400px; }
   .opportunities-table th:nth-child(1), .opportunities-table td:nth-child(1) { width: 42px; text-align: center; }
+  /* numeric columns: Pos(5) Imp(6) Clicks(7) CTR(8) Score(11) */
   .opportunities-table th:nth-child(5), .opportunities-table td:nth-child(5),
   .opportunities-table th:nth-child(6), .opportunities-table td:nth-child(6),
   .opportunities-table th:nth-child(7), .opportunities-table td:nth-child(7),
-  .opportunities-table th:nth-child(8), .opportunities-table td:nth-child(8) { text-align: right; font-variant-numeric: tabular-nums; }
-  .opportunities-table th:nth-child(9), .opportunities-table td:nth-child(9) { text-align: left; font-weight: 400; color: var(--text-secondary); }
-  .opportunities-table th:nth-child(10), .opportunities-table td:nth-child(10) { text-align: center; font-weight: 800; color: var(--accent); }
-  .opportunities-table th:last-child, .opportunities-table td:last-child { text-align: right; }
+  .opportunities-table th:nth-child(8), .opportunities-table td:nth-child(8),
+  .opportunities-table th:nth-child(11), .opportunities-table td:nth-child(11) { text-align: right; font-variant-numeric: tabular-nums; }
+  /* Content Type(13) */
+  .opportunities-table th:nth-child(13), .opportunities-table td:nth-child(13) { text-align: center; }
+  /* Reason (last) — truncated, click opens detail */
+  .opp-reason-cell { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; color: var(--text-secondary); }
+  .opp-reason-cell:hover { color: var(--text); text-decoration: underline; }
+  .opp-filters { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; margin-bottom: 18px; }
+  .opp-filters .flt { display: flex; flex-direction: column; gap: 4px; }
+  .opp-filters label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+  .opp-filters select, .opp-filters input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 7px 9px; font-size: 13px; }
+  .opp-filters input.flt-num { width: 78px; }
+  .opp-filters .flt-count { font-size: 12px; color: var(--text-muted); margin-left: auto; align-self: center; }
   .opp-keyword-cell { min-width: 220px; color: var(--text); font-weight: 700; }
   .opp-page-cell { max-width: 300px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .opp-page-cell a { color: var(--text-muted); text-decoration: none; }
@@ -286,6 +297,8 @@
   .alert-info { background: var(--accent-glow); border: 1px solid rgba(124,92,255,0.15); color: var(--accent); }
   .alert-success { background: var(--green-glow); border: 1px solid rgba(61,220,151,0.15); color: var(--green); }
   .alert-error { background: var(--red-glow); border: 1px solid rgba(255,71,87,0.15); color: var(--red); }
+  .alert-warning { background: rgba(245,178,7,0.08); border: 1px solid rgba(245,178,7,0.28); color: #c98a00; }
+  body.light .alert-warning { color: #8a6200; }
 
   /* Icons */
   .icon { width: 18px; height: 18px; display: inline-block; vertical-align: middle; flex-shrink: 0; }
@@ -382,7 +395,7 @@
     <!-- PAGE: DISCOVER -->
     <div id="page-discover" class="page active">
       <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Discover Opportunities</h1>
-      <p style="color:var(--text-muted);margin-bottom:24px;">Upload a GSC CSV or XLSX export to find existing-page SEO opportunities.</p>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Upload a GSC CSV or pull live Search Console data to find existing-page SEO opportunities.</p>
 
       <div class="card upload-beam-card" id="upload-card">
         <div class="card-title">Upload GSC Export</div>
@@ -392,6 +405,10 @@
           <div class="upload-hint">Expected query data: query, clicks, impressions, position</div>
         </div>
         <input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="handleFile(this)">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
+          <button class="btn btn-primary" onclick="runLiveGSC()">Pull live GSC</button>
+          <button class="btn btn-secondary" onclick="showPage('integrations')">Configure GSC</button>
+        </div>
       </div>
 
       <div class="loading" id="loading">
@@ -406,12 +423,14 @@
         <!-- Opportunities -->
         <div class="card">
           <div class="results-card-header">
-            <div class="card-title">Ranked Opportunities</div>
+            <div class="card-title" id="resultsCardTitle">Ranked Opportunities</div>
             <div class="results-actions">
               <button class="btn btn-sm btn-secondary" onclick="resetDiscoverUpload()">Cancel</button>
               <button class="btn btn-sm btn-primary" onclick="uploadAnotherFile()">Upload another file</button>
+              <button class="btn btn-sm btn-primary" onclick="runLiveGSC()">Pull live GSC</button>
             </div>
           </div>
+          <div id="oppsFilters"></div>
           <div id="oppsTable"></div>
         </div>
       </div>
@@ -769,10 +788,16 @@
 </div>
 
 <script>
-const BASE = window.location.origin;
+const BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : window.location.origin;
 let opportunities = [];
 let activeJobPoll = null;
 let analysisInProgress = false;
+let oppCurrentPage = 1;
+const OPP_PAGE_SIZE = 100;
+// GSC Overview pagination — 100 rows per page per section.
+let gscOverviewSections = [];
+let gscSectionPages = {};
+const GSC_PAGE_SIZE = 100;
 
 // ── Icon helper ──────────────────────────────────────────────────────────────
 function icon(name) {
@@ -865,6 +890,11 @@ function resetDiscoverUpload() {
   }
   analysisInProgress = false;
   opportunities = [];
+  oppCurrentPage = 1;
+  gscOverviewSections = [];
+  gscSectionPages = {};
+  const titleEl = document.getElementById('resultsCardTitle');
+  if (titleEl) titleEl.textContent = 'Ranked Opportunities';
   document.getElementById('loading').classList.remove('active');
   document.getElementById('results-section').classList.add('hidden');
   document.getElementById('statsGrid').innerHTML = '';
@@ -910,6 +940,10 @@ function handleFile(input) {
         // Analysis queued -- poll for results
         showQueuedStatus(d);
         pollJob(d.job_id);
+      } else if (d.status === 'overview_only') {
+        // Query-only export: show raw GSC sections (real URLs), no fake pages.
+        analysisInProgress = false;
+        renderGscOverview(d);
       } else if (d.opportunities) {
         // Synchronous result (fallback)
         analysisInProgress = false;
@@ -924,6 +958,46 @@ function handleFile(input) {
       document.getElementById('loading').classList.remove('active');
       resetDiscoverUpload();
       alert('Error: ' + err);
+    });
+}
+
+function runLiveGSC(days = 30, rowLimit = 500) {
+  if (analysisInProgress || hasVisibleResults()) {
+    alert('Please cancel the current results before pulling live GSC data.');
+    return;
+  }
+
+  analysisInProgress = true;
+  setUploadCardVisible(false);
+  document.getElementById('loading').classList.add('active');
+  document.getElementById('results-section').classList.add('hidden');
+
+  fetch(BASE + '/api/integrations/gsc/pull', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ days, row_limit: rowLimit })
+  })
+    .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+    .then(({ ok, data }) => {
+      document.getElementById('loading').classList.remove('active');
+      if (!ok || data.error || data.status === 'error') {
+        alert('GSC pull failed: ' + (data.error || data.message || 'Check GSC configuration.'));
+        resetDiscoverUpload();
+        return;
+      }
+
+      if (data.status === 'queued' && data.job_id) {
+        showQueuedStatus(data);
+        pollJob(data.job_id);
+      } else {
+        alert('No live GSC analysis job was returned.');
+        resetDiscoverUpload();
+      }
+    })
+    .catch(err => {
+      document.getElementById('loading').classList.remove('active');
+      resetDiscoverUpload();
+      alert('GSC pull failed: ' + err);
     });
 }
 
@@ -951,6 +1025,13 @@ function recommendationBadge(recommendation) {
   if (recommendation === 'Improve Existing') return 'optimize';
   if (recommendation === 'Expand Existing') return 'maybe';
   return 'skip';
+}
+
+// Display label per spec wording (internal value stays stable for logic).
+function recommendationLabel(recommendation) {
+  if (recommendation === 'Improve Existing') return 'Improve Existing Page';
+  if (recommendation === 'Expand Existing') return 'Expand Existing Page';
+  return recommendation || '';
 }
 
 function contentTypeBadge(contentType) {
@@ -1047,30 +1128,135 @@ function renderResults(d) {
   analysisInProgress = false;
   setUploadCardVisible(false);
   document.getElementById('results-section').classList.remove('hidden');
+  const titleEl = document.getElementById('resultsCardTitle');
+  if (titleEl) titleEl.textContent = 'Ranked Opportunities';
   const rows = Array.isArray(d.opportunities) ? d.opportunities : [];
   opportunities = rows;
+  oppCurrentPage = 1;
 
   const opportunitiesFound = d.opportunities_found ?? d.summary?.opportunities_found ?? rows.length;
-  const noChange = d.summary?.no_change ?? rows.filter(o => o.recommendation === 'No Change').length;
-  const improve = d.summary?.improve_existing ?? rows.filter(o => o.recommendation === 'Improve Existing' || o.recommendation === 'Expand Existing').length;
-  const createNew = d.summary?.create_new ?? rows.filter(o => o.recommendation === 'Create New Content').length;
-  const gapCount = d.summary?.gap_keywords ?? rows.filter(o => o.is_gap).length;
-  const excludedCount = Array.isArray(d.excluded) ? d.excluded.length : (d.excluded ?? 0);
+  const critical = rows.filter(o => o.priority === 'Critical').length;
+  const high = rows.filter(o => o.priority === 'High').length;
+  const noChange = rows.filter(o => o.recommendation === 'No Change').length;
+  const improveExisting = rows.filter(o => o.recommendation === 'Improve Existing').length;
+  const expandExisting = rows.filter(o => o.recommendation === 'Expand Existing').length;
+  const createNew = rows.filter(o => o.recommendation === 'Create New Content').length;
 
   document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-card"><div class="stat-value">${opportunitiesFound}</div><div class="stat-label">Total Found</div></div>
+    <div class="stat-card"><div class="stat-value">${opportunitiesFound}</div><div class="stat-label">Total Opportunities</div></div>
+    <div class="stat-card"><div class="stat-value stat-critical">${critical}</div><div class="stat-label">Critical</div></div>
+    <div class="stat-card"><div class="stat-value stat-high">${high}</div><div class="stat-label">High</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--green)">${improveExisting}</div><div class="stat-label">Improve Existing</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--yellow)">${expandExisting}</div><div class="stat-label">Expand Existing</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--crimson)">${createNew}</div><div class="stat-label">Create New</div></div>
     <div class="stat-card"><div class="stat-value" style="color:#2DD4BF">${noChange}</div><div class="stat-label">No Change</div></div>
-    <div class="stat-card"><div class="stat-value stat-high">${improve}</div><div class="stat-label">Improve Existing</div></div>
-    <div class="stat-card"><div class="stat-value stat-critical">${createNew}</div><div class="stat-label">Create New</div></div>
-    <div class="stat-card"><div class="stat-value" style="color:var(--accent)">${gapCount}</div><div class="stat-label">Gap Keywords</div></div>
-    <div class="stat-card"><div class="stat-value" style="color:var(--text-muted)">${excludedCount}</div><div class="stat-label">Excluded</div></div>
   `;
 
+  const oppsFilters = document.getElementById('oppsFilters');
   const list = document.getElementById('oppsTable');
   if (!rows.length) {
+    if (oppsFilters) oppsFilters.innerHTML = '';
     list.innerHTML = '<div class="alert alert-info">No opportunities matched the Stage 1A filters. Try a wider GSC export or check that the file includes query, impressions, clicks, and position columns.</div>';
     return;
   }
+
+  renderOppFilters();
+  applyOppFilters();
+}
+
+// Filter bar — Recommendation, Intent, Priority, Landing Page, Position, Score.
+function renderOppFilters() {
+  const el = document.getElementById('oppsFilters');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="opp-filters">
+      <div class="flt"><label>Recommendation</label>
+        <select id="fltRec" onchange="applyOppFilters(true)">
+          <option value="">All</option>
+          <option value="No Change">No Change</option>
+          <option value="Improve Existing">Improve Existing Page</option>
+          <option value="Expand Existing">Expand Existing Page</option>
+          <option value="Create New Content">Create New Content</option>
+        </select></div>
+      <div class="flt"><label>Intent</label>
+        <select id="fltIntent" onchange="applyOppFilters(true)">
+          <option value="">All</option><option>BOFU</option><option>MOFU</option><option>TOFU</option>
+        </select></div>
+      <div class="flt"><label>Priority</label>
+        <select id="fltPriority" onchange="applyOppFilters(true)">
+          <option value="">All</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option>
+        </select></div>
+      <div class="flt"><label>Landing Page</label>
+        <input id="fltLanding" type="text" placeholder="search url…" oninput="applyOppFilters(true)"></div>
+      <div class="flt"><label>Position</label>
+        <div style="display:flex;gap:6px;">
+          <input id="fltPosMin" class="flt-num" type="number" placeholder="min" oninput="applyOppFilters(true)">
+          <input id="fltPosMax" class="flt-num" type="number" placeholder="max" oninput="applyOppFilters(true)">
+        </div></div>
+      <div class="flt"><label>Min Score</label>
+        <input id="fltScoreMin" class="flt-num" type="number" placeholder="0" oninput="applyOppFilters(true)"></div>
+      <button class="btn btn-sm btn-secondary" onclick="resetOppFilters()">Reset</button>
+      <span class="flt-count" id="fltCount"></span>
+    </div>
+  `;
+}
+
+function resetOppFilters() {
+  ['fltRec','fltIntent','fltPriority','fltLanding','fltPosMin','fltPosMax','fltScoreMin'].forEach(id => {
+    const e = document.getElementById(id); if (e) e.value = '';
+  });
+  oppCurrentPage = 1;
+  applyOppFilters();
+}
+
+function applyOppFilters(resetPage = false) {
+  if (resetPage) oppCurrentPage = 1;
+  const g = id => document.getElementById(id);
+  const rec = g('fltRec') ? g('fltRec').value : '';
+  const intent = g('fltIntent') ? g('fltIntent').value : '';
+  const prio = g('fltPriority') ? g('fltPriority').value : '';
+  const lp = (g('fltLanding') ? g('fltLanding').value : '').trim().toLowerCase();
+  const posMin = parseFloat(g('fltPosMin') ? g('fltPosMin').value : '');
+  const posMax = parseFloat(g('fltPosMax') ? g('fltPosMax').value : '');
+  const scoreMin = parseFloat(g('fltScoreMin') ? g('fltScoreMin').value : '');
+  const all = Array.isArray(opportunities) ? opportunities : [];
+  const filtered = all.filter(o => {
+    if (rec && o.recommendation !== rec) return false;
+    if (intent && o.intent !== intent) return false;
+    if (prio && o.priority !== prio) return false;
+    if (lp) {
+      const hay = ((o.landing_page || '') + ' ' + (o.page || '') + ' ' + (o.landing_page_url || '')).toLowerCase();
+      if (!hay.includes(lp)) return false;
+    }
+    const pos = Number(o.position);
+    if (!isNaN(posMin) && pos < posMin) return false;
+    if (!isNaN(posMax) && pos > posMax) return false;
+    const sc = Number(o.score != null ? o.score : (o.opportunity_score || 0));
+    if (!isNaN(scoreMin) && sc < scoreMin) return false;
+    return true;
+  });
+  renderOppsTable(filtered);
+}
+
+function changeOppPage(delta) {
+  oppCurrentPage = Math.max(1, oppCurrentPage + delta);
+  applyOppFilters();
+}
+
+function renderOppsTable(rows) {
+  const list = document.getElementById('oppsTable');
+  if (!list) return;
+  if (!rows.length) {
+    list.innerHTML = '<div class="alert alert-info">No opportunities match the current filters.</div>';
+    return;
+  }
+  const totalPages = Math.max(1, Math.ceil(rows.length / OPP_PAGE_SIZE));
+  if (oppCurrentPage > totalPages) oppCurrentPage = totalPages;
+  const start = (oppCurrentPage - 1) * OPP_PAGE_SIZE;
+  const pageRows = rows.slice(start, start + OPP_PAGE_SIZE);
+  const end = start + pageRows.length;
+  const cnt = document.getElementById('fltCount');
+  if (cnt) cnt.textContent = `Showing ${start + 1}-${end} of ${rows.length}`;
 
   list.innerHTML = `
     <div class="table-wrap opportunities-table-wrap">
@@ -1080,49 +1266,179 @@ function renderResults(d) {
             <th>#</th>
             <th>Priority</th>
             <th>Keyword</th>
-            <th>Existing Page</th>
+            <th>Landing Page</th>
             <th>Pos</th>
             <th>Imp</th>
+            <th>Clicks</th>
+            <th>CTR</th>
             <th>Intent</th>
+            <th>Commercial</th>
             <th>Score</th>
             <th>Recommendation</th>
             <th>Content Type</th>
             <th>Confidence</th>
-            <th>Next Action</th>
+            <th>Reason</th>
           </tr>
         </thead>
         <tbody>
-          ${rows.map((o, i) => {
-            const page = o.page || '';
-            const pageIsLink = /^(https?:\/\/|\/)/i.test(page);
-            const pageCell = page && pageIsLink
-              ? `<a href="${escapeHtml(page)}" target="_blank" rel="noopener">${escapeHtml(page)}</a>`
-              : `<span style="color:var(--text-muted);">${escapeHtml(page || '—')}</span>`;
+          ${pageRows.map((o, i) => {
+            const idx = opportunities.indexOf(o);
+            const landingPage = o.landing_page || o.page || '';
+            const lpType = o.landing_page_type || '';
+            const lpUrl = o.landing_page_url || (/^https?:\/\//i.test(landingPage) ? landingPage : '');
+            const lpInner = lpUrl
+              ? `<a href="${escapeHtml(lpUrl)}" target="_blank" rel="noopener">${escapeHtml(landingPage)}</a>`
+              : `<span>${escapeHtml(landingPage || '—')}</span>`;
+            const lpBadge = lpType === 'existing'
+              ? `<span style="font-size:9px;padding:2px 7px;margin-left:6px;border-radius:4px;background:rgba(45,212,191,0.12);color:#2DD4BF;">existing</span>`
+              : lpType === 'suggested_new'
+                ? `<span style="font-size:9px;padding:2px 7px;margin-left:6px;border-radius:4px;background:rgba(124,92,255,0.1);color:var(--accent);">suggested</span>`
+                : '';
+            const pageCell = `${lpInner}${lpBadge}`;
+            const page = landingPage;
             const gapLabel = o.is_gap ? `<span class="badge badge-gap" style="font-size:9px;padding:2px 7px;margin-left:4px;">GAP</span>` : '';
             const ctLabel = o.content_type ? `<span class="badge badge-${contentTypeBadge(o.content_type)}">${escapeHtml(o.content_type)}</span>` : '—';
             const confVal = o.confidence != null ? o.confidence : '—';
             const confColor = o.confidence >= 85 ? 'var(--green)' : o.confidence >= 70 ? 'var(--yellow)' : 'var(--text-muted)';
+            const commercial = o.commercial_potential || '—';
+            const commColor = commercial === 'High' ? 'var(--green)' : commercial === 'Medium' ? 'var(--yellow)' : 'var(--text-muted)';
+            const reasonText = o.reason || '';
             return `
               <tr>
-                <td>${i + 1}</td>
+                <td>${start + i + 1}</td>
                 <td><span class="badge badge-${safeBadgeClass(o.priority)}">${escapeHtml(o.priority || 'Low')}</span></td>
-                <td class="opp-keyword-cell">${escapeHtml(o.keyword || '')}${gapLabel}</td>
+                <td class="opp-keyword-cell">${escapeHtml(o.keyword || '')}${gapLabel}${approvalBadge(o.approval_status)}</td>
                 <td class="opp-page-cell" title="${escapeHtml(page || '—')}">${pageCell}</td>
                 <td>${formatNumber(o.position)}</td>
                 <td>${formatNumber(o.impressions)}</td>
+                <td>${formatNumber(o.clicks)}</td>
+                <td>${(o.ctr != null && o.ctr !== '') ? escapeHtml(String(o.ctr)) : '—'}</td>
                 <td><span class="badge badge-${safeBadgeClass(o.intent)}">${escapeHtml(o.intent || 'MOFU')}</span></td>
+                <td style="color:${commColor};font-weight:600;">${escapeHtml(commercial)}</td>
                 <td>${scoreValue(o)}</td>
-                <td><span class="badge badge-${recommendationBadge(o.recommendation)}">${escapeHtml(o.recommendation || '')}</span></td>
+                <td><span class="badge badge-${recommendationBadge(o.recommendation)}">${escapeHtml(recommendationLabel(o.recommendation))}</span></td>
                 <td>${ctLabel}</td>
                 <td style="color:${confColor};font-weight:700;">${confVal !== '—' ? confVal + '%' : '—'}</td>
-                <td><button class="btn btn-sm btn-secondary" onclick="showReasonModal(${i})">Review</button></td>
+                <td class="opp-reason-cell" title="${escapeHtml(reasonText)}" onclick="showReasonModal(${idx})">${escapeHtml(reasonText || '—')}</td>
               </tr>
             `;
           }).join('')}
         </tbody>
       </table>
     </div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:14px;">
+      <span style="font-size:12px;color:var(--text-muted);">Page ${oppCurrentPage} of ${totalPages}</span>
+      <button class="btn btn-sm btn-secondary" onclick="changeOppPage(-1)" ${oppCurrentPage <= 1 ? 'disabled' : ''}>Prev</button>
+      <button class="btn btn-sm btn-primary" onclick="changeOppPage(1)" ${oppCurrentPage >= totalPages ? 'disabled' : ''}>Next</button>
+    </div>
   `;
+}
+
+// ── GSC Overview (raw Search Console sections, real URLs, paginated) ──────────
+function isUrl(value) {
+  return /^https?:\/\//i.test(String(value || '').trim());
+}
+
+// Renders one cell. Real URLs (e.g. the Pages "Top pages" column) become
+// clickable links; GSC's raw numbers are tidied for display.
+function renderGscCell(value, column) {
+  const text = String(value ?? '').trim();
+  if (!text) return '—';
+  if (isUrl(text)) {
+    return `<a href="${escapeHtml(text)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>`;
+  }
+  const col = String(column || '').toLowerCase();
+  const num = Number(text);
+  if (Number.isFinite(num)) {
+    if (col === 'ctr') return (num <= 1 ? num * 100 : num).toFixed(2) + '%';
+    if (col === 'position') return num.toFixed(2);
+    if (col === 'clicks' || col === 'impressions') return Math.round(num).toLocaleString();
+  }
+  return escapeHtml(text);
+}
+
+function renderGscOverview(d) {
+  analysisInProgress = false;
+  setUploadCardVisible(false);
+  document.getElementById('loading').classList.remove('active');
+  document.getElementById('results-section').classList.remove('hidden');
+  opportunities = [];
+
+  const titleEl = document.getElementById('resultsCardTitle');
+  if (titleEl) titleEl.textContent = 'GSC Overview';
+
+  gscOverviewSections = Array.isArray(d.gsc_overview) ? d.gsc_overview : [];
+  gscSectionPages = {};
+  gscOverviewSections.forEach((_, i) => { gscSectionPages[i] = 1; });
+
+  const findSection = label => gscOverviewSections.find(s => String(s.label || '').toLowerCase() === label);
+  const queries = findSection('queries');
+  const pages = findSection('pages');
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${gscOverviewSections.length}</div><div class="stat-label">GSC Sections</div></div>
+    <div class="stat-card"><div class="stat-value">${queries ? formatNumber(queries.total_rows || 0) : 0}</div><div class="stat-label">Queries</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--green)">${pages ? formatNumber(pages.total_rows || 0) : 0}</div><div class="stat-label">Pages</div></div>
+  `;
+
+  const filters = document.getElementById('oppsFilters');
+  if (filters) filters.innerHTML = '';
+
+  document.getElementById('oppsTable').innerHTML = `
+    ${d.warning ? `<div class="alert alert-warning">${escapeHtml(d.warning)}</div>` : ''}
+    <div id="gscSections"></div>
+  `;
+  renderGscSections();
+}
+
+function renderGscSections() {
+  const host = document.getElementById('gscSections');
+  if (!host) return;
+  if (!gscOverviewSections.length) {
+    host.innerHTML = '<div class="alert alert-info">No GSC sections were found in this export.</div>';
+    return;
+  }
+  host.innerHTML = gscOverviewSections.map((section, idx) => {
+    const columns = Array.isArray(section.columns) ? section.columns : [];
+    const rows = Array.isArray(section.rows) ? section.rows : [];
+    if (!columns.length || !rows.length) return '';
+    const total = rows.length;                                  // rows present client-side
+    const totalPages = Math.max(1, Math.ceil(total / GSC_PAGE_SIZE));
+    let page = gscSectionPages[idx] || 1;
+    if (page > totalPages) { page = totalPages; gscSectionPages[idx] = page; }
+    const start = (page - 1) * GSC_PAGE_SIZE;
+    const pageRows = rows.slice(start, start + GSC_PAGE_SIZE);
+    const end = start + pageRows.length;
+    const grandTotal = section.total_rows != null ? section.total_rows : total;
+    const truncNote = grandTotal > total ? ` (first ${formatNumber(total)} of ${formatNumber(grandTotal)})` : '';
+
+    const head = columns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
+    const body = pageRows.map(r => `<tr>${columns.map(c => `<td title="${escapeHtml(r[c] ?? '')}">${renderGscCell(r[c], c)}</td>`).join('')}</tr>`).join('');
+    return `
+      <div class="card">
+        <div class="results-card-header">
+          <div class="card-title">${escapeHtml(section.label || 'GSC Data')}</div>
+          <span style="font-size:12px;color:var(--text-muted);">Showing ${formatNumber(start + 1)}-${formatNumber(end)} of ${formatNumber(total)}${truncNote}</span>
+        </div>
+        <div class="table-wrap opportunities-table-wrap">
+          <table>
+            <thead><tr>${head}</tr></thead>
+            <tbody>${body}</tbody>
+          </table>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:14px;">
+          <span style="font-size:12px;color:var(--text-muted);">Page ${page} of ${totalPages}</span>
+          <button class="btn btn-sm btn-secondary" onclick="changeGscPage(${idx}, -1)" ${page <= 1 ? 'disabled' : ''}>Prev</button>
+          <button class="btn btn-sm btn-primary" onclick="changeGscPage(${idx}, 1)" ${page >= totalPages ? 'disabled' : ''}>Next</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function changeGscPage(idx, delta) {
+  const cur = gscSectionPages[idx] || 1;
+  gscSectionPages[idx] = Math.max(1, cur + delta);
+  renderGscSections();
 }
 
 function quickDecisionFromIndex(index) {
@@ -1131,30 +1447,93 @@ function quickDecisionFromIndex(index) {
   quickDecision(o.keyword || '', o.page || '', Number(o.position) || 0, Number(o.impressions) || 0, Number(o.clicks) || 0);
 }
 
+function suggestedAction(o) {
+  switch (o.recommendation) {
+    case 'No Change': return 'Leave this page as-is — it already performs well. Re-check in your next GSC review.';
+    case 'Improve Existing': return 'Optimize the existing page (title, on-page content, internal links) to push it into the top 5.';
+    case 'Expand Existing': return 'Expand the existing page with more depth and sections to move it from page 2 onto page 1.';
+    case 'Create New Content': return 'Create a new ' + (o.content_type || 'page') + ' targeting this keyword and its intent.';
+    default: return 'Review the data and decide the next step.';
+  }
+}
+
+function nextStep(o) {
+  const s = o.approval_status || 'needs_review';
+  if (s === 'approved') return 'Approved — ready to move to the next stage.';
+  if (s === 'rejected') return 'Rejected — no action will be taken.';
+  if (s === 'blocked') return 'Blocked — needs more information before deciding.';
+  return 'Send to the approval queue for human review.';
+}
+
+function approvalBadge(status) {
+  const s = status || 'needs_review';
+  const map = {
+    needs_review: ['Needs Review', 'var(--text-muted)', 'rgba(148,163,184,0.12)'],
+    approved: ['Approved', '#2DD4BF', 'rgba(45,212,191,0.14)'],
+    rejected: ['Rejected', 'var(--crimson)', 'rgba(244,63,94,0.14)'],
+    blocked: ['Blocked', 'var(--yellow)', 'rgba(234,179,8,0.14)'],
+  };
+  const [label, color, bg] = map[s] || map.needs_review;
+  return `<span style="font-size:9px;padding:2px 7px;margin-left:6px;border-radius:4px;background:${bg};color:${color};">${label}</span>`;
+}
+
+async function setApproval(index, action) {
+  const o = opportunities[index];
+  if (!o) return;
+  const statusMap = { approve: 'approved', reject: 'rejected', block: 'blocked' };
+  try {
+    await fetch(BASE + '/api/queue/' + encodeURIComponent(o.keyword) + '/' + action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: '' }),
+    });
+    o.approval_status = statusMap[action] || o.approval_status;
+  } catch (e) {
+    alert('Could not update approval: ' + e);
+    return;
+  }
+  applyOppFilters();
+  showReasonModal(index);
+}
+
 function showReasonModal(index) {
   const o = opportunities[index];
   if (!o) return;
   const rec = o.recommendation || '';
   const recColor = rec === 'No Change' ? '#2DD4BF' : rec === 'Improve Existing' ? 'var(--green)' : rec === 'Expand Existing' ? 'var(--yellow)' : 'var(--crimson)';
   const confColor = (o.confidence || 0) >= 85 ? 'var(--green)' : (o.confidence || 0) >= 70 ? 'var(--yellow)' : 'var(--text-muted)';
+  const landingPage = o.landing_page || o.page || '';
+  const lpUrl = o.landing_page_url || (/^https?:\/\//i.test(landingPage) ? landingPage : '');
+  const lpHtml = landingPage
+    ? (lpUrl ? `<a href="${escapeHtml(lpUrl)}" target="_blank" rel="noopener">${escapeHtml(landingPage)}</a>` : escapeHtml(landingPage))
+    : 'No existing page — new content';
+  const metric = (label, val) => `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;"><div style="font-size:10px;color:var(--text-muted);">${label}</div><div style="font-weight:700;font-size:15px;">${val}</div></div>`;
   const existing = document.getElementById('reason-modal');
   if (existing) existing.remove();
   const modal = document.createElement('div');
   modal.id = 'reason-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;';
   modal.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:540px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,0.5);">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:600px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,0.5);max-height:90vh;overflow:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
         <div>
           <div style="font-size:17px;font-weight:700;margin-bottom:4px;">${escapeHtml(o.keyword || '')}</div>
-          <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(o.page || 'No existing page')}</div>
+          <div style="font-size:12px;color:var(--text-muted);">Landing page: ${lpHtml}</div>
         </div>
         <button onclick="document.getElementById('reason-modal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1;">×</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+        ${metric('Position', formatNumber(o.position))}
+        ${metric('Impressions', formatNumber(o.impressions))}
+        ${metric('Clicks', formatNumber(o.clicks))}
+        ${metric('CTR', (o.ctr != null && o.ctr !== '') ? escapeHtml(String(o.ctr)) : '—')}
+        ${metric('Intent', escapeHtml(o.intent || '—'))}
+        ${metric('Commercial', escapeHtml(o.commercial_potential || '—'))}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
         <div style="background:var(--surface2);border-radius:10px;padding:14px;">
           <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">RECOMMENDATION</div>
-          <div style="font-weight:700;color:${recColor};">${escapeHtml(rec)}</div>
+          <div style="font-weight:700;color:${recColor};">${escapeHtml(recommendationLabel(rec))}</div>
         </div>
         <div style="background:var(--surface2);border-radius:10px;padding:14px;">
           <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">CONTENT TYPE</div>
@@ -1169,11 +1548,27 @@ function showReasonModal(index) {
           <div style="font-weight:700;font-size:20px;color:var(--accent);">${o.score || 0}/100</div>
         </div>
       </div>
-      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:20px;">
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">REASONING</div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">WHY THIS RECOMMENDATION</div>
         <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${escapeHtml(o.reason || 'No reason available.')}</div>
       </div>
-      <div style="display:flex;justify-content:flex-end;">
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">SUGGESTED ACTION</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${escapeHtml(suggestedAction(o))}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:18px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">NEXT STEP</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${escapeHtml(nextStep(o))}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span style="font-size:11px;color:var(--text-muted);">APPROVAL</span>${approvalBadge(o.approval_status)}
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-sm" style="background:var(--green);color:#06281f;border:none;" onclick="setApproval(${index},'approve')">Approve</button>
+          <button class="btn btn-sm" style="background:var(--crimson);color:#fff;border:none;" onclick="setApproval(${index},'reject')">Reject</button>
+          <button class="btn btn-sm" style="background:var(--yellow);color:#3a2e05;border:none;" onclick="setApproval(${index},'block')">Block</button>
+        </div>
         <button class="btn btn-primary" onclick="document.getElementById('reason-modal').remove()">Close</button>
       </div>
     </div>
@@ -1745,7 +2140,7 @@ function loadIntegrations() {
         const el = document.getElementById('int-status-' + int.id);
         if (el) {
           const status = d.status || 'unknown';
-          const color = status === 'configured' ? 'var(--green)' : status === 'mock' ? 'var(--yellow)' : 'var(--text-muted)';
+          const color = (status === 'configured' || status === 'connected') ? 'var(--green)' : status === 'mock' ? 'var(--yellow)' : 'var(--text-muted)';
           el.innerHTML = `<span style="color:${color};">● ${status}</span>`;
         }
       })
@@ -1788,6 +2183,7 @@ function showGSCConfig(int) {
         html += `<div class="alert alert-success">✓ Connected — Live data is being pulled from GSC.</div>`;
         html += `<div style="display:flex;gap:10px;">`;
         html += `<button class="btn btn-primary" onclick="validateGSC()">Test Connection</button>`;
+        html += `<button class="btn btn-primary" onclick="showPage('discover'); runLiveGSC();">Pull Live Data</button>`;
         html += `<button class="btn btn-danger" onclick="disconnectGSC()">Disconnect</button>`;
         html += `</div>`;
         html += `<div id="gsc-config-result" style="margin-top:16px;"></div>`;
@@ -1800,6 +2196,11 @@ function showGSCConfig(int) {
         html += `<div style="background:var(--surface2);border-radius:var(--radius-md);padding:16px;margin-bottom:16px;">`;
         html += `<strong style="font-size:13px;color:var(--text);">Option 2: Live Data (requires setup)</strong>`;
         html += `<p style="font-size:12px;color:var(--text-muted);margin-top:6px;margin-bottom:10px;">Search Console API requires a Service Account. API keys alone do NOT work.</p>`;
+        html += `<div style="display:grid;gap:10px;margin-bottom:12px;">`;
+        html += `<div><label>Verified GSC property</label><input type="text" id="gscSiteUrl" placeholder="https://example.com/ or sc-domain:example.com" value="${escapeHtml(d.site_url || '')}"></div>`;
+        html += `<div><label>Service account JSON path</label><input type="text" id="gscCredentialsPath" placeholder="config/gsc_credentials.json" value="${escapeHtml(d.credentials_path || 'config/gsc_credentials.json')}"></div>`;
+        html += `<button class="btn btn-primary" onclick="saveGSCConfig()">Save GSC Config</button>`;
+        html += `</div>`;
         html += `<ol style="font-size:12px;color:var(--text-muted);padding-left:20px;margin:0;">`;
         html += `<li>Go to console.google.com → APIs & Services → Library</li>`;
         html += `<li>Search 'Search Console API' → Enable</li>`;
@@ -1815,6 +2216,39 @@ function showGSCConfig(int) {
       html += `<button class="btn btn-secondary" style="margin-top:16px;" onclick="loadIntegrations()">← Back</button></div>`;
       document.getElementById('integrations-grid').innerHTML = html;
     });
+}
+
+async function saveGSCConfig() {
+  const resultEl = document.getElementById('gsc-config-result');
+  const siteUrl = document.getElementById('gscSiteUrl')?.value.trim() || '';
+  const credentialsPath = document.getElementById('gscCredentialsPath')?.value.trim() || '';
+
+  if (!siteUrl || !credentialsPath) {
+    resultEl.innerHTML = '<div class="alert alert-error">Enter the verified property and credential path.</div>';
+    return;
+  }
+
+  resultEl.innerHTML = '<div class="alert alert-info">Saving GSC configuration...</div>';
+  try {
+    const res = await fetch(BASE + '/api/integrations/gsc/configure', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        site_url: siteUrl,
+        credentials_path: credentialsPath,
+        api_key: ''
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      resultEl.innerHTML = `<div class="alert alert-error">${escapeHtml(data.error || 'Could not save GSC config.')}</div>`;
+      return;
+    }
+    resultEl.innerHTML = '<div class="alert alert-success">GSC configuration saved. Test the connection next.</div>';
+    setTimeout(() => showGSCConfig(INTEGRATIONS.find(i => i.id === 'gsc')), 900);
+  } catch (e) {
+    resultEl.innerHTML = '<div class="alert alert-error">Could not save GSC config.</div>';
+  }
 }
 
 async function validateGSC() {

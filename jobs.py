@@ -165,14 +165,19 @@ def _save_job_outputs(job_id: str, result: dict):
             row = {
                 "priority": o["priority"],
                 "keyword": o["keyword"],
-                "page": o["page"],
+                "landing_page": o.get("landing_page", o.get("page", "")),
+                "landing_page_url": o.get("landing_page_url", ""),
+                "landing_page_type": o.get("landing_page_type", ""),
+                "existing_page": o.get("page", ""),
                 "position": o["position"],
                 "impressions": o["impressions"],
                 "clicks": o["clicks"],
+                "ctr": o.get("ctr", ""),
                 "intent": o["intent"],
                 "commercial_potential": o["commercial_potential"],
                 "volume": o.get("volume", "not_available"),
                 "keyword_difficulty": o.get("keyword_difficulty", "not_available"),
+                "opportunity_score": o.get("opportunity_score", o.get("score", o.get("total_score", 0))),
                 "score": o.get("score", o.get("total_score", 0)),
                 "recommendation": o.get("recommendation", "N/A"),
                 "content_type": o.get("content_type", "N/A"),
@@ -187,6 +192,34 @@ def _save_job_outputs(job_id: str, result: dict):
             writer.writerow(row)
         with open(csv_path, "w") as f:
             f.write(output.getvalue())
+
+    # Save YAML approval queue so the Approval Queue page populates after upload.
+    import yaml as _yaml
+    queue = {"approved_existing_page_actions": []}
+    for o in opportunities:
+        queue["approved_existing_page_actions"].append({
+            "keyword": o.get("keyword", ""),
+            "landing_page": o.get("landing_page", o.get("page", "")),
+            "landing_page_url": o.get("landing_page_url", ""),
+            "page": o.get("page", ""),
+            "recommendation": o.get("recommendation", "N/A"),
+            "content_type": o.get("content_type", "N/A"),
+            "intent": o.get("intent", ""),
+            "commercial_potential": o.get("commercial_potential", ""),
+            "priority": o.get("priority", ""),
+            "score": o.get("score", o.get("opportunity_score", 0)),
+            "confidence": o.get("confidence", ""),
+            "gsc_position": o.get("position"),
+            "impressions": o.get("impressions"),
+            "clicks": o.get("clicks"),
+            "ctr": o.get("ctr", ""),
+            "reason": o.get("reason", ""),
+            "approval_status": o.get("approval_status", "needs_review"),
+            "next_stage": "Stage 1B or Stage 2 content brief",
+        })
+    yaml_path = os.path.join(outputs_dir, "stage_1a_approval_queue.yaml")
+    with open(yaml_path, "w", encoding="utf-8") as f:
+        f.write(_yaml.dump(queue, default_flow_style=False, sort_keys=False, allow_unicode=True))
 
 
 def list_recent_jobs(limit: int = 10) -> list:
