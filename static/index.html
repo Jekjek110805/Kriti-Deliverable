@@ -1112,17 +1112,29 @@ function selectRole(role) {
   if (label) label.textContent = role === 'admin' ? 'Admin' : 'User';
 }
 
+// Allowed credentials (username -> { password, role })
+const ALLOWED_USERS = {
+  'jake':      { password: 'kriti2026', role: 'admin' },
+  'paul':      { password: 'kriti2026', role: 'admin' },
+  'engana':    { password: 'kriti2026', role: 'admin' },
+};
+
 function doLogin(e) {
   e.preventDefault();
-  const username = document.getElementById('loginUser').value.trim();
+  const username = document.getElementById('loginUser').value.trim().toLowerCase();
   const password = document.getElementById('loginPass').value;
   const errEl = document.getElementById('loginError');
   if (!username || !password) {
     errEl.textContent = 'Please enter both username and password.';
     return false;
   }
+  const user = ALLOWED_USERS[username];
+  if (!user || user.password !== password) {
+    errEl.textContent = 'Invalid username or password.';
+    return false;
+  }
   errEl.textContent = '';
-  const auth = { username, role: selectedRole };
+  const auth = { username, role: user.role };
   localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
   enterApp(auth);
   return false;
@@ -1155,9 +1167,16 @@ function logout() {
 function initAuth() {
   let auth = null;
   try { auth = JSON.parse(localStorage.getItem(AUTH_KEY)); } catch (_) { auth = null; }
+  // Re-validate stored auth against allowed users
   if (auth && auth.username) {
-    selectRole(auth.role || 'user');
-    enterApp(auth);
+    const valid = ALLOWED_USERS[auth.username.toLowerCase()];
+    if (valid && valid.role === auth.role) {
+      selectRole(auth.role || 'user');
+      enterApp(auth);
+    } else {
+      localStorage.removeItem(AUTH_KEY);
+      showLanding();
+    }
   } else {
     showLanding();
   }
