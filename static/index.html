@@ -418,15 +418,17 @@
   .btn-glass:active { transform: translateY(0); }
 
   /* Sidebar account / logout */
-  .sidebar-account { display: flex; align-items: center; gap: 10px; margin: 8px 14px 4px; padding: 10px 12px; border: 1px solid var(--glass-border); border-radius: var(--radius-md); background: var(--glass); }
+  .sidebar-account { display: flex; align-items: center; gap: 12px; margin: 8px 14px 4px; padding: 14px 16px; border: 1px solid var(--glass-border); border-radius: var(--radius-lg); background: var(--glass); }
+  .sidebar-account-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #7C5CFF 0%, #FF5CF4 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; flex-shrink: 0; }
   .sidebar-account-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-  .sidebar-account-name { font-size: 12.5px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sidebar-account-role { font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; }
+  .sidebar-account-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidebar-account-role { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; }
   .sidebar-logout { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; border-radius: var(--radius-sm); border: 1px solid var(--glass-border); background: var(--glass-strong); color: var(--text-muted); cursor: pointer; transition: all .2s; }
   .sidebar-logout:hover { color: #fff; background: var(--red); border-color: transparent; }
   .sidebar-logout .icon { width: 16px; height: 16px; }
-  .sidebar.collapsed .sidebar-account { justify-content: center; padding: 8px; }
+  .sidebar.collapsed .sidebar-account { justify-content: center; padding: 10px; }
   .sidebar.collapsed .sidebar-account-meta { display: none; }
+  .sidebar.collapsed .sidebar-logout { display: none; }
 
   @media (max-width: 920px) {
     .auth-left { display: none; }
@@ -509,6 +511,7 @@
         <div class="theme-toggle-track"><div class="theme-toggle-thumb"></div></div>
       </div>
       <div class="sidebar-account" id="sidebarAccount">
+        <div class="sidebar-account-avatar" id="accountAvatar">KR</div>
         <div class="sidebar-account-meta">
           <span class="sidebar-account-name" id="accountName">User</span>
           <span class="sidebar-account-role" id="accountRole">Member</span>
@@ -1149,12 +1152,26 @@ function showScreen(name) {
 function showLanding() { showScreen('landing'); }
 function showLogin() { showLanding(); }
 
+function getInitials(name) {
+  const parts = (name || '').trim().split(/[\s]+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return (name || 'KR').substring(0, 2).toUpperCase();
+}
+
 function enterApp(auth) {
   showScreen('app');
   const nameEl = document.getElementById('accountName');
   const roleEl = document.getElementById('accountRole');
+  const avatarEl = document.getElementById('accountAvatar');
   if (nameEl) nameEl.textContent = auth.username;
   if (roleEl) roleEl.textContent = auth.role === 'admin' ? 'Admin' : 'Member';
+  if (avatarEl) {
+    // Special cases for known users
+    const uname = (auth.username || '').toLowerCase();
+    if (uname === 'kriti') avatarEl.textContent = 'KR';
+    else if (uname === 'jake' || uname === 'engana') avatarEl.textContent = 'RJ';
+    else avatarEl.textContent = getInitials(auth.username);
+  }
   showSection(auth.role === 'admin' ? 'admin' : 'discover');
 }
 
