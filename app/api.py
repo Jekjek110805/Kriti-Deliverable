@@ -2382,11 +2382,11 @@ def _clean_llm_output(text: str) -> str:
 
 
 def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int) -> Dict:
-    """Generate a content draft by calling Hermes (LLM) for each section.
+    """Generate a content draft by calling OpenRouter Owl Alpha for each section.
 
     Every section is generated uniquely — no templates, no placeholders.
-    Hermes writes ALL content. The output is formal, original, and natural.
-    If Hermes is unavailable, falls back to a clear message.
+    Owl Alpha writes ALL content. The output is formal, original, and natural.
+    If the model is unavailable, falls back to a clear message.
     """
     from integrations.hermes_llm import hermes_generate
 
@@ -2402,10 +2402,10 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
 
     sections = []
 
-    # Helper: generate text via Hermes agent
+    # Helper: generate text via the configured OpenRouter model.
     def _gen(prompt, min_len=30):
         result = hermes_generate(prompt)
-        if result and not result.startswith("[Hermes") and len(result) > min_len:
+        if result and not result.startswith("[") and len(result) > min_len:
             return result
         return None
 
@@ -2423,7 +2423,7 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
         sections.append({"type": "h2", "title": intro_title, "content": intro})
     else:
         sections.append({"type": "h2", "title": intro_title,
-                         "content": f"[{keyword.title()} — Hermes unavailable for content generation]"})
+                         "content": f"[{keyword.title()} - AI content generation unavailable]"})
 
     # Body sections — each generated uniquely by Hermes
     for h2 in h2_outline[1:]:
@@ -2434,7 +2434,7 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
             sections.append({"type": "h2", "title": h2, "content": content})
         else:
             sections.append({"type": "h2", "title": h2,
-                             "content": f"[{keyword.title()} — Hermes unavailable for content generation]"})
+                             "content": f"[{keyword.title()} - AI content generation unavailable]"})
 
     # FAQ section — each answer generated uniquely by Hermes
     if faq:
@@ -2444,7 +2444,7 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
             if answer:
                 faq_parts.append(f"**Q: {q}**\n\nA: {answer}")
             else:
-                faq_parts.append(f"**Q: {q}**\n\nA: [Answer unavailable — Hermes not available]")
+                faq_parts.append(f"**Q: {q}**\n\nA: [Answer unavailable - AI generation not available]")
         sections.append({
             "type": "h2",
             "title": "Frequently Asked Questions",
@@ -2482,7 +2482,7 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
         "ai_generated": True,
         "human_edited": False,
         "created_at": datetime.utcnow().isoformat(),
-        "notes": "This draft was written by Hermes (LLM). A human must review, edit, fact-check, and approve before publishing.",
+        "notes": "This draft was written with OpenRouter Owl Alpha. A human must review, edit, fact-check, and approve before publishing.",
     }
     return draft
 

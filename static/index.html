@@ -2358,28 +2358,36 @@ function writeContent() {
 
   // Show loading state
   const resultEl = document.getElementById('content-result');
-  resultEl.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:12px;padding:20px;"><div class="spinner" style="width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div><span style="color:var(--text-muted);">Generating draft with Hermes LLM...</span></div></div>';
+  resultEl.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:12px;padding:20px;"><div class="spinner" style="width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div><span style="color:var(--text-muted);">Generating draft with Owl Alpha...</span></div></div>';
 
   fetch(BASE + '/api/content/write', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ keyword, tone: document.getElementById('writeTone').value, brief, word_count: 1500 }),
   })
-  .then(r => r.json())
+  .then(async r => {
+    const data = await r.json();
+    if (!r.ok || data.error) throw new Error(data.error || 'Draft generation failed');
+    return data;
+  })
   .then(d => {
+    const content = d.full_content || '';
     document.getElementById('content-result').innerHTML = `
       <div class="card">
         <div class="card-title">Draft: ${d.keyword}</div>
         <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;">
           <span class="badge badge-${d.intent.toLowerCase()}">${d.intent}</span>
-          <span style="font-size:13px;color:var(--text-muted);">${d.full_content.split(' ').length} words</span>
+          <span style="font-size:13px;color:var(--text-muted);">${content.split(/\s+/).filter(Boolean).length} words</span>
         </div>
-        <textarea id="draftEditor" style="width:100%;min-height:300px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;color:var(--text);font-family:monospace;font-size:13px;line-height:1.6;resize:vertical;">${d.full_content}</textarea>
+        <textarea id="draftEditor" style="width:100%;min-height:300px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;color:var(--text);font-family:monospace;font-size:13px;line-height:1.6;resize:vertical;">${content}</textarea>
         <div style="display:flex;gap:10px;margin-top:12px;">
           <button class="btn btn-primary" onclick="contentToValidate('${d.keyword.replace(/'/g, "\\'")}')">→ Validate</button>
           <button class="btn btn-secondary" onclick="saveDraftChanges('${d.keyword.replace(/'/g, "\\'")}')">Save Changes</button>
         </div>
       </div>
     `;
+  })
+  .catch(err => {
+    resultEl.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
   });
 }
 
