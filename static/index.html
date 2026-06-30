@@ -178,6 +178,12 @@
   /* Reason (last) — truncated, click opens detail */
   .opp-reason-cell { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; color: var(--text-secondary); }
   .opp-reason-cell:hover { color: var(--text); text-decoration: underline; }
+  .opp-filters { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; margin-bottom: 18px; }
+  .opp-filters .flt { display: flex; flex-direction: column; gap: 4px; }
+  .opp-filters label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+  .opp-filters select, .opp-filters input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 7px 9px; font-size: 13px; }
+  .opp-filters input.flt-num { width: 78px; }
+  .opp-filters .flt-count { font-size: 12px; color: var(--text-muted); margin-left: auto; align-self: center; }
   .opp-keyword-cell { min-width: 220px; color: var(--text); font-weight: 700; }
   .opp-page-cell { max-width: 300px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .opp-page-cell a { color: var(--text-muted); text-decoration: none; }
@@ -422,6 +428,7 @@
               <button class="btn btn-sm btn-primary" onclick="runLiveGSC()">Pull live GSC</button>
             </div>
           </div>
+          <div id="oppsFilters"></div>
           <div id="oppsTable"></div>
         </div>
       </div>
@@ -1125,12 +1132,99 @@ function renderResults(d) {
     <div class="stat-card"><div class="stat-value" style="color:#2DD4BF">${noChange}</div><div class="stat-label">No Change</div></div>
   `;
 
+  const oppsFilters = document.getElementById('oppsFilters');
   const list = document.getElementById('oppsTable');
   if (!rows.length) {
+    if (oppsFilters) oppsFilters.innerHTML = '';
     list.innerHTML = '<div class="alert alert-info">No opportunities matched the Stage 1A filters. Try a wider GSC export or check that the file includes query, impressions, clicks, and position columns.</div>';
     return;
   }
 
+  renderOppFilters();
+  applyOppFilters();
+}
+
+// Filter bar — Recommendation, Intent, Priority, Landing Page, Position, Score.
+function renderOppFilters() {
+  const el = document.getElementById('oppsFilters');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="opp-filters">
+      <div class="flt"><label>Recommendation</label>
+        <select id="fltRec" onchange="applyOppFilters()">
+          <option value="">All</option>
+          <option value="No Change">No Change</option>
+          <option value="Improve Existing">Improve Existing Page</option>
+          <option value="Expand Existing">Expand Existing Page</option>
+          <option value="Create New Content">Create New Content</option>
+        </select></div>
+      <div class="flt"><label>Intent</label>
+        <select id="fltIntent" onchange="applyOppFilters()">
+          <option value="">All</option><option>BOFU</option><option>MOFU</option><option>TOFU</option>
+        </select></div>
+      <div class="flt"><label>Priority</label>
+        <select id="fltPriority" onchange="applyOppFilters()">
+          <option value="">All</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option>
+        </select></div>
+      <div class="flt"><label>Landing Page</label>
+        <input id="fltLanding" type="text" placeholder="search url…" oninput="applyOppFilters()"></div>
+      <div class="flt"><label>Position</label>
+        <div style="display:flex;gap:6px;">
+          <input id="fltPosMin" class="flt-num" type="number" placeholder="min" oninput="applyOppFilters()">
+          <input id="fltPosMax" class="flt-num" type="number" placeholder="max" oninput="applyOppFilters()">
+        </div></div>
+      <div class="flt"><label>Min Score</label>
+        <input id="fltScoreMin" class="flt-num" type="number" placeholder="0" oninput="applyOppFilters()"></div>
+      <button class="btn btn-sm btn-secondary" onclick="resetOppFilters()">Reset</button>
+      <span class="flt-count" id="fltCount"></span>
+    </div>
+  `;
+}
+
+function resetOppFilters() {
+  ['fltRec','fltIntent','fltPriority','fltLanding','fltPosMin','fltPosMax','fltScoreMin'].forEach(id => {
+    const e = document.getElementById(id); if (e) e.value = '';
+  });
+  applyOppFilters();
+}
+
+function applyOppFilters() {
+  const g = id => document.getElementById(id);
+  const rec = g('fltRec') ? g('fltRec').value : '';
+  const intent = g('fltIntent') ? g('fltIntent').value : '';
+  const prio = g('fltPriority') ? g('fltPriority').value : '';
+  const lp = (g('fltLanding') ? g('fltLanding').value : '').trim().toLowerCase();
+  const posMin = parseFloat(g('fltPosMin') ? g('fltPosMin').value : '');
+  const posMax = parseFloat(g('fltPosMax') ? g('fltPosMax').value : '');
+  const scoreMin = parseFloat(g('fltScoreMin') ? g('fltScoreMin').value : '');
+  const all = Array.isArray(opportunities) ? opportunities : [];
+  const filtered = all.filter(o => {
+    if (rec && o.recommendation !== rec) return false;
+    if (intent && o.intent !== intent) return false;
+    if (prio && o.priority !== prio) return false;
+    if (lp) {
+      const hay = ((o.landing_page || '') + ' ' + (o.page || '') + ' ' + (o.landing_page_url || '')).toLowerCase();
+      if (!hay.includes(lp)) return false;
+    }
+    const pos = Number(o.position);
+    if (!isNaN(posMin) && pos < posMin) return false;
+    if (!isNaN(posMax) && pos > posMax) return false;
+    const sc = Number(o.score != null ? o.score : (o.opportunity_score || 0));
+    if (!isNaN(scoreMin) && sc < scoreMin) return false;
+    return true;
+  });
+  const cnt = g('fltCount');
+  if (cnt) cnt.textContent = `Showing ${filtered.length} of ${all.length}`;
+  renderOppsTable(filtered);
+}
+
+function renderOppsTable(rows) {
+  const list = document.getElementById('oppsTable');
+  if (!list) return;
+  if (!rows.length) {
+    list.innerHTML = '<div class="alert alert-info">No opportunities match the current filters.</div>';
+    return;
+  }
   list.innerHTML = `
     <div class="table-wrap opportunities-table-wrap">
       <table class="opportunities-table">
@@ -1155,6 +1249,7 @@ function renderResults(d) {
         </thead>
         <tbody>
           ${rows.map((o, i) => {
+            const idx = opportunities.indexOf(o);
             const landingPage = o.landing_page || o.page || '';
             const lpType = o.landing_page_type || '';
             const lpUrl = o.landing_page_url || (/^https?:\/\//i.test(landingPage) ? landingPage : '');
@@ -1191,7 +1286,7 @@ function renderResults(d) {
                 <td><span class="badge badge-${recommendationBadge(o.recommendation)}">${escapeHtml(recommendationLabel(o.recommendation))}</span></td>
                 <td>${ctLabel}</td>
                 <td style="color:${confColor};font-weight:700;">${confVal !== '—' ? confVal + '%' : '—'}</td>
-                <td class="opp-reason-cell" title="${escapeHtml(reasonText)}" onclick="showReasonModal(${i})">${escapeHtml(reasonText || '—')}</td>
+                <td class="opp-reason-cell" title="${escapeHtml(reasonText)}" onclick="showReasonModal(${idx})">${escapeHtml(reasonText || '—')}</td>
               </tr>
             `;
           }).join('')}
