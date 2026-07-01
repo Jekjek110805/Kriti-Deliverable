@@ -2463,53 +2463,7 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
         sections.append({"type": "h2", "title": "Main Content", "content": f"[{keyword} — Hermes unavailable]"})
         sections.append({"type": "cta", "content": f"Explore how {keyword} can work for your organisation."})
 
-<<<<<<< HEAD
-    # Introduction — Hermes
-    intro_title = h2_outline[0] if h2_outline else "Introduction"
-    intro = _gen(f"Write an engaging introduction section for an article about '{keyword}'. Title: '{intro_title}'. Intent: {intent}. Tone: {tone}. Write ~{words_per_section} words. No markdown headers — just natural prose.")
-    if intro:
-        sections.append({"type": "h2", "title": intro_title, "content": intro})
-    else:
-        sections.append({"type": "h2", "title": intro_title,
-                         "content": f"[{keyword.title()} - AI content generation unavailable]"})
-
-    # Body sections — each generated uniquely by Hermes
-    for h2 in h2_outline[1:]:
-        if h2.lower() in ("frequently asked questions", "faq", "next steps", "conclusion"):
-            continue
-        content = _gen(f"Write a detailed section for an article about '{keyword}'. Section heading: '{h2}'. Intent: {intent}. Tone: {tone}. Write ~{words_per_section} words. No markdown headers — just natural prose with paragraphs.")
-        if content:
-            sections.append({"type": "h2", "title": h2, "content": content})
-        else:
-            sections.append({"type": "h2", "title": h2,
-                             "content": f"[{keyword.title()} - AI content generation unavailable]"})
-
-    # FAQ section — each answer generated uniquely by Hermes
-    if faq:
-        faq_parts = []
-        for q in faq:
-            answer = _gen(f"Answer this question about '{keyword}': {q}. Tone: {tone}. Write 2-3 sentences.", min_len=10)
-            if answer:
-                faq_parts.append(f"**Q: {q}**\n\nA: {answer}")
-            else:
-                faq_parts.append(f"**Q: {q}**\n\nA: [Answer unavailable - AI generation not available]")
-        sections.append({
-            "type": "h2",
-            "title": "Frequently Asked Questions",
-            "content": "\n\n".join(faq_parts),
-        })
-
-    # CTA — Hermes
-    cta = _gen(f"Write a call-to-action for '{keyword}'. Intent: {intent}. Tone: {tone}. 1-2 sentences. Encourage the reader to take the next step.", min_len=15)
-    if cta:
-        sections.append({"type": "cta", "content": cta})
-    else:
-        sections.append({"type": "cta", "content": f"Explore how {keyword} can work for your organisation. Speak with our team to discuss your requirements."})
-
-    # Compile full content — NO # headers in the output, just clean prose
-=======
     # Compile full content
->>>>>>> 7ce1f982fffd7cfc4e653e57f1373c8b467ffbdd
     full_content = ""
     for section in sections:
         if section["type"] == "tldr":
