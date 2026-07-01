@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 hermes_llm.py - Hermes Agent LLM client for Kriti Content Writer.
-Calls the local Hermes agent (owl-alpha model) for content generation.
+Calls the local Hermes agent for content generation.
 No LiteLLM/OpenRouter needed — uses the Hermes agent directly.
 """
 import subprocess
@@ -10,7 +10,7 @@ import re
 
 import shutil
 HERMES_BIN = shutil.which("hermes") or "/opt/hermes/bin/hermes"
-DEFAULT_MODEL = os.environ.get("HERMES_MODEL", "owl-alpha")
+DEFAULT_MODEL = os.environ.get("HERMES_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
 
 
 def _clean_output(text):
@@ -18,82 +18,61 @@ def _clean_output(text):
     if not text:
         return ""
     # Remove ANSI escape codes
-    text = re.sub(r'\x1b\[[0-9;]*m', '', text)
-    # Remove box-drawing characters
-    text = re.sub(r'[╭╮╰╯│─├┤┬┴┼╌╍═╎╏║╔╗╚╝]', '', text)
-    # Remove the "Hermes" header/footer lines
-    text = re.sub(r'⚕ Hermes[─]+', '', text)
-    text = re.sub(r'[─]{10,}', '', text)
-    # Remove resume/session info
-    text = re.sub(r'Resume this session with:.*', '', text, flags=re.DOTALL)
-    text = re.sub(r'Session:.*', '', text)
-    text = re.sub(r'Duration:.*', '', text)
-    text = re.sub(r'Messages:.*', '', text)
-    # Remove "Query:" and "Initializing" lines
-    text = re.sub(r'^Query:.*\n', '', text)
-    text = re.sub(r'^Initializing agent.*\n', '', text)
-    # Remove leading/trailing whitespace and blank lines
-    lines = [l.strip() for l in text.split('\n') if l.strip()]
-    return '\n'.join(lines).strip()
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
 
 
-def _openrouter_fallback(prompt, model):
-    """Fallback: call OpenRouter API directly when Hermes binary is not available."""
-    import urllib.request as _urllib
-    import json as _json
-
-    api_key = os.environ.get("LITELLM_API_KEY") or os.environ.get("OPENROUTER_API_KEY", "")
-    if not api_key:
-        return "[Hermes not found and no OpenRouter API key set]"
-
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    payload = {
-        "model": model or DEFAULT_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 1000,
-    }
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
-
-    try:
-        req = _urllib.Request(url, data=_json.dumps(payload).encode(), headers=headers, method="POST")
-        with _urllib.urlopen(req, timeout=60) as resp:
-            data = _json.loads(resp.read().decode())
-        return data["choices"][0]["message"]["content"]
-    except Exception as e:
-        return f"[OpenRouter fallback error: {e}]"
-
-
-def hermes_generate(prompt, model=None, max_tokens=500):
-    """Call Hermes agent with a prompt and return the response text."""
-    if not os.path.exists(HERMES_BIN):
-        # Fallback: try OpenRouter API directly
-        return _openrouter_fallback(prompt, model)
-
+def call_hermes(prompt, model=None, timeout=120):
+    """
+    Call the Hermes agent CLI with a prompt and return the cleaned response.
+    """
+    model = model or DEFAULT_MODEL
     cmd = [
-        HERMES_BIN, "chat", "-q", prompt,
-        "-m", model or DEFAULT_MODEL,
-        "-Q",  # quiet mode
+        HERMES_BIN,
+        "chat",
+        "-q",
+        prompt,
+        "-m",
+        model,
+        "-Q",  # quiet mode: only final response
     ]
-
     try:
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            timeout=120,
+            timeout=timeout,
+            env={**os.environ, "HOME": "/opt/data", "HERMES_HOME": "/opt/data"},
         )
-        output = result.stdout
         if result.returncode != 0:
-            err = result.stderr[:200] if result.stderr else "Unknown error"
-            return f"[Hermes error: {err}]"
-
-        cleaned = _clean_output(output)
-        return cleaned if cleaned else "[Hermes returned empty response]"
-
+            # fallback: try without -Q flag
+            cmd = [
+                HERMES_BIN,
+                "chat",
+                "-q",
+                prompt,
+                "-m",
+                model,
+            ]
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                env={**os.environ, "HOME": "/opt/data", "HERMES_HOME": "/opt/data"},
+            )
+        output = result.stdout.strip()
+        return _clean_output(output)
     except subprocess.TimeoutExpired:
-        return "[Hermes timeout — request took too long]"
+        return f"[ERROR] Hermes call timed out after {timeout}s"
     except Exception as e:
-        return f"[Hermes exception: {e}]"
+        return f"[ERROR] Failed to call Hermes: {e}"
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 1:
+        prompt = " ".join(sys.argv[1:])
+        print(call_hermes(prompt))
+    else:
+        print("Usage: python hermes_llm.py <prompt>")
