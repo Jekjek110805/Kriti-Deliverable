@@ -14,7 +14,7 @@
        30% secondary: --surface / --text neutrals (cards, borders, copy)
        10% accent   : --accent (a single restrained indigo, used sparingly) */
     --bg: #0F1115;
-    --bg-gradient: radial-gradient(1100px 560px at 90% -12%, rgba(110,139,255,0.10), transparent 55%), radial-gradient(900px 520px at -8% 112%, rgba(110,139,255,0.06), transparent 55%), #0F1115;
+    --bg-gradient: radial-gradient(1100px 560px at 90% -12%, rgba(110,139,255,0.06), transparent 55%), radial-gradient(900px 520px at -8% 112%, rgba(110,139,255,0.035), transparent 55%), #0F1115;
     --surface: #16181D;
     --surface2: #1C1F26;
     --surface3: #24272F;
@@ -184,11 +184,11 @@
   .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
   .btn-secondary:hover { background: var(--surface3); border-color: var(--border-light); transform: translateY(-1px); }
   .btn-sm { padding: 7px 16px; font-size: 12px; border-radius: var(--radius-sm); }
-  .btn-success { background: linear-gradient(135deg, var(--green), #2ECC8A); color: white; box-shadow: 0 4px 12px var(--green-glow); }
+  .btn-success { background: var(--green); color: white; box-shadow: 0 4px 12px var(--green-glow); }
   .btn-success:hover { box-shadow: 0 6px 20px var(--green-glow); transform: translateY(-1px); }
-  .btn-danger { background: linear-gradient(135deg, var(--red), #E02640); color: white; box-shadow: 0 4px 12px var(--red-glow); }
+  .btn-danger { background: var(--red); color: white; box-shadow: 0 4px 12px var(--red-glow); }
   .btn-danger:hover { box-shadow: 0 6px 20px var(--red-glow); transform: translateY(-1px); }
-  .btn-warning { background: linear-gradient(135deg, var(--yellow), #D9A020); color: #000; box-shadow: 0 4px 12px var(--yellow-glow); }
+  .btn-warning { background: var(--yellow); color: #15171C; box-shadow: 0 4px 12px var(--yellow-glow); }
 
   /* Stats */
   .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px; }
@@ -201,11 +201,11 @@
   .stat-approved { color: var(--green); }
 
   /* Table */
-  .table-wrap { border-radius: var(--radius-lg); border: 1px solid var(--glass-border); overflow: hidden; background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
-  .opportunities-table-wrap { overflow-x: auto; }
+  .table-wrap { border-radius: var(--radius-lg); border: 1px solid var(--glass-border); overflow: auto; max-height: min(68vh, 620px); background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); scrollbar-gutter: stable; }
+  .opportunities-table-wrap { overflow: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; }
-  thead { background: var(--glass-strong); }
-  th { text-align: left; padding: 14px 14px; color: var(--text-muted); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  thead { background: var(--surface2); }
+  th { position: sticky; top: 0; z-index: 3; text-align: left; padding: 14px 14px; background: var(--surface2); color: var(--text-muted); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); white-space: nowrap; box-shadow: 0 1px 0 var(--border); }
   th:nth-child(1) { width: 36px; text-align: center; }
   th:nth-child(5), th:nth-child(6), th:nth-child(7) { text-align: right; }
   th:nth-child(9) { text-align: center; }
@@ -240,6 +240,7 @@
   .opp-page-cell { max-width: 300px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .opp-page-cell a { color: var(--text-muted); text-decoration: none; }
   .opp-page-cell a:hover { color: var(--accent); }
+  .gsc-page-link, .gsc-page-link:hover, .gsc-page-link:visited { color: var(--text); text-decoration: none; font-weight: 600; }
 
   /* Opportunity cards */
   .opp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; transition: all .2s; position: relative; overflow: hidden; }
@@ -316,6 +317,10 @@
 
   /* Inputs */
   input, select, textarea { background: var(--glass-strong); border: 1px solid var(--glass-border); border-radius: var(--radius-md); padding: 12px 16px; color: var(--text); font-size: 13.5px; width: 100%; transition: all .2s; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  select { color-scheme: dark; background-color: var(--surface2); color: var(--text); }
+  select option, select optgroup { background-color: #16181D; color: #F4F5F7; }
+  select option:checked { background-color: var(--accent); color: #FFFFFF; }
+  select option:disabled { color: #868C99; }
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
   label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; }
 
@@ -394,7 +399,10 @@
   }
 
   /* Light mode overrides */
-  body.light { --bg: #EEF0F5; --bg-gradient: radial-gradient(1100px 560px at 90% -12%, rgba(110,139,255,0.16), transparent 56%), radial-gradient(900px 520px at -8% 112%, rgba(110,139,255,0.10), transparent 56%), #EEF0F5; --surface: #FFFFFF; --surface2: #F1F2F5; --surface3: #E7E9EE; --border: rgba(18,20,26,0.1); --border-light: rgba(18,20,26,0.18); --text: #15171C; --text-secondary: #44474F; --text-muted: #6C7079; --accent-glow: rgba(92,121,240,0.08); --accent-glow-strong: rgba(92,121,240,0.14); --accent-subtle: rgba(92,121,240,0.07); --green-glow: rgba(79,178,134,0.08); --yellow-glow: rgba(217,167,66,0.1); --red-glow: rgba(224,102,122,0.08); --glass: rgba(255,255,255,0.6); --glass-strong: rgba(255,255,255,0.74); --glass-border: rgba(255,255,255,0.85); }
+  body.light { --bg: #EEF0F5; --bg-gradient: radial-gradient(1100px 560px at 90% -12%, rgba(110,139,255,0.08), transparent 56%), radial-gradient(900px 520px at -8% 112%, rgba(110,139,255,0.045), transparent 56%), #EEF0F5; --surface: #FFFFFF; --surface2: #F1F2F5; --surface3: #E7E9EE; --border: rgba(18,20,26,0.1); --border-light: rgba(18,20,26,0.18); --text: #15171C; --text-secondary: #44474F; --text-muted: #6C7079; --accent-glow: rgba(92,121,240,0.08); --accent-glow-strong: rgba(92,121,240,0.14); --accent-subtle: rgba(92,121,240,0.07); --green-glow: rgba(79,178,134,0.08); --yellow-glow: rgba(217,167,66,0.1); --red-glow: rgba(224,102,122,0.08); --glass: rgba(255,255,255,0.6); --glass-strong: rgba(255,255,255,0.74); --glass-border: rgba(255,255,255,0.85); }
+  body.light select { color-scheme: light; background-color: var(--surface); color: var(--text); }
+  body.light select option, body.light select optgroup { background-color: #FFFFFF; color: #15171C; }
+  body.light select option:checked { background-color: var(--accent); color: #FFFFFF; }
   body.light .card { box-shadow: 0 4px 24px rgba(18,20,26,0.06); }
   body.light .card::before { opacity: 0.4; }
   body.light .sidebar { border-right-color: var(--glass-border); }
@@ -421,7 +429,7 @@
 
   /* Sidebar account / logout */
   .sidebar-account { display: flex; align-items: center; gap: 12px; margin: 8px 14px 4px; padding: 14px 16px; border: 1px solid var(--glass-border); border-radius: var(--radius-lg); background: var(--glass); }
-  .sidebar-account-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #7C5CFF 0%, #FF5CF4 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; flex-shrink: 0; }
+  .sidebar-account-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; flex-shrink: 0; }
   .sidebar-account-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
   .sidebar-account-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sidebar-account-role { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; }
@@ -1701,7 +1709,7 @@ function renderGscCell(value, column) {
   const text = String(value ?? '').trim();
   if (!text) return '—';
   if (isUrl(text)) {
-    return `<a href="${escapeHtml(text)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>`;
+    return `<a class="gsc-page-link" href="${escapeHtml(text)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>`;
   }
   const col = String(column || '').toLowerCase();
   const num = Number(text);
@@ -2351,28 +2359,36 @@ function writeContent() {
 
   // Show loading state
   const resultEl = document.getElementById('content-result');
-  resultEl.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:12px;padding:20px;"><div class="spinner" style="width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div><span style="color:var(--text-muted);">Generating draft with Hermes LLM...</span></div></div>';
+  resultEl.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:12px;padding:20px;"><div class="spinner" style="width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div><span style="color:var(--text-muted);">Generating draft with Owl Alpha...</span></div></div>';
 
   fetch(BASE + '/api/content/write', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ keyword, tone: document.getElementById('writeTone').value, brief, word_count: 1500 }),
   })
-  .then(r => r.json())
+  .then(async r => {
+    const data = await r.json();
+    if (!r.ok || data.error) throw new Error(data.error || 'Draft generation failed');
+    return data;
+  })
   .then(d => {
+    const content = d.full_content || '';
     document.getElementById('content-result').innerHTML = `
       <div class="card">
         <div class="card-title">Draft: ${d.keyword}</div>
         <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;">
           <span class="badge badge-${d.intent.toLowerCase()}">${d.intent}</span>
-          <span style="font-size:13px;color:var(--text-muted);">${d.full_content.split(' ').length} words</span>
+          <span style="font-size:13px;color:var(--text-muted);">${content.split(/\s+/).filter(Boolean).length} words</span>
         </div>
-        <textarea id="draftEditor" style="width:100%;min-height:300px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;color:var(--text);font-family:monospace;font-size:13px;line-height:1.6;resize:vertical;">${d.full_content}</textarea>
+        <textarea id="draftEditor" style="width:100%;min-height:300px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;color:var(--text);font-family:monospace;font-size:13px;line-height:1.6;resize:vertical;">${content}</textarea>
         <div style="display:flex;gap:10px;margin-top:12px;">
           <button class="btn btn-primary" onclick="contentToValidate('${d.keyword.replace(/'/g, "\\'")}')">→ Validate</button>
           <button class="btn btn-secondary" onclick="saveDraftChanges('${d.keyword.replace(/'/g, "\\'")}')">Save Changes</button>
         </div>
       </div>
     `;
+  })
+  .catch(err => {
+    resultEl.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
   });
 }
 
@@ -2816,7 +2832,7 @@ function loadObservability() {
   c.innerHTML = '<div style="position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;padding:32px;"><div style="max-width:1200px;margin:0:auto;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;"><button class="btn btn-secondary" onclick="document.getElementById(\'obs-container\').innerHTML=\'\'">← Back</button><h1 style="font-size:24px;font-weight:700;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16h.01"/><path d="M11 12h.01"/><path d="M15 16h.01"/><path d="M19 8h.01"/></svg> Observability</h1></div><div id="obs-metrics" class="stats-grid" style="margin-bottom:20px;"></div><div id="obs-maturity" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:20px;"></div><div class="card"><div class="card-title">Prompt Library</div><div id="obs-prompts"></div></div><div class="card"><div class="card-title">Cost Tracking</div><div id="obs-costs"></div></div></div></div>';
   fetch(BASE + '/api/observability/metrics').then(r=>r.json()).then(d=>{const m=d.metrics;document.getElementById('obs-metrics').innerHTML='<div class="stat-card"><div class="stat-value">'+m.workflow_runs+'</div><div class="stat-label">Workflow Runs</div></div><div class="stat-card"><div class="stat-value">'+m.agent_executions+'</div><div class="stat-label">Agent Executions</div></div><div class="stat-card"><div class="stat-value">'+m.approvals+'</div><div class="stat-label">Approvals</div></div><div class="stat-card"><div class="stat-value">'+m.tokens_used+'</div><div class="stat-label">Tokens</div></div><div class="stat-card"><div class="stat-value">$'+d.cost_summary.total_cost_usd.toFixed(4)+'</div><div class="stat-label">Est. Cost</div></div>';document.getElementById('obs-costs').innerHTML=d.cost_summary.recent_costs.map(e=>'<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(46,51,72,0.5);">'+e.agent_id+' — '+e.operation+': '+e.tokens+' tokens, $'+e.cost_usd.toFixed(4)+' <span style="color:var(--text-muted);">'+new Date(e.timestamp).toLocaleDateString()+'</span></div>').join('')||'<p style="color:var(--text-muted)">No cost data yet.</p>';});
   fetch(BASE + '/api/observability/maturity').then(r=>r.json()).then(d=>{let h='';for(const[area,data] of Object.entries(d)){if(typeof data!=='object'||!data.status)continue;h+='<div class="card"><div class="card-title">'+area.replace(/_/g,' ').toUpperCase()+'</div><span class="badge badge-'+(data.status==='pass'?'approved':data.status==='in_progress'?'pending':'rejected')+'">'+data.status+'</span>';if(data.total_agents)h+='<div style="font-size:12px;margin-top:8px;">Agents: '+data.active_agents+'/'+data.total_agents+' active</div>';if(data.total_prompts)h+='<div style="font-size:12px;margin-top:8px;">Prompts: '+data.active_prompts+'/'+data.total_prompts+' active</div>';if(data.total_gates)h+='<div style="font-size:12px;margin-top:8px;">Gates: '+data.approved_gates+'/'+data.total_gates+' approved</div>';h+='</div>';}document.getElementById('obs-maturity').innerHTML=h;});
-  fetch(BASE + '/api/observability/prompts/usage').then(r=>r.json()).then(d=>{let h='<table><thead><tr><th>Prompt</th><th>Version</th><th>Status</th><th>Used By</th></tr></thead><tbody>';for(const[pid,p] of Object.entries(d.prompts)){h+='<tr><td><strong>'+p.name+'</strong></td><td>v'+p.version+'</td><td><span class="badge badge-'+(p.status==='active'?'approved':'pending')+'">'+p.status+'</span></td><td style="font-size:11px;">'+p.used_by.join(', ')+'</td></tr>';}h+='</tbody></table>';document.getElementById('obs-prompts').innerHTML=h;});
+  fetch(BASE + '/api/observability/prompts/usage').then(r=>r.json()).then(d=>{let h='<div class="table-wrap"><table><thead><tr><th>Prompt</th><th>Version</th><th>Status</th><th>Used By</th></tr></thead><tbody>';for(const[pid,p] of Object.entries(d.prompts)){h+='<tr><td><strong>'+p.name+'</strong></td><td>v'+p.version+'</td><td><span class="badge badge-'+(p.status==='active'?'approved':'pending')+'">'+p.status+'</span></td><td style="font-size:11px;">'+p.used_by.join(', ')+'</td></tr>';}h+='</tbody></table></div>';document.getElementById('obs-prompts').innerHTML=h;});
 }
 
 // ── Approvals & Roadmap ──────────────────────────────────────────────────────
@@ -2865,11 +2881,11 @@ function loadApprovals() {
 
   // Risks
   fetch(BASE + '/api/risks').then(r=>r.json()).then(d=>{
-    let h='<div class="card"><div class="card-title">Risk Register ('+d.total+' risks)</div><table><thead><tr><th>Risk</th><th>Impact</th><th>Status</th><th>Owner</th></tr></thead><tbody>';
+    let h='<div class="card"><div class="card-title">Risk Register ('+d.total+' risks)</div><div class="table-wrap"><table><thead><tr><th>Risk</th><th>Impact</th><th>Status</th><th>Owner</th></tr></thead><tbody>';
     d.risks.forEach(r=>{
       h+='<tr><td><strong>'+r.risk+'</strong></td><td><span class="badge badge-'+(r.impact==='high'?'rejected':r.impact==='medium'?'pending':'approved')+'">'+r.impact+'</span></td><td><span class="badge badge-'+(r.status==='mitigated'?'approved':r.status==='monitoring'?'pending':'rejected')+'">'+r.status+'</span></td><td style="font-size:12px;">'+r.owner+'</td></tr>';
     });
-    h+='</tbody></table></div>';
+    h+='</tbody></table></div></div>';
     document.getElementById('appr-risks').innerHTML=h;
   });
 }

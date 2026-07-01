@@ -250,5 +250,36 @@
       "notes": "Approved via governance page",
       "keyword": ""
     }
+  },
+  {
+    "id": 24,
+    "action": "gate_rejected",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-30T08:47:57.895178",
+    "details": {
+      "notes": "not eligible"
+    }
+  },
+  {
+    "id": 25,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-30T08:48:01.082829",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 26,
+    "action": "gate_rejected",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-06-30T08:48:06.215053",
+    "details": {
+      "notes": "not eligible"
+    }
   }
 ]

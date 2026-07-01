@@ -4,10 +4,10 @@
     "description": "Approve topic before research begins",
     "required_role": "editor",
     "check_permission": "queue:approve",
-    "status": "approved",
+    "status": "rejected",
     "approved_by": "human",
-    "approved_at": "2026-06-30T05:45:57.995517",
-    "notes": "Approved via governance page"
+    "approved_at": "2026-06-30T08:48:06.209661",
+    "notes": "not eligible"
   },
   "existing_vs_new": {
     "label": "Existing Page vs New Content",
