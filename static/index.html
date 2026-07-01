@@ -240,6 +240,7 @@
   .opp-page-cell { max-width: 300px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .opp-page-cell a { color: var(--text-muted); text-decoration: none; }
   .opp-page-cell a:hover { color: var(--accent); }
+  .gsc-page-link, .gsc-page-link:hover, .gsc-page-link:visited { color: var(--text); text-decoration: none; font-weight: 600; }
 
   /* Opportunity cards */
   .opp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; transition: all .2s; position: relative; overflow: hidden; }
@@ -1708,7 +1709,7 @@ function renderGscCell(value, column) {
   const text = String(value ?? '').trim();
   if (!text) return '—';
   if (isUrl(text)) {
-    return `<a href="${escapeHtml(text)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>`;
+    return `<a class="gsc-page-link" href="${escapeHtml(text)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>`;
   }
   const col = String(column || '').toLowerCase();
   const num = Number(text);
