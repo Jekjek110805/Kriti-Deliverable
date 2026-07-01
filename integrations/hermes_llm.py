@@ -3,7 +3,9 @@
 OpenRouter-backed LLM client for the Kriti Content Writer.
 
 The public helper is still named hermes_generate() because app/api.py already
-imports that name. Internally, generation now uses OpenRouter's Owl Alpha model.
+imports that name. Internally, generation calls OpenRouter's NVIDIA Nemotron 3
+Super model over plain HTTPS — no local binary required, so it works the same
+whether the backend runs on the server or on a local machine.
 """
 import os
 from typing import Optional
@@ -16,7 +18,7 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
 OPENROUTER_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
-DEFAULT_MODEL = os.getenv("OPENROUTER_MODEL") or os.getenv("HERMES_MODEL") or "openrouter/owl-alpha"
+DEFAULT_MODEL = os.getenv("OPENROUTER_MODEL") or os.getenv("HERMES_MODEL") or "nvidia/nemotron-3-super-120b-a12b:free"
 APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "Kriti Content Writer")
 APP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", "http://localhost:8000")
 
@@ -51,7 +53,7 @@ def _clean_output(text: Optional[str]) -> str:
 
 
 def hermes_generate(prompt, model=None, max_tokens=900):
-    """Generate text with OpenRouter Owl Alpha and return plain content."""
+    """Generate text with OpenRouter (NVIDIA Nemotron 3 Super) and return plain content."""
     api_key = _load_api_key()
     if not api_key:
         return "[OpenRouter not configured: set OPENROUTER_API_KEY in .env]"

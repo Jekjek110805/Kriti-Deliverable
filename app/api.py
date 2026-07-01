@@ -2382,11 +2382,11 @@ def _clean_llm_output(text: str) -> str:
 
 
 def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int) -> Dict:
-    """Generate a content draft by calling OpenRouter Owl Alpha for each section.
+    """Generate a content draft by calling OpenRouter (NVIDIA Nemotron 3 Super).
 
     Every section is generated uniquely — no templates, no placeholders.
-    Owl Alpha writes ALL content. The output is formal, original, and natural.
-    If the model is unavailable, falls back to a clear message.
+    The configured OpenRouter model writes ALL content. The output is formal,
+    original, and natural. If the model is unavailable, falls back to a clear message.
     """
     from integrations.hermes_llm import hermes_generate
 
@@ -2487,7 +2487,7 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
         "ai_generated": True,
         "human_edited": False,
         "created_at": datetime.utcnow().isoformat(),
-        "notes": "This draft was written with OpenRouter Owl Alpha. A human must review, edit, fact-check, and approve before publishing.",
+        "notes": "This draft was written with OpenRouter (NVIDIA Nemotron 3 Super). A human must review, edit, fact-check, and approve before publishing.",
     }
     return draft
 

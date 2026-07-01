@@ -1,7 +1,7 @@
 {
   "keyword": "Seeking medical solution for cancer",
   "intent": "MOFU",
-  "tone": "professional",
+  "tone": "conversational",
   "word_count_target": 1500,
   "word_count_actual": 63,
   "sections": [
@@ -28,6 +28,6 @@
   "status": "draft",
   "ai_generated": true,
   "human_edited": false,
-  "created_at": "2026-06-26T02:57:35.667498",
+  "created_at": "2026-06-30T09:13:10.912220",
   "notes": "This draft was written by Hermes (LLM). A human must review, edit, fact-check, and approve before publishing."
 }
