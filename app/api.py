@@ -2381,6 +2381,78 @@ def _clean_llm_output(text: str) -> str:
     return "\n".join(cleaned).strip()
 
 
+def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
+    if not text:
+        return None
+
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+
+    candidates = [cleaned]
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidates.append(cleaned[start : end + 1])
+
+    for candidate in candidates:
+        try:
+            parsed = json.loads(candidate)
+            return parsed if isinstance(parsed, dict) else None
+        except json.JSONDecodeError:
+            continue
+    return None
+
+
+def _parse_labeled_content(text: str) -> Dict[str, str]:
+    if not text:
+        return {}
+
+    labels = {
+        "tldr": "tldr",
+        "tl;dr": "tldr",
+        "introduction": "introduction",
+        "main content": "main_content",
+        "faq": "faq",
+        "cta": "cta",
+    }
+    pattern = re.compile(
+        r"(?im)^\s*(TLDR|TL;DR|INTRODUCTION|MAIN CONTENT|FAQ|CTA)\s*:?\s*"
+    )
+    matches = list(pattern.finditer(text))
+    sections: Dict[str, str] = {}
+
+    for index, match in enumerate(matches):
+        key = labels[match.group(1).lower()]
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        value = _clean_llm_output(text[start:end])
+        if value and "[" not in value and "]" not in value:
+            sections[key] = value
+
+    return sections
+
+
+def _article_text(value: Any) -> str:
+    if isinstance(value, str):
+        return _clean_llm_output(value)
+    if isinstance(value, list):
+        parts = []
+        for item in value:
+            if isinstance(item, dict):
+                question = _clean_llm_output(str(item.get("question", "")))
+                answer = _clean_llm_output(str(item.get("answer", "")))
+                if question and answer:
+                    parts.append(f"Q: {question}\nA: {answer}")
+                elif answer:
+                    parts.append(answer)
+            elif item:
+                parts.append(_clean_llm_output(str(item)))
+        return "\n\n".join(part for part in parts if part)
+    return ""
+
+
 def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int) -> Dict:
     """Generate a content draft by calling OpenRouter (NVIDIA Nemotron 3 Super).
 
@@ -2433,34 +2505,49 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
         except (ValueError, IndexError):
             return None
 
-    # Generate ALL content in ONE Hermes call (faster than 5 separate calls)
     full_prompt = (
-        f"Write a complete article about '{keyword}' for {intent} intent. Tone: {tone}.\n"
+        f"Write a complete article about '{keyword}' for {intent} intent.\n"
+        f"Tone: {tone}.\n"
         f"Target audience: {brief.get('target_audience', 'general audience')}.\n"
-        f"Word count target: ~{word_count} words total.\n\n"
-        f"Output format (use these exact section headers):\n"
-        f"TLDR: [2-3 sentence summary]\n"
-        f"INTRODUCTION: [engaging intro paragraph]\n"
-        f"MAIN CONTENT: [detailed body with multiple paragraphs covering the topic]\n"
-        f"FAQ: [3 common questions and answers about {keyword}]\n"
-        f"CTA: [1-2 sentence call to action]\n\n"
-        f"Write factual, original content. No markdown headers (#). No placeholders."
+        f"Word count target: about {word_count} words total.\n\n"
+        "Return only valid JSON. Do not include markdown fences, analysis, notes, "
+        "placeholders, or text outside the JSON object.\n"
+        "Use exactly this schema:\n"
+        '{'
+        '"tldr":"2-3 sentence summary",'
+        '"introduction":"engaging introduction paragraph",'
+        '"main_content":"detailed body with multiple paragraphs",'
+        '"faq":[{"question":"question text","answer":"answer text"}],'
+        '"cta":"1-2 sentence call to action"'
+        '}\n'
+        "All values must be final reader-facing article copy."
     )
 
     full_content_raw = _gen(full_prompt, min_len=100)
+    parsed_content = _extract_json_object(full_content_raw or "")
+    labeled_content = _parse_labeled_content(full_content_raw or "") if not parsed_content else {}
 
-    if full_content_raw:
-        # Parse the sections from the output
-        sections.append({"type": "tldr", "content": _extract_section(full_content_raw, "TLDR", "INTRODUCTION") or f"Key considerations and practical guidance on {keyword}."})
-        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": _extract_section(full_content_raw, "INTRODUCTION", "MAIN CONTENT") or f"[{keyword} — content generated]"})
-        sections.append({"type": "h2", "title": "Main Content", "content": _extract_section(full_content_raw, "MAIN CONTENT", "FAQ") or f"[{keyword} — content generated]"})
-        sections.append({"type": "h2", "title": "Frequently Asked Questions", "content": _extract_section(full_content_raw, "FAQ", "CTA") or ""})
-        sections.append({"type": "cta", "content": _extract_section(full_content_raw, "CTA", "") or f"Explore how {keyword} can work for your needs."})
-    else:
-        # Fallback
+    if parsed_content:
+        sections.append({"type": "tldr", "content": _article_text(parsed_content.get("tldr")) or f"Key considerations and practical guidance on {keyword}."})
+        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": _article_text(parsed_content.get("introduction"))})
+        sections.append({"type": "h2", "title": "Main Content", "content": _article_text(parsed_content.get("main_content"))})
+        sections.append({"type": "h2", "title": "Frequently Asked Questions", "content": _article_text(parsed_content.get("faq"))})
+        sections.append({"type": "cta", "content": _article_text(parsed_content.get("cta")) or f"Explore how {keyword} can work for your needs."})
+    elif labeled_content:
+        sections.append({"type": "tldr", "content": labeled_content.get("tldr") or f"Key considerations and practical guidance on {keyword}."})
+        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": labeled_content.get("introduction", "")})
+        sections.append({"type": "h2", "title": "Main Content", "content": labeled_content.get("main_content", "")})
+        sections.append({"type": "h2", "title": "Frequently Asked Questions", "content": labeled_content.get("faq", "")})
+        sections.append({"type": "cta", "content": labeled_content.get("cta") or f"Explore how {keyword} can work for your needs."})
+    elif full_content_raw:
+        cleaned_content = _clean_llm_output(full_content_raw)
+        sections.append({"type": "tldr", "content": f"Key considerations and practical guidance on {keyword}."})
+        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Draft", "content": cleaned_content})
+        sections.append({"type": "cta", "content": f"Explore how {keyword} can work for your needs."})
+
+    if not sections:
         sections.append({"type": "tldr", "content": f"Key considerations and practical guidance on {keyword}, distilled into actionable insights."})
-        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": f"[{keyword} — Hermes unavailable]"})
-        sections.append({"type": "h2", "title": "Main Content", "content": f"[{keyword} — Hermes unavailable]"})
+        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": "Draft generation is unavailable because the configured OpenRouter model did not return usable content."})
         sections.append({"type": "cta", "content": f"Explore how {keyword} can work for your organisation."})
 
     # Compile full content

@@ -3,9 +3,8 @@
 OpenRouter-backed LLM client for the Kriti Content Writer.
 
 The public helper is still named hermes_generate() because app/api.py already
-imports that name. Internally, generation calls OpenRouter's NVIDIA Nemotron 3
-Super model over plain HTTPS — no local binary required, so it works the same
-whether the backend runs on the server or on a local machine.
+imports that name. Internally, generation calls the configured OpenRouter model
+over plain HTTPS, so no local Hermes binary is required.
 """
 import os
 from typing import Optional
@@ -53,7 +52,7 @@ def _clean_output(text: Optional[str]) -> str:
 
 
 def hermes_generate(prompt, model=None, max_tokens=900):
-    """Generate text with OpenRouter (NVIDIA Nemotron 3 Super) and return plain content."""
+    """Generate text with the configured OpenRouter model and return plain content."""
     api_key = _load_api_key()
     if not api_key:
         return "[OpenRouter not configured: set OPENROUTER_API_KEY in .env]"
@@ -64,15 +63,20 @@ def hermes_generate(prompt, model=None, max_tokens=900):
             {
                 "role": "system",
                 "content": (
-                    "You are Kriti's SEO content writer. Write original, useful, "
-                    "natural content. Do not include placeholders or meta-commentary."
+                    "You are Kriti's SEO content writer. Return only the requested "
+                    "final content. Do not include analysis, placeholders, or "
+                    "meta-commentary."
                 ),
             },
             {"role": "user", "content": prompt},
         ],
-        "temperature": 0.7,
+        "temperature": 0.5,
         "max_tokens": max_tokens,
+        "reasoning": {"effort": "none", "exclude": True},
     }
+
+    if "json" in prompt.lower():
+        payload["response_format"] = {"type": "json_object"}
 
     headers = {
         "Authorization": f"Bearer {api_key}",
