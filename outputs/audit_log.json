@@ -281,5 +281,16 @@
     "details": {
       "notes": "not eligible"
     }
+  },
+  {
+    "id": 27,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-07-01T03:00:36.259239",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
   }
 ]

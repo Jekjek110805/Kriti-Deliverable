@@ -169,6 +169,140 @@
   body:not(.light) .auth-desc-title { color: #f4f5f7; }
   body:not(.light) .auth-desc { color: #aab0bf; }
 
+  /* ─────────────────────────────────────────────────────────────────────────
+     Marketing landing page (shown before login). Theme-aware via CSS vars.
+     ───────────────────────────────────────────────────────────────────────── */
+  .lp-page { position: fixed; inset: 0; z-index: 190; overflow-y: auto; overflow-x: hidden; background: var(--bg-gradient); color: var(--text); }
+  .lp-page.hidden { display: none; }
+  .lp-wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  /* Top nav */
+  .lp-nav { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background: color-mix(in srgb, var(--bg) 78%, transparent); border-bottom: 1px solid var(--border); }
+  .lp-nav-inner { max-width: 1120px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .lp-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; letter-spacing: -0.3px; color: var(--text); }
+  .lp-brand-mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(150deg, var(--accent), #4a63e8); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 14px; box-shadow: 0 6px 16px var(--accent-glow-strong); }
+  .lp-logo { height: 27px; width: auto; display: block; }
+  .lp-nav .lp-logo { color: var(--accent); }
+  .lp-footer .lp-logo { color: #fff; }
+  .lp-nav-links { display: flex; align-items: center; gap: 26px; }
+  .lp-nav-links a { color: var(--text-secondary); font-size: 13.5px; font-weight: 600; cursor: pointer; transition: color .2s; }
+  .lp-nav-links a:hover { color: var(--text); }
+  /* Buttons */
+  .lp-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 999px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1px solid transparent; transition: all .2s; white-space: nowrap; }
+  .lp-btn-primary { background: var(--accent); color: #fff; box-shadow: 0 8px 22px var(--accent-glow-strong); }
+  .lp-btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .lp-btn-ghost { background: transparent; color: var(--text); border-color: var(--border-light); }
+  .lp-btn-ghost:hover { background: var(--accent-subtle); border-color: var(--accent); }
+  .lp-btn-lg { padding: 15px 30px; font-size: 15px; }
+  /* Sections */
+  .lp-section { padding: 84px 0; }
+  .lp-section.alt { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .lp-eyebrow { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); background: var(--accent-subtle); padding: 6px 14px; border-radius: 999px; margin-bottom: 20px; }
+  .lp-h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 800; line-height: 1.08; letter-spacing: -1.2px; color: var(--text); margin-bottom: 20px; }
+  .lp-h1 em { font-style: normal; color: var(--accent); }
+  .lp-lead { font-size: 17px; line-height: 1.7; color: var(--text-secondary); max-width: 560px; }
+  .lp-h2 { font-size: clamp(26px, 3.4vw, 36px); font-weight: 800; letter-spacing: -0.7px; color: var(--text); margin-bottom: 12px; }
+  .lp-h2 em { font-style: italic; color: var(--accent); }
+  .lp-sub { font-size: 15.5px; line-height: 1.65; color: var(--text-muted); max-width: 640px; }
+  .lp-center { text-align: center; }
+  .lp-center .lp-sub { margin: 0 auto; }
+  .lp-section-head { margin-bottom: 44px; }
+  /* Hero */
+  .lp-hero { padding: 72px 0 64px; }
+  .lp-hero-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 48px; align-items: center; }
+  .lp-cta-row { display: flex; gap: 14px; margin-top: 30px; flex-wrap: wrap; }
+  .lp-hero-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 26px; box-shadow: 0 20px 50px rgba(18,20,26,0.08); }
+  .lp-hero-panel h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 16px; font-weight: 800; }
+  .lp-checkline { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); font-size: 14.5px; font-weight: 600; color: var(--text); }
+  .lp-checkline:last-child { border-bottom: none; }
+  .lp-check { flex: none; width: 26px; height: 26px; border-radius: 8px; background: var(--accent-subtle); color: var(--accent); display: flex; align-items: center; justify-content: center; }
+  .lp-check svg { width: 15px; height: 15px; }
+  /* Numbered engine list */
+  .lp-steps-list { display: flex; flex-direction: column; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; }
+  .lp-step-row { display: grid; grid-template-columns: 64px 1fr; gap: 20px; align-items: center; padding: 26px 28px; border-bottom: 1px solid var(--border); }
+  .lp-step-row:last-child { border-bottom: none; }
+  .lp-step-num { font-size: 22px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .lp-step-row h3 { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .lp-step-row p { font-size: 14px; color: var(--text-muted); line-height: 1.55; }
+  /* Card grids */
+  .lp-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .lp-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .lp-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .lp-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 26px; transition: all .2s; }
+  .lp-card:hover { border-color: var(--accent); box-shadow: 0 14px 34px var(--accent-glow); transform: translateY(-2px); }
+  .lp-card-ico { width: 44px; height: 44px; border-radius: 12px; background: var(--accent-subtle); color: var(--accent); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+  .lp-card-ico svg { width: 22px; height: 22px; }
+  .lp-card h3 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .lp-card p { font-size: 13.5px; color: var(--text-muted); line-height: 1.6; }
+  /* Comparison table */
+  .lp-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+  .lp-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  .lp-table th, .lp-table td { padding: 15px 18px; text-align: left; font-size: 13.5px; border-bottom: 1px solid var(--border); }
+  .lp-table thead th { font-weight: 800; color: var(--text); background: var(--surface2); }
+  .lp-table thead th.hl { color: var(--accent); }
+  .lp-table td:first-child { font-weight: 600; color: var(--text); }
+  .lp-table td { color: var(--text-secondary); }
+  .lp-table tr:last-child td { border-bottom: none; }
+  .lp-col-hl { background: var(--accent-subtle); }
+  .lp-yes { color: var(--green); font-weight: 800; }
+  .lp-no { color: var(--text-muted); }
+  /* Testimonial */
+  .lp-quote { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 48px; text-align: center; max-width: 780px; margin: 0 auto; }
+  .lp-quote p { font-size: clamp(18px, 2.4vw, 24px); line-height: 1.55; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
+  .lp-quote .lp-quote-by { font-size: 13.5px; color: var(--text-muted); margin-top: 22px; font-weight: 600; }
+  /* FAQ */
+  .lp-faq { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  .lp-faq-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .lp-faq-q { padding: 18px 22px; font-size: 15px; font-weight: 700; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .lp-faq-q::after { content: '+'; font-size: 20px; color: var(--accent); font-weight: 700; flex: none; }
+  .lp-faq-item.open .lp-faq-q::after { content: '−'; }
+  .lp-faq-a { max-height: 0; overflow: hidden; transition: max-height .25s ease, padding .25s ease; padding: 0 22px; color: var(--text-muted); font-size: 14px; line-height: 1.65; }
+  .lp-faq-item.open .lp-faq-a { max-height: 260px; padding: 0 22px 20px; }
+  /* Final CTA */
+  .lp-cta-band { background: linear-gradient(150deg, #4a63e8, var(--accent)); border-radius: 24px; padding: 60px 40px; text-align: center; color: #fff; box-shadow: 0 24px 60px var(--accent-glow-strong); }
+  .lp-cta-band h2 { font-size: clamp(26px, 3.4vw, 38px); font-weight: 800; letter-spacing: -0.6px; margin-bottom: 12px; }
+  .lp-cta-band p { color: rgba(255,255,255,0.9); font-size: 16px; margin-bottom: 28px; }
+  .lp-cta-band .lp-btn { background: #fff; color: var(--accent); }
+  .lp-cta-band .lp-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(0,0,0,0.25); }
+  /* Footer */
+  .lp-footer { background: #0d1018; color: #aab0bf; padding: 56px 0 32px; }
+  .lp-footer-grid { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); gap: 32px; }
+  .lp-footer h5 { color: #fff; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; font-weight: 800; }
+  .lp-footer a, .lp-footer li { display: block; color: #8b93a3; font-size: 13.5px; margin-bottom: 9px; cursor: pointer; transition: color .2s; }
+  .lp-footer a:hover { color: #fff; }
+  .lp-footer-brand p { color: #8b93a3; font-size: 13.5px; line-height: 1.6; margin-top: 12px; max-width: 280px; }
+  .lp-footer-bottom { border-top: 1px solid rgba(255,255,255,0.08); margin-top: 40px; padding-top: 22px; font-size: 12.5px; color: #6b7280; text-align: center; }
+  .lp-theme-toggle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary); transition: all .2s; }
+  .lp-theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .lp-theme-toggle svg { width: 18px; height: 18px; }
+  .lp-back { display: inline-flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 700; cursor: pointer; margin-bottom: 22px; }
+  .lp-back:hover { color: #fff; }
+  /* Iridescence animated hero background */
+  .lp-hero { position: relative; overflow: hidden; padding: 116px 0 96px; background: linear-gradient(150deg, #3d5aa8, #6E8BFF); }
+  #iridescence-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+  .lp-hero-scrim { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(100deg, rgba(10,14,32,0.42) 0%, rgba(10,14,32,0.16) 46%, rgba(10,14,32,0.02) 100%); }
+  .lp-hero > .lp-wrap { position: relative; z-index: 1; }
+  .lp-hero .lp-eyebrow { color: #fff; background: rgba(255,255,255,0.18); }
+  .lp-hero .lp-h1 { color: #fff; }
+  .lp-hero .lp-h1 em { color: #fff; text-decoration: underline; text-decoration-color: rgba(255,255,255,0.5); text-underline-offset: 4px; }
+  .lp-hero .lp-lead { color: rgba(255,255,255,0.94); }
+  .lp-hero .lp-btn-primary { background: #fff; color: var(--accent); box-shadow: 0 10px 26px rgba(0,0,0,0.22); }
+  .lp-hero .lp-btn-primary:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 14px 32px rgba(0,0,0,0.3); }
+  .lp-hero .lp-btn-ghost { color: #fff; border-color: rgba(255,255,255,0.6); }
+  .lp-hero .lp-btn-ghost:hover { background: rgba(255,255,255,0.16); border-color: #fff; }
+  /* Glassy hero panel — translucent frosted glass over the iridescence */
+  .lp-hero .lp-hero-panel { background: rgba(255,255,255,0.10); backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%); border: 1px solid rgba(255,255,255,0.30); box-shadow: 0 16px 48px rgba(10,14,40,0.30), inset 0 1px 0 rgba(255,255,255,0.45); }
+  .lp-hero .lp-hero-panel h4 { color: rgba(255,255,255,0.75); }
+  .lp-hero .lp-checkline { color: #fff; border-bottom-color: rgba(255,255,255,0.20); }
+  .lp-hero .lp-check { background: rgba(255,255,255,0.22); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.28); }
+  body:not(.light) .lp-hero .lp-hero-panel { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.22); }
+
+  @media (max-width: 860px) {
+    .lp-hero-grid { grid-template-columns: 1fr; }
+    .lp-grid-3, .lp-grid-4, .lp-grid-2, .lp-footer-grid { grid-template-columns: 1fr; }
+    .lp-nav-links { display: none; }
+    .lp-section { padding: 56px 0; }
+  }
+
   /* Page head (Discover & other feature pages) */
   .page-head { margin-bottom: 20px; }
   .page-head-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); margin-bottom: 4px; }
@@ -449,8 +583,204 @@
 <body>
 
 <!-- LANDING / SIGN-IN (split screen) -->
-<div class="auth-page" id="landingPage">
-  <button class="auth-theme-toggle" id="landingThemeToggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode"><span id="landingThemeIcon"></span></button>
+<!-- ══════════════════════ MARKETING LANDING (pre-login) ══════════════════════ -->
+<div class="lp-page" id="landingPage">
+  <nav class="lp-nav">
+    <div class="lp-nav-inner">
+      <div class="lp-brand"><svg class="lp-logo" viewBox="24 24 344 100" role="img" aria-label="MAAI — AI SEO Intelligence"><g fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><polyline points="40,108 40,40 78,82 116,40 116,108"/><polyline points="150,108 190,40 230,108"/><polyline points="242,108 282,40 322,108"/><line x1="352" y1="40" x2="352" y2="108"/></g></svg></div>
+      <div class="lp-nav-links">
+        <a onclick="lpScroll('lp-how')">How it works</a>
+        <a onclick="lpScroll('lp-capabilities')">Capabilities</a>
+        <a onclick="lpScroll('lp-compare')">Why MAAI</a>
+        <a onclick="lpScroll('lp-faq')">FAQ</a>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="lp-theme-toggle" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme"><span id="landingThemeIcon"></span></button>
+        <button class="lp-btn lp-btn-primary" onclick="showLogin()">Sign in</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="lp-hero">
+    <canvas id="iridescence-bg" aria-hidden="true"></canvas>
+    <div class="lp-hero-scrim" aria-hidden="true"></div>
+    <div class="lp-wrap"><div class="lp-hero-grid">
+    <div>
+      <span class="lp-eyebrow">AI SEO Decision Platform</span>
+      <h1 class="lp-h1">Search Console tells you <em>what happened.</em> MAAI tells you <em>what to do.</em></h1>
+      <p class="lp-lead">MAAI is an AI decision layer on top of Google Search Console. It scores every keyword and page, recommends the highest-impact action, and routes it through human approval — from raw search data to published, optimized content.</p>
+      <div class="lp-cta-row">
+        <button class="lp-btn lp-btn-primary lp-btn-lg" onclick="showLogin()">Get started</button>
+        <button class="lp-btn lp-btn-ghost lp-btn-lg" onclick="lpScroll('lp-how')">See how it works</button>
+      </div>
+    </div>
+    <div class="lp-hero-panel">
+      <h4>What you get</h4>
+      <div class="lp-checkline"><span class="lp-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> AI-scored SEO opportunities</div>
+      <div class="lp-checkline"><span class="lp-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> SOP-driven content briefs &amp; drafts</div>
+      <div class="lp-checkline"><span class="lp-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Human-approved publishing</div>
+      <div class="lp-checkline"><span class="lp-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Live performance monitoring</div>
+    </div>
+  </div></div></section>
+
+  <!-- Engine -->
+  <section class="lp-section alt" id="lp-how"><div class="lp-wrap">
+    <div class="lp-section-head lp-center">
+      <div class="lp-eyebrow">The engine</div>
+      <h2 class="lp-h2">An AI decision engine <em>for SEO</em></h2>
+      <p class="lp-sub">MAAI moves beyond raw metrics — it reasons about your search data the way a strategist would, and turns it into a prioritized plan of action.</p>
+    </div>
+    <div class="lp-steps-list">
+      <div class="lp-step-row"><div class="lp-step-num">01</div><div><h3>Strategy Alignment</h3><p>Every recommendation is grounded in search intent, commercial value, and priority — not vanity metrics.</p></div></div>
+      <div class="lp-step-row"><div class="lp-step-num">02</div><div><h3>Production Speed</h3><p>Turn a Search Console export into ranked opportunities and AI content briefs in minutes, not days.</p></div></div>
+      <div class="lp-step-row"><div class="lp-step-num">03</div><div><h3>Quality Control</h3><p>SEO gate, fact-check, and brand review run automatically before anything reaches publish.</p></div></div>
+      <div class="lp-step-row"><div class="lp-step-num">04</div><div><h3>Measurable Impact</h3><p>Live Search Console performance tracked per keyword and page, so you see what actually moved.</p></div></div>
+    </div>
+  </div></section>
+
+  <!-- Workflows -->
+  <section class="lp-section"><div class="lp-wrap">
+    <div class="lp-section-head lp-center">
+      <div class="lp-eyebrow">Workflows</div>
+      <h2 class="lp-h2">AI-powered SEO workflows <em>at scale</em></h2>
+      <p class="lp-sub">One pipeline from discovery to publish — each stage handled by a specialized agent and gated by a human.</p>
+    </div>
+    <div class="lp-grid-3">
+      <div class="lp-card"><div class="lp-card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div><h3>Opportunity Discovery</h3><p>Upload or pull live GSC data. Stage 1A scores each keyword by position, impressions, intent, and existing-page fit.</p></div>
+      <div class="lp-card"><div class="lp-card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8"/></svg></div><h3>Content Briefing &amp; Drafting</h3><p>Generate structured briefs and AI drafts aligned to search intent and your standard operating procedure.</p></div>
+      <div class="lp-card"><div class="lp-card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><h3>Quality Validation</h3><p>Automated SEO, fact, and brand checks gate every draft before it can be approved and published.</p></div>
+    </div>
+  </div></section>
+
+  <!-- Excellence -->
+  <section class="lp-section alt"><div class="lp-wrap">
+    <div class="lp-section-head lp-center">
+      <h2 class="lp-h2">Achieve SEO excellence <em>and consistency</em></h2>
+      <p class="lp-sub">Repeatable, governed workflows that keep quality high as volume grows.</p>
+    </div>
+    <div class="lp-grid-4">
+      <div class="lp-card"><h3>Accelerate Content Cycles</h3><p>Compress research-to-brief from hours to minutes with rule-based scoring and AI drafting.</p></div>
+      <div class="lp-card"><h3>Ensure SEO Consistency</h3><p>Every page follows the same intent-aware SOP, so output quality never drifts.</p></div>
+      <div class="lp-card"><h3>Improve Keyword Coverage</h3><p>Surface gap keywords and under-optimized pages you would otherwise miss in raw GSC.</p></div>
+      <div class="lp-card"><h3>Automate SEO Reporting</h3><p>Live performance and cost tracking, always current — no manual spreadsheet exports.</p></div>
+    </div>
+  </div></section>
+
+  <!-- Capabilities -->
+  <section class="lp-section" id="lp-capabilities"><div class="lp-wrap">
+    <div class="lp-section-head lp-center">
+      <div class="lp-eyebrow">Capabilities</div>
+      <h2 class="lp-h2">Everything an SEO team <em>needs</em></h2>
+      <p class="lp-sub">A full platform — not a prompt. Grounded in your real data, with humans in control at every gate.</p>
+    </div>
+    <div class="lp-grid-3">
+      <div class="lp-card"><div class="lp-card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div><h3>100-Point Opportunity Scoring</h3><p>Each keyword scored across position, impressions, intent, commercial potential, and existing-page fit.</p></div>
+      <div class="lp-card"><div class="lp-card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div><h3>Live GSC Integration</h3><p>Pull real Search Console performance directly, or upload a CSV/XLSX export — your choice.</p></div>
+      <div class="lp-card"><div class="lp-card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div><h3>AI Briefs &amp; Drafts</h3><p>Intent-aware content briefs and full drafts generated to your SOP, ready for review.</p></div>
+      <div class="lp-card"><div class="lp-card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16 3 3m0 18L16 8"/><path d="M21 12a9 9 0 1 1-9-9"/></svg></div><h3>Should-Optimize Decisions</h3><p>Improve an existing page, create new content, or leave it — with a clear reason for each call.</p></div>
+      <div class="lp-card"><div class="lp-card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></div><h3>Approval Queue &amp; Governance</h3><p>Role-based approval gates, audit log, and compliance tracking keep humans firmly in control.</p></div>
+      <div class="lp-card"><div class="lp-card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16h.01M11 12h.01M15 16h.01M19 8h.01"/></svg></div><h3>Performance Monitoring</h3><p>Track clicks, impressions, CTR, and position per keyword and page after you publish.</p></div>
+    </div>
+  </div></section>
+
+  <!-- Comparison -->
+  <section class="lp-section alt" id="lp-compare"><div class="lp-wrap">
+    <div class="lp-section-head lp-center">
+      <h2 class="lp-h2">Why MAAI, <em>not generic AI</em></h2>
+      <p class="lp-sub">Search Console reports. ChatGPT guesses. MAAI decides — grounded in your data and your process.</p>
+    </div>
+    <div class="lp-table-wrap"><table class="lp-table">
+      <thead><tr><th>Capability</th><th>Raw Search Console</th><th>Generic AI chat</th><th class="hl">MAAI</th></tr></thead>
+      <tbody>
+        <tr><td>Prioritized recommendations</td><td class="lp-no">Data only</td><td class="lp-no">Generic</td><td class="lp-col-hl"><span class="lp-yes">✓</span> Scored &amp; ranked</td></tr>
+        <tr><td>Grounded in your real data</td><td class="lp-yes">✓</td><td class="lp-no">✗</td><td class="lp-col-hl"><span class="lp-yes">✓</span></td></tr>
+        <tr><td>Search-intent classification</td><td class="lp-no">✗</td><td class="lp-no">Inconsistent</td><td class="lp-col-hl"><span class="lp-yes">✓</span> BOFU/MOFU/TOFU</td></tr>
+        <tr><td>Existing-page detection</td><td class="lp-no">✗</td><td class="lp-no">✗</td><td class="lp-col-hl"><span class="lp-yes">✓</span></td></tr>
+        <tr><td>SOP-driven briefs &amp; drafts</td><td class="lp-no">✗</td><td class="lp-no">Ad-hoc</td><td class="lp-col-hl"><span class="lp-yes">✓</span></td></tr>
+        <tr><td>Human approval gates</td><td class="lp-no">✗</td><td class="lp-no">✗</td><td class="lp-col-hl"><span class="lp-yes">✓</span></td></tr>
+        <tr><td>Governance &amp; audit trail</td><td class="lp-no">✗</td><td class="lp-no">✗</td><td class="lp-col-hl"><span class="lp-yes">✓</span></td></tr>
+      </tbody>
+    </table></div>
+  </div></section>
+
+  <!-- Security -->
+  <section class="lp-section"><div class="lp-wrap">
+    <div class="lp-section-head lp-center">
+      <div class="lp-eyebrow">Trust</div>
+      <h2 class="lp-h2">Built for <em>secure, scalable SEO</em></h2>
+    </div>
+    <div class="lp-grid-2">
+      <div class="lp-card"><h3>Total Governance</h3><p>Ordered approval gates, an immutable audit log, and compliance tracking mean nothing ships without a human sign-off.</p></div>
+      <div class="lp-card"><h3>Team Collaboration</h3><p>Role-based access (Admin, Editor, Reviewer) and a shared approval queue keep the whole team aligned.</p></div>
+      <div class="lp-card"><h3>Uphold E-E-A-T</h3><p>Automated fact-checking and brand review protect quality, accuracy, and voice on every draft.</p></div>
+      <div class="lp-card"><h3>Extensibility</h3><p>A modular agent registry and pluggable integrations (GSC, SEMrush, CMS, analytics) grow with your stack.</p></div>
+    </div>
+  </div></section>
+
+  <!-- Testimonial -->
+  <section class="lp-section alt"><div class="lp-wrap">
+    <div class="lp-quote">
+      <p>&ldquo;MAAI turned our Search Console data into a ranked action plan. What used to take a strategist a full day now takes minutes — and every recommendation comes with a reason we can defend.&rdquo;</p>
+      <div class="lp-quote-by">— SEO Lead, early access team</div>
+    </div>
+  </div></section>
+
+  <!-- Steps -->
+  <section class="lp-section"><div class="lp-wrap">
+    <div class="lp-section-head lp-center">
+      <h2 class="lp-h2">From data to decision <em>in 4 steps</em></h2>
+    </div>
+    <div class="lp-grid-4">
+      <div class="lp-card"><div class="lp-step-num">01</div><h3 style="margin-top:10px;">Connect GSC</h3><p>Link Google Search Console or upload an export to bring in real performance data.</p></div>
+      <div class="lp-card"><div class="lp-step-num">02</div><h3 style="margin-top:10px;">Discover Opportunities</h3><p>Stage 1A scores and ranks every keyword and page by real impact potential.</p></div>
+      <div class="lp-card"><div class="lp-step-num">03</div><h3 style="margin-top:10px;">Approve &amp; Create</h3><p>Approve the shortlist, then generate briefs and drafts that pass quality gates.</p></div>
+      <div class="lp-card"><div class="lp-step-num">04</div><h3 style="margin-top:10px;">Publish &amp; Monitor</h3><p>Ship approved content and track live performance per keyword and page.</p></div>
+    </div>
+  </div></section>
+
+  <!-- FAQ -->
+  <section class="lp-section alt" id="lp-faq"><div class="lp-wrap">
+    <div class="lp-section-head lp-center">
+      <h2 class="lp-h2">Frequently asked <em>questions</em></h2>
+    </div>
+    <div class="lp-faq">
+      <div class="lp-faq-item"><div class="lp-faq-q" onclick="lpFaq(this)">Is MAAI just ChatGPT for SEO?</div><div class="lp-faq-a">No. MAAI is grounded in your actual Search Console data and follows a defined scoring model and SOP. Generic chat tools guess without your data; MAAI reasons about real performance and produces prioritized, defensible recommendations.</div></div>
+      <div class="lp-faq-item"><div class="lp-faq-q" onclick="lpFaq(this)">Does MAAI replace Google Search Console?</div><div class="lp-faq-a">No — it sits on top of it. Search Console reports what happened; MAAI is the decision layer that tells you what to do about it, then routes work through approval and back to monitoring.</div></div>
+      <div class="lp-faq-item"><div class="lp-faq-q" onclick="lpFaq(this)">How does MAAI decide what to optimize?</div><div class="lp-faq-a">Each keyword is scored on a 100-point model across position, impressions, search intent, commercial potential, and whether a matching page already exists — then ranked by priority with a clear recommendation and reason.</div></div>
+      <div class="lp-faq-item"><div class="lp-faq-q" onclick="lpFaq(this)">Do humans stay in control?</div><div class="lp-faq-a">Always. Nothing is published automatically. Ordered approval gates, role-based access, and a full audit log keep a human in the loop at every stage.</div></div>
+      <div class="lp-faq-item"><div class="lp-faq-q" onclick="lpFaq(this)">What data does MAAI need?</div><div class="lp-faq-a">A Google Search Console connection (live) or a CSV/XLSX export containing query, impressions, clicks, and position. That's enough to start scoring opportunities.</div></div>
+      <div class="lp-faq-item"><div class="lp-faq-q" onclick="lpFaq(this)">Can MAAI create the content too?</div><div class="lp-faq-a">Yes. Once you approve an opportunity, MAAI generates an intent-aware brief and a full AI draft, then runs SEO, fact, and brand checks before it reaches your approval queue.</div></div>
+    </div>
+  </div></section>
+
+  <!-- Final CTA -->
+  <section class="lp-section"><div class="lp-wrap">
+    <div class="lp-cta-band">
+      <h2>Turn your search data into decisions</h2>
+      <p>Sign in to your MAAI workspace and see your first ranked opportunities in minutes.</p>
+      <button class="lp-btn lp-btn-lg" onclick="showLogin()">Get started</button>
+    </div>
+  </div></section>
+
+  <!-- Footer -->
+  <footer class="lp-footer"><div class="lp-wrap">
+    <div class="lp-footer-grid">
+      <div class="lp-footer-brand">
+        <div class="lp-brand"><svg class="lp-logo" viewBox="24 24 344 100" role="img" aria-label="MAAI — AI SEO Intelligence"><g fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><polyline points="40,108 40,40 78,82 116,40 116,108"/><polyline points="150,108 190,40 230,108"/><polyline points="242,108 282,40 322,108"/><line x1="352" y1="40" x2="352" y2="108"/></g></svg></div>
+        <p>The AI decision layer for SEO — turning Google Search Console data into ranked, action-ready decisions.</p>
+      </div>
+      <div><h5>Product</h5><a onclick="lpScroll('lp-how')">How it works</a><a onclick="lpScroll('lp-capabilities')">Capabilities</a><a onclick="lpScroll('lp-compare')">Why MAAI</a><a onclick="showLogin()">Sign in</a></div>
+      <div><h5>Workflow</h5><li>Opportunity Discovery</li><li>Content Briefing</li><li>Quality Validation</li><li>Performance Monitoring</li></div>
+      <div><h5>Company</h5><li>About</li><li>Governance</li><li>Security</li><li>Contact</li></div>
+    </div>
+    <div class="lp-footer-bottom">© 2026 MAAI — AI SEO Intelligence. Built on Google Search Console. Authorized access only.</div>
+  </div></footer>
+</div>
+
+<!-- ══════════════════════ LOGIN SCREEN ══════════════════════ -->
+<div class="auth-page hidden" id="loginPage">
+  <button class="auth-theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode"><span id="loginThemeIcon"></span></button>
   <div class="auth-left">
     <div class="auth-intro">
       <svg class="auth-logo" viewBox="0 0 400 150" role="img" aria-label="MAAI — AI SEO Intelligence" xmlns="http://www.w3.org/2000/svg">
@@ -470,6 +800,7 @@
 
   <div class="auth-right">
     <div class="auth-form-wrap">
+      <div class="lp-back" onclick="showLanding()">← Back to home</div>
       <h1 class="auth-title">Sign in</h1>
       <p class="auth-sub">Access your MAAI workspace.</p>
 
@@ -920,14 +1251,41 @@
       <div id="review-result"></div>
     </div>
 
+    <!-- PAGE: AGENT REGISTRY -->
+    <div id="page-agents" class="page"><div id="agent-registry-container"></div></div>
+
+    <!-- PAGE: OBSERVABILITY -->
+    <div id="page-observability" class="page"><div id="obs-container"></div></div>
+
+    <!-- PAGE: APPROVALS & ROADMAP -->
+    <div id="page-approvals" class="page"><div id="approvals-container"></div></div>
+
+    <!-- PAGE: MODEL USAGE -->
+    <div id="page-models" class="page"><div id="models-container"></div></div>
+
+    <!-- PAGE: USER MANAGEMENT -->
+    <div id="page-users" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">User Management</h1>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Add or remove accounts. Admins only — new accounts can sign in immediately.</p>
+      <div class="card" id="users-admin-only">
+        <div class="card-title">Add Account</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+          <div><label>Username</label><input type="text" id="newUserName" placeholder="e.g. maria" autocomplete="off"></div>
+          <div><label>Password</label><input type="password" id="newUserPass" placeholder="min 4 characters" autocomplete="new-password"></div>
+          <div><label>Role</label><select id="newUserRole"><option value="user">User</option><option value="admin">Admin</option><option value="editor">Editor</option><option value="reviewer">Reviewer</option><option value="publisher">Publisher</option></select></div>
+          <div><button class="btn btn-primary" onclick="createUser()">Add account</button></div>
+        </div>
+        <div id="user-add-result" style="margin-top:12px;"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Accounts</div>
+        <div class="table-wrap"><table><thead><tr><th>Username</th><th>Role</th><th>Actions</th></tr></thead><tbody id="usersTable"></tbody></table></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
-<!-- AGENT REGISTRY PAGE -->
-<div id="agent-registry-container"></div>
-<div id="obs-container"></div>
-<div id="approvals-container"></div>
-<div id="models-container"></div>
 
 <!-- ADD CALENDAR MODAL -->
 <div class="modal-overlay" id="addCalModal">
@@ -1003,6 +1361,7 @@ const NAV_GROUPS = {
     defaultPage: 'governance',
     pages: [
       { id: 'governance', label: 'Governance', icon: 'shield' },
+      { id: 'users', label: 'User Management', icon: 'users' },
       { id: 'agents', label: 'Agent Registry', icon: 'robot' },
     ],
   },
@@ -1044,6 +1403,7 @@ function icon(name) {
     package: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 1 1 5.66 5.66l-9.2 9.19a2 2 0 1 1-2.83-2.83l8.49-8.48"/></svg>',
     lightbulb: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>',
     folder: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+    users: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
   };
   return icons[name] || '';
 }
@@ -1082,8 +1442,10 @@ const themeIcons = {
 };
 
 function syncThemeIcons(isLight) {
-  const landingIcon = document.getElementById('landingThemeIcon');
-  if (landingIcon) landingIcon.innerHTML = isLight ? themeIcons.sun : themeIcons.moon;
+  ['landingThemeIcon', 'loginThemeIcon'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = isLight ? themeIcons.sun : themeIcons.moon;
+  });
 }
 
 function toggleTheme() {
@@ -1127,14 +1489,6 @@ function selectRole(role) {
   if (label) label.textContent = role === 'admin' ? 'Admin' : 'User';
 }
 
-// Allowed credentials (username -> { password, role })
-const ALLOWED_USERS = {
-  'kriti':     { password: 'kriti2026', role: 'admin' },
-  'jake':      { password: 'kriti2026', role: 'admin' },
-  'paul':      { password: 'kriti2026', role: 'admin' },
-  'engana':    { password: 'kriti2026', role: 'admin' },
-};
-
 function doLogin(e) {
   e.preventDefault();
   const username = document.getElementById('loginUser').value.trim().toLowerCase();
@@ -1144,25 +1498,128 @@ function doLogin(e) {
     errEl.textContent = 'Please enter both username and password.';
     return false;
   }
-  const user = ALLOWED_USERS[username];
-  if (!user || user.password !== password) {
-    errEl.textContent = 'Invalid username or password.';
-    return false;
-  }
-  errEl.textContent = '';
-  const auth = { username, role: user.role };
-  localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
-  enterApp(auth);
+  errEl.textContent = 'Signing in…';
+  fetch(BASE + '/api/auth/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  })
+    .then(r => r.json().then(d => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => {
+      if (!ok) { errEl.textContent = d.error || 'Invalid username or password.'; return; }
+      errEl.textContent = '';
+      const auth = { username: d.username, role: d.role };
+      localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+      enterApp(auth);
+    })
+    .catch(err => { errEl.textContent = 'Sign-in failed: ' + err; });
   return false;
 }
 
 function showScreen(name) {
   document.getElementById('landingPage').classList.toggle('hidden', name !== 'landing');
+  const loginEl = document.getElementById('loginPage');
+  if (loginEl) loginEl.classList.toggle('hidden', name !== 'login');
   document.getElementById('appRoot').classList.toggle('hidden', name !== 'app');
+  if (name === 'landing') { const lp = document.getElementById('landingPage'); if (lp) lp.scrollTop = 0; }
 }
 
 function showLanding() { showScreen('landing'); }
-function showLogin() { showLanding(); }
+function showLogin() { showScreen('login'); }
+
+// Marketing landing helpers
+function lpScroll(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function lpFaq(q) {
+  const item = q.closest('.lp-faq-item');
+  if (item) item.classList.toggle('open');
+}
+
+// ── Iridescence animated hero background — vanilla WebGL, no dependencies ─────
+// Ported from the ReactBits "Iridescence" shader. Color: rgb(0.290,0.435,0.749).
+(function () {
+  function init() {
+    const canvas = document.getElementById('iridescence-bg');
+    if (!canvas) return;
+    const gl = canvas.getContext('webgl', { antialias: true }) || canvas.getContext('experimental-webgl');
+    if (!gl) return; // no WebGL → CSS gradient fallback stays visible
+
+    const VERT = 'attribute vec2 position; attribute vec2 uv; varying vec2 vUv;' +
+      'void main(){ vUv = uv; gl_Position = vec4(position, 0.0, 1.0); }';
+    const FRAG = 'precision highp float;' +
+      'uniform float uTime; uniform vec3 uColor; uniform vec3 uResolution;' +
+      'uniform vec2 uMouse; uniform float uAmplitude; uniform float uSpeed; varying vec2 vUv;' +
+      'void main(){' +
+      '  float mr = min(uResolution.x, uResolution.y);' +
+      '  vec2 uv = (vUv * 2.0 - 1.0) * uResolution.xy / mr;' +
+      '  uv += (uMouse - vec2(0.5)) * uAmplitude;' +
+      '  float d = -uTime * 0.5 * uSpeed; float a = 0.0;' +
+      '  for (float i = 0.0; i < 8.0; ++i){ a += cos(i - d - a * uv.x); d += sin(uv.y * i + a); }' +
+      '  d += uTime * 0.5 * uSpeed;' +
+      '  vec3 col = vec3(cos(uv * vec2(d, a)) * 0.6 + 0.4, cos(a + d) * 0.5 + 0.5);' +
+      '  col = cos(col * cos(vec3(d, a, 2.5)) * 0.5 + 0.5) * uColor;' +
+      '  gl_FragColor = vec4(col, 1.0);' +
+      '}';
+
+    function sh(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+    gl.useProgram(prog);
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 0, 0, 3, -1, 2, 0, -1, 3, 0, 2]), gl.STATIC_DRAW);
+    const posLoc = gl.getAttribLocation(prog, 'position');
+    const uvLoc = gl.getAttribLocation(prog, 'uv');
+    gl.enableVertexAttribArray(posLoc); gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 16, 0);
+    gl.enableVertexAttribArray(uvLoc); gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 16, 8);
+
+    const uTime = gl.getUniformLocation(prog, 'uTime');
+    const uColor = gl.getUniformLocation(prog, 'uColor');
+    const uRes = gl.getUniformLocation(prog, 'uResolution');
+    const uMouse = gl.getUniformLocation(prog, 'uMouse');
+    const uAmp = gl.getUniformLocation(prog, 'uAmplitude');
+    const uSpeed = gl.getUniformLocation(prog, 'uSpeed');
+    gl.uniform3f(uColor, 0.2901960784313726, 0.43529411764705883, 0.7490196078431373);
+    gl.uniform1f(uAmp, 0.1);
+    gl.uniform1f(uSpeed, 1.0);
+    let mx = 0.5, my = 0.5;
+    gl.uniform2f(uMouse, mx, my);
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1;
+      canvas.width = Math.max(1, Math.floor(w * dpr));
+      canvas.height = Math.max(1, Math.floor(h * dpr));
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.uniform3f(uRes, canvas.width, canvas.height, canvas.width / canvas.height);
+    }
+    window.addEventListener('resize', resize);
+    if (window.ResizeObserver) { try { new ResizeObserver(resize).observe(canvas); } catch (_) {} }
+    resize();
+
+    canvas.addEventListener('mousemove', function (e) {
+      const r = canvas.getBoundingClientRect();
+      mx = (e.clientX - r.left) / r.width;
+      my = 1.0 - (e.clientY - r.top) / r.height;
+      gl.uniform2f(uMouse, mx, my);
+    });
+
+    const t0 = performance.now();
+    function frame(now) {
+      gl.uniform1f(uTime, (now - t0) * 0.001);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
 
 function getInitials(name) {
   const parts = (name || '').trim().split(/[\s]+/);
@@ -1194,19 +1651,71 @@ function logout() {
   showLanding();
 }
 
+// ── User Management (admin) ──────────────────────────────────────────────────
+function currentAuth() {
+  try { return JSON.parse(localStorage.getItem(AUTH_KEY)) || {}; } catch (_) { return {}; }
+}
+
+function loadUsers() {
+  const isAdmin = currentAuth().role === 'admin';
+  const addCard = document.getElementById('users-admin-only');
+  if (addCard) addCard.style.display = isAdmin ? '' : 'none';
+  const tbody = document.getElementById('usersTable');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted)">Loading…</td></tr>';
+  fetch(BASE + '/api/auth/users').then(r => r.json()).then(d => {
+    const me = (currentAuth().username || '').toLowerCase();
+    const rows = (d.users || []).map(u => `
+      <tr>
+        <td><strong>${u.username}</strong>${u.username === me ? ' <span class="badge badge-approved">you</span>' : ''}</td>
+        <td><span class="badge badge-${u.role === 'admin' ? 'approved' : 'pending'}">${u.role}</span></td>
+        <td>${isAdmin && u.username !== me ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.username}')">Remove</button>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
+      </tr>`).join('');
+    if (tbody) tbody.innerHTML = rows || '<tr><td colspan="3" style="color:var(--text-muted)">No accounts.</td></tr>';
+  }).catch(err => { if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="color:var(--red)">Failed to load: ' + err + '</td></tr>'; });
+}
+
+function createUser() {
+  const auth = currentAuth();
+  const username = (document.getElementById('newUserName').value || '').trim();
+  const password = document.getElementById('newUserPass').value || '';
+  const role = document.getElementById('newUserRole').value;
+  const out = document.getElementById('user-add-result');
+  if (!username || !password) { out.innerHTML = '<div class="alert alert-warning">Username and password are required.</div>'; return; }
+  fetch(BASE + '/api/auth/users', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, role, actor_role: auth.role })
+  })
+    .then(r => r.json().then(d => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => {
+      if (!ok) { out.innerHTML = '<div class="alert alert-warning">' + (d.error || 'Failed to add account.') + '</div>'; return; }
+      out.innerHTML = '<div class="alert alert-success">Account <strong>' + d.user.username + '</strong> (' + d.user.role + ') created — they can sign in now.</div>';
+      document.getElementById('newUserName').value = '';
+      document.getElementById('newUserPass').value = '';
+      loadUsers();
+    })
+    .catch(err => { out.innerHTML = '<div class="alert alert-warning">Failed: ' + err + '</div>'; });
+}
+
+function deleteUser(username) {
+  if (!confirm('Remove account "' + username + '"? They will no longer be able to sign in.')) return;
+  const auth = currentAuth();
+  fetch(BASE + '/api/auth/users/' + encodeURIComponent(username), {
+    method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actor_role: auth.role })
+  })
+    .then(r => r.json().then(d => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => { if (!ok) alert(d.error || 'Failed to remove account.'); loadUsers(); })
+    .catch(err => alert('Failed: ' + err));
+}
+
 function initAuth() {
   let auth = null;
   try { auth = JSON.parse(localStorage.getItem(AUTH_KEY)); } catch (_) { auth = null; }
-  // Re-validate stored auth against allowed users
-  if (auth && auth.username) {
-    const valid = ALLOWED_USERS[auth.username.toLowerCase()];
-    if (valid && valid.role === auth.role) {
-      selectRole(auth.role || 'user');
-      enterApp(auth);
-    } else {
-      localStorage.removeItem(AUTH_KEY);
-      showLanding();
-    }
+  // Trust a stored session (username + role). Credentials are validated by the
+  // backend at sign-in; accounts live in data/users.json.
+  if (auth && auth.username && auth.role) {
+    selectRole(auth.role === 'admin' ? 'admin' : 'user');
+    enterApp(auth);
   } else {
     showLanding();
   }
@@ -1320,7 +1829,7 @@ function handleFile(input) {
     });
 }
 
-function runLiveGSC(days = 30, rowLimit = 500) {
+function runLiveGSC(days = 90, rowLimit = 500) {
   if (analysisInProgress || hasVisibleResults()) {
     alert('Please cancel the current results before pulling live GSC data.');
     return;
@@ -2476,14 +2985,86 @@ function publishContent(now) {
 }
 
 // ── Monitor ──────────────────────────────────────────────────────────────────
+// ── Results Report ───────────────────────────────────────────────────────────
+function loadReport() {
+  const empty = document.getElementById('report-empty');
+  const content = document.getElementById('report-content');
+  const opps = Array.isArray(opportunities) ? opportunities : [];
+  if (!opps.length) {
+    empty.classList.remove('hidden');
+    content.classList.add('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  content.classList.remove('hidden');
+
+  const critical = opps.filter(o => o.priority === 'Critical').length;
+  const high = opps.filter(o => o.priority === 'High').length;
+  const bofu = opps.filter(o => o.intent === 'BOFU').length;
+  document.getElementById('report-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${opps.length}</div><div class="stat-label">Opportunities</div></div>
+    <div class="stat-card"><div class="stat-value stat-critical">${critical}</div><div class="stat-label">Critical</div></div>
+    <div class="stat-card"><div class="stat-value stat-high">${high}</div><div class="stat-label">High</div></div>
+    <div class="stat-card"><div class="stat-value">${bofu}</div><div class="stat-label">BOFU</div></div>`;
+
+  document.getElementById('reportTable').innerHTML = opps.map((o, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><span class="badge badge-${(o.priority || '').toLowerCase()}">${o.priority || ''}</span></td>
+      <td>${o.keyword || ''}</td>
+      <td>${o.page || ''}</td>
+      <td>${o.position != null ? o.position : ''}</td>
+      <td>${(o.impressions != null ? o.impressions : 0).toLocaleString()}</td>
+      <td>${o.intent || ''}</td>
+      <td>${o.score != null ? o.score : (o.opportunity_score || 0)}</td>
+      <td>${o.recommendation || ''}</td>
+    </tr>`).join('');
+}
+
+// ── Performance Monitor ──────────────────────────────────────────────────────
 function loadMonitor() {
-  fetch(BASE + '/api/monitor').then(r => r.json()).then(d => {
-    if (!d.total) { document.getElementById('monitor-content').innerHTML = '<div class="card"><div class="alert alert-info">No published content yet.</div></div>'; return; }
-    let html = '<div class="card"><div class="card-title">Published Content</div><div class="table-wrap"><table><thead><tr><th>Keyword</th><th>Status</th><th>Published</th><th>Actions</th></tr></thead><tbody>';
-    d.published.forEach(p => { html += '<tr><td><strong>' + p.keyword + '</strong></td><td><span class="badge badge-' + (p.status === 'published' ? 'approved' : 'pending') + '">' + p.status + '</span></td><td>' + (p.published_at ? new Date(p.published_at).toLocaleDateString() : 'Scheduled') + '</td><td><button class="btn btn-sm btn-secondary" onclick="requestIndexing(\'' + p.keyword + '\')">Request Indexing</button></td></tr>'; });
-    html += '</tbody></table></div></div>';
-    document.getElementById('monitor-content').innerHTML = html;
-  });
+  const container = document.getElementById('monitor-content');
+  container.innerHTML = '<div class="card"><div class="alert alert-info">Loading live GSC performance…</div></div>';
+
+  fetch(BASE + '/api/integrations/gsc/performance?days=90&row_limit=500')
+    .then(r => r.json())
+    .then(g => {
+      let html = '';
+      if (g && !g.error && g.totals) {
+        const t = g.totals;
+        html += `<div class="stats-grid" style="margin-bottom:16px;">
+          <div class="stat-card"><div class="stat-value">${t.clicks.toLocaleString()}</div><div class="stat-label">Clicks</div></div>
+          <div class="stat-card"><div class="stat-value">${t.impressions.toLocaleString()}</div><div class="stat-label">Impressions</div></div>
+          <div class="stat-card"><div class="stat-value">${t.avg_ctr}%</div><div class="stat-label">Avg CTR</div></div>
+          <div class="stat-card"><div class="stat-value">${t.avg_position}</div><div class="stat-label">Avg Position</div></div>
+        </div>`;
+        html += `<div class="card"><div class="card-title">Live Search Performance — ${g.site_url} (last ${g.days} days)</div>`;
+        if (g.rows && g.rows.length) {
+          html += '<div class="table-wrap"><table><thead><tr><th>Query</th><th>Page</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Position</th></tr></thead><tbody>';
+          g.rows.forEach(r => {
+            const pos = isNaN(Number(r.position)) ? r.position : Number(r.position).toFixed(1);
+            html += '<tr><td><strong>' + (r.query || '') + '</strong></td><td>' + (r.page || '') + '</td><td>' + r.clicks + '</td><td>' + r.impressions + '</td><td>' + r.ctr + '</td><td>' + pos + '</td></tr>';
+          });
+          html += '</tbody></table></div>';
+        } else {
+          html += '<div class="alert alert-info">No query data returned for this period.</div>';
+        }
+        html += '</div>';
+      } else {
+        html += '<div class="card"><div class="alert alert-warning">Live GSC performance unavailable: ' + ((g && g.error) || 'not configured') + '</div></div>';
+      }
+
+      // Also show published content when present.
+      fetch(BASE + '/api/monitor').then(r => r.json()).then(d => {
+        if (d.total) {
+          html += '<div class="card"><div class="card-title">Published Content</div><div class="table-wrap"><table><thead><tr><th>Keyword</th><th>Status</th><th>Published</th><th>Actions</th></tr></thead><tbody>';
+          d.published.forEach(p => { html += '<tr><td><strong>' + p.keyword + '</strong></td><td><span class="badge badge-' + (p.status === 'published' ? 'approved' : 'pending') + '">' + p.status + '</span></td><td>' + (p.published_at ? new Date(p.published_at).toLocaleDateString() : 'Scheduled') + '</td><td><button class="btn btn-sm btn-secondary" onclick="requestIndexing(\'' + p.keyword + '\')">Request Indexing</button></td></tr>'; });
+          html += '</tbody></table></div></div>';
+        }
+        container.innerHTML = html;
+      }).catch(() => { container.innerHTML = html; });
+    })
+    .catch(err => { container.innerHTML = '<div class="card"><div class="alert alert-danger">Failed to load performance: ' + err + '</div></div>'; });
 }
 
 function requestIndexing(keyword) {
@@ -2502,12 +3083,48 @@ const INTEGRATIONS = [
   { id: "outreach", name: "Outreach Tracker", icon: icon('mail'), desc: "Link building and PR outreach management", endpoint: "/api/integrations/outreach" },
 ];
 
+// Simple "paste key → Connect" config for API-based integrations.
+const INTEGRATION_CONFIG = {
+  semrush: {
+    configureEndpoint: '/api/integrations/semrush/configure',
+    fields: [
+      { key: 'api_key', label: 'SEMrush API Key', type: 'password', placeholder: 'Paste your SEMrush API key', primary: true },
+      { key: 'database', label: 'Database', type: 'text', placeholder: 'us', default: 'us' },
+    ],
+  },
+  cms: {
+    configureEndpoint: '/api/integrations/cms/configure',
+    fields: [
+      { key: 'cms_type', label: 'CMS Type', type: 'select', options: ['wordpress', 'contentful', 'strapi', 'custom'], default: 'wordpress' },
+      { key: 'api_url', label: 'API URL', type: 'text', placeholder: 'https://yoursite.com/wp-json' },
+      { key: 'api_key', label: 'API Key / Token', type: 'password', placeholder: 'Paste your CMS API key or token', primary: true },
+      { key: 'author_id', label: 'Author ID (optional)', type: 'text', placeholder: 'e.g. 1' },
+    ],
+  },
+  notifications: {
+    configureEndpoint: '/api/integrations/notifications/configure',
+    fields: [
+      { key: 'slack_webhook_url', label: 'Slack Webhook URL', type: 'password', placeholder: 'https://hooks.slack.com/services/...', primary: true },
+      { key: 'notify_email', label: 'Notify Email (optional)', type: 'text', placeholder: 'you@company.com' },
+    ],
+  },
+  analytics: {
+    configureEndpoint: '/api/integrations/analytics/configure',
+    fields: [
+      { key: 'google_analytics_id', label: 'Google Analytics ID', type: 'text', placeholder: 'G-XXXXXXXXXX or UA-XXXXXXX', primary: true },
+      { key: 'gtag_id', label: 'gtag ID (optional)', type: 'text', placeholder: 'G-XXXXXXXXXX' },
+    ],
+  },
+};
+
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const page = document.getElementById('page-' + pageId);
   if (page) page.classList.add('active');
   renderSidebarNav(pageId);
 
+  if (pageId === 'results') loadReport();
+  if (pageId === 'users') loadUsers();
   if (pageId === 'queue') loadQueue();
   if (pageId === 'calendar') loadCalendar();
   if (pageId === 'monitor') loadMonitor();
@@ -2556,20 +3173,75 @@ function loadIntegrations() {
 function showIntegrationDetail(id) {
   const int = INTEGRATIONS.find(i => i.id === id);
   if (!int) return;
+  if (id === 'gsc') { showGSCConfig(int); return; }
+  if (INTEGRATION_CONFIG[id]) { showIntegrationConnect(int); return; }
+  showIntegrationInfo(int);
+}
 
-  if (id === 'gsc') {
-    showGSCConfig(int);
+function intFieldHtml(f) {
+  if (f.type === 'select') {
+    return `<select id="int-f-${f.key}">${f.options.map(o => `<option value="${o}"${o === f.default ? ' selected' : ''}>${o}</option>`).join('')}</select>`;
+  }
+  const type = f.type === 'password' ? 'password' : 'text';
+  return `<input type="${type}" id="int-f-${f.key}" placeholder="${escapeHtml(f.placeholder || '')}" value="${escapeHtml(f.default || '')}" autocomplete="off">`;
+}
+
+// Simple connect form: paste the key(s) → Connect.
+function showIntegrationConnect(int) {
+  const cfg = INTEGRATION_CONFIG[int.id];
+  const primary = cfg.fields.find(f => f.primary) || cfg.fields[0];
+  fetch(BASE + int.endpoint).then(r => r.json()).then(d => {
+    const connected = (d.status === 'configured' || d.status === 'connected');
+    let html = `<div class="card" style="max-width:560px;">`;
+    html += `<div class="card-title">${int.icon} ${int.name}</div>`;
+    html += `<p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">${int.desc}</p>`;
+    html += connected
+      ? `<div class="alert alert-success">✓ Connected — ${int.name} is configured. Paste new details to update.</div>`
+      : `<div class="alert alert-info">Paste your ${primary.label} below and click Connect.</div>`;
+    html += `<div style="display:grid;gap:12px;margin:14px 0;">`;
+    cfg.fields.forEach(f => { html += `<div><label>${f.label}</label>${intFieldHtml(f)}</div>`; });
+    html += `</div>`;
+    html += `<div id="int-connect-result" style="margin-bottom:12px;"></div>`;
+    html += `<div style="display:flex;gap:10px;">`;
+    html += `<button class="btn btn-primary" onclick="connectIntegration('${int.id}')">${connected ? 'Update connection' : 'Connect'}</button>`;
+    html += `<button class="btn btn-secondary" onclick="loadIntegrations()">← Back</button>`;
+    html += `</div></div>`;
+    document.getElementById('integrations-grid').innerHTML = html;
+  });
+}
+
+function connectIntegration(id) {
+  const cfg = INTEGRATION_CONFIG[id];
+  const int = INTEGRATIONS.find(i => i.id === id);
+  const out = document.getElementById('int-connect-result');
+  const payload = {};
+  cfg.fields.forEach(f => { const el = document.getElementById('int-f-' + f.key); payload[f.key] = el ? el.value.trim() : ''; });
+  const primary = cfg.fields.find(f => f.primary);
+  if (primary && !payload[primary.key]) {
+    out.innerHTML = `<div class="alert alert-warning">${primary.label} is required.</div>`;
     return;
   }
+  out.innerHTML = '<div class="alert alert-info">Connecting…</div>';
+  fetch(BASE + cfg.configureEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    .then(r => r.json().then(d => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => {
+      if (!ok || d.error) { out.innerHTML = `<div class="alert alert-warning">${escapeHtml(d.error || 'Could not connect.')}</div>`; return; }
+      out.innerHTML = '<div class="alert alert-success">✓ Connected! ' + escapeHtml(d.message || (int.name + ' is now configured.')) + '</div>';
+      setTimeout(() => showIntegrationConnect(int), 900);
+    })
+    .catch(err => { out.innerHTML = '<div class="alert alert-warning">Failed: ' + err + '</div>'; });
+}
 
-  fetch(BASE + int.endpoint)
-    .then(r => r.json())
-    .then(d => {
-      let html = `<div class="card"><div class="card-title">${int.icon} ${int.name}</div>`;
-      html += `<pre style="font-size:12px;background:var(--surface2);padding:12px;border-radius:8px;overflow:auto;max-height:400px;">${JSON.stringify(d, null, 2)}</pre>`;
-      html += `<button class="btn btn-secondary" style="margin-top:8px;" onclick="loadIntegrations()">← Back</button></div>`;
-      document.getElementById('integrations-grid').innerHTML = html;
-    });
+// Built-in integrations (no API key needed) — show a friendly status view.
+function showIntegrationInfo(int) {
+  fetch(BASE + int.endpoint).then(r => r.json()).then(d => {
+    let html = `<div class="card" style="max-width:560px;"><div class="card-title">${int.icon} ${int.name}</div>`;
+    html += `<p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">${int.desc}</p>`;
+    html += `<div class="alert alert-info">Built-in — no API key required. This works out of the box.</div>`;
+    html += `<pre style="font-size:12px;background:var(--surface2);padding:12px;border-radius:8px;overflow:auto;max-height:320px;">${escapeHtml(JSON.stringify(d, null, 2))}</pre>`;
+    html += `<button class="btn btn-secondary" style="margin-top:8px;" onclick="loadIntegrations()">← Back</button></div>`;
+    document.getElementById('integrations-grid').innerHTML = html;
+  });
 }
 
 function showGSCConfig(int) {
@@ -2818,7 +3490,7 @@ function loadAuditLog() {
 // ── Agent Registry ──────────────────────────────────────────────────────────
 function loadAgentRegistry() {
   const c = document.getElementById('agent-registry-container');
-  c.innerHTML = '<div style="position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;padding:32px;"><div style="max-width:1200px;margin:0 auto;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;"><button class="btn btn-secondary" onclick="document.getElementById(\'agent-registry-container\').innerHTML=\'\'">← Back</button><h1 style="font-size:24px;font-weight:700;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/></svg> Agent Registry</h1></div><div id="ar-health" class="stats-grid" style="margin-bottom:20px;"></div><div id="ar-groups" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:16px;margin-bottom:20px;"></div><div class="card"><div class="card-title">Capability Catalog</div><div id="ar-caps" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;"></div></div><div class="card"><div class="card-title">Execution Log</div><div id="ar-log" style="max-height:300px;overflow-y:auto;"></div></div></div></div>';
+  c.innerHTML = '<h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Agent Registry</h1><p style="color:var(--text-muted);margin-bottom:24px;">All agents in the system, their capabilities, and recent executions.</p><div id="ar-health" class="stats-grid" style="margin-bottom:20px;"></div><div id="ar-groups" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:16px;margin-bottom:20px;"></div><div class="card"><div class="card-title">Capability Catalog</div><div id="ar-caps" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;"></div></div><div class="card"><div class="card-title">Execution Log</div><div id="ar-log" style="max-height:300px;overflow-y:auto;"></div></div>';
   fetch(BASE + '/api/registry/health').then(r => r.json()).then(d => { document.getElementById('ar-health').innerHTML = '<div class="stat-card"><div class="stat-value">'+d.summary.total+'</div><div class="stat-label">Total</div></div><div class="stat-card"><div class="stat-value" style="color:var(--green)">'+d.summary.active+'</div><div class="stat-label">Active</div></div><div class="stat-card"><div class="stat-value" style="color:var(--yellow)">'+d.summary.planned+'</div><div class="stat-label">Planned</div></div><div class="stat-card"><div class="stat-value">'+d.summary.healthy_percentage+'%</div><div class="stat-label">Healthy</div></div>'; });
   fetch(BASE + '/api/registry/groups').then(r => r.json()).then(d => { let h=''; const gi={research:'search',planning:'clipboard',production:'pencil',quality:'check',publishing:'rocket',monitoring:'graph',coordination:'target'}; for(const[g,data] of Object.entries(d.groups)){h+='<div class="card"><div class="card-title">'+icon(gi[g]||'package')+' '+g.charAt(0).toUpperCase()+g.slice(1)+' ('+data.count+')</div>';data.agents.forEach(a=>{h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(46,51,72,0.5);"><span style="color:'+(a.status==='active'?'var(--green)':'var(--yellow)')+';">●</span><div style="flex:1;"><strong>'+a.name+'</strong><br><span style="font-size:11px;color:var(--text-muted);">v'+a.version+'</span></div><span class="badge badge-'+(a.status==='active'?'approved':'pending')+'">'+a.status+'</span></div>';});h+='</div>';} document.getElementById('ar-groups').innerHTML=h; });
   fetch(BASE + '/api/registry/capabilities').then(r => r.json()).then(d => { let h=''; for(const[cap,info] of Object.entries(d.capabilities)){h+='<div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-weight:600;font-size:13px;">'+info.name+'</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">'+info.agents.map(a=>a.name).join(', ')+'</div></div>';} document.getElementById('ar-caps').innerHTML=h; });
@@ -2829,7 +3501,7 @@ function loadAgentRegistry() {
 function loadObservability() {
   const c = document.getElementById('obs-container');
   if (!c) return;
-  c.innerHTML = '<div style="position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;padding:32px;"><div style="max-width:1200px;margin:0:auto;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;"><button class="btn btn-secondary" onclick="document.getElementById(\'obs-container\').innerHTML=\'\'">← Back</button><h1 style="font-size:24px;font-weight:700;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16h.01"/><path d="M11 12h.01"/><path d="M15 16h.01"/><path d="M19 8h.01"/></svg> Observability</h1></div><div id="obs-metrics" class="stats-grid" style="margin-bottom:20px;"></div><div id="obs-maturity" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:20px;"></div><div class="card"><div class="card-title">Prompt Library</div><div id="obs-prompts"></div></div><div class="card"><div class="card-title">Cost Tracking</div><div id="obs-costs"></div></div></div></div>';
+  c.innerHTML = '<h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Observability</h1><p style="color:var(--text-muted);margin-bottom:24px;">Workflow metrics, maturity, prompt library, and cost tracking.</p><div id="obs-metrics" class="stats-grid" style="margin-bottom:20px;"></div><div id="obs-maturity" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:20px;"></div><div class="card"><div class="card-title">Prompt Library</div><div id="obs-prompts"></div></div><div class="card"><div class="card-title">Cost Tracking</div><div id="obs-costs"></div></div>';
   fetch(BASE + '/api/observability/metrics').then(r=>r.json()).then(d=>{const m=d.metrics;document.getElementById('obs-metrics').innerHTML='<div class="stat-card"><div class="stat-value">'+m.workflow_runs+'</div><div class="stat-label">Workflow Runs</div></div><div class="stat-card"><div class="stat-value">'+m.agent_executions+'</div><div class="stat-label">Agent Executions</div></div><div class="stat-card"><div class="stat-value">'+m.approvals+'</div><div class="stat-label">Approvals</div></div><div class="stat-card"><div class="stat-value">'+m.tokens_used+'</div><div class="stat-label">Tokens</div></div><div class="stat-card"><div class="stat-value">$'+d.cost_summary.total_cost_usd.toFixed(4)+'</div><div class="stat-label">Est. Cost</div></div>';document.getElementById('obs-costs').innerHTML=d.cost_summary.recent_costs.map(e=>'<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(46,51,72,0.5);">'+e.agent_id+' — '+e.operation+': '+e.tokens+' tokens, $'+e.cost_usd.toFixed(4)+' <span style="color:var(--text-muted);">'+new Date(e.timestamp).toLocaleDateString()+'</span></div>').join('')||'<p style="color:var(--text-muted)">No cost data yet.</p>';});
   fetch(BASE + '/api/observability/maturity').then(r=>r.json()).then(d=>{let h='';for(const[area,data] of Object.entries(d)){if(typeof data!=='object'||!data.status)continue;h+='<div class="card"><div class="card-title">'+area.replace(/_/g,' ').toUpperCase()+'</div><span class="badge badge-'+(data.status==='pass'?'approved':data.status==='in_progress'?'pending':'rejected')+'">'+data.status+'</span>';if(data.total_agents)h+='<div style="font-size:12px;margin-top:8px;">Agents: '+data.active_agents+'/'+data.total_agents+' active</div>';if(data.total_prompts)h+='<div style="font-size:12px;margin-top:8px;">Prompts: '+data.active_prompts+'/'+data.total_prompts+' active</div>';if(data.total_gates)h+='<div style="font-size:12px;margin-top:8px;">Gates: '+data.approved_gates+'/'+data.total_gates+' approved</div>';h+='</div>';}document.getElementById('obs-maturity').innerHTML=h;});
   fetch(BASE + '/api/observability/prompts/usage').then(r=>r.json()).then(d=>{let h='<div class="table-wrap"><table><thead><tr><th>Prompt</th><th>Version</th><th>Status</th><th>Used By</th></tr></thead><tbody>';for(const[pid,p] of Object.entries(d.prompts)){h+='<tr><td><strong>'+p.name+'</strong></td><td>v'+p.version+'</td><td><span class="badge badge-'+(p.status==='active'?'approved':'pending')+'">'+p.status+'</span></td><td style="font-size:11px;">'+p.used_by.join(', ')+'</td></tr>';}h+='</tbody></table></div>';document.getElementById('obs-prompts').innerHTML=h;});
@@ -2839,7 +3511,7 @@ function loadObservability() {
 function loadApprovals() {
   const c = document.getElementById('approvals-container');
   if (!c) return;
-  c.innerHTML = '<div style="position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;padding:32px;"><div style="max-width:1200px;margin:0:auto;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;"><button class="btn btn-secondary" onclick="document.getElementById(\'approvals-container\').innerHTML=\'\'">← Back</button><h1 style="font-size:24px;font-weight:700;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg> Approvals & Roadmap</h1></div><div id="appr-checklist" style="margin-bottom:20px;"></div><div id="appr-roadmap" style="margin-bottom:20px;"></div><div id="appr-criteria" style="margin-bottom:20px;"></div><div id="appr-risks"></div></div></div>';
+  c.innerHTML = '<h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Approvals &amp; Roadmap</h1><p style="color:var(--text-muted);margin-bottom:24px;">Delivery checklist, roadmap, Stage 1 criteria, and risk register.</p><div id="appr-checklist" style="margin-bottom:20px;"></div><div id="appr-roadmap" style="margin-bottom:20px;"></div><div id="appr-criteria" style="margin-bottom:20px;"></div><div id="appr-risks"></div>';
 
   // Checklist
   fetch(BASE + '/api/approvals').then(r=>r.json()).then(d=>{
@@ -2894,7 +3566,7 @@ function loadApprovals() {
 function loadModelUsage() {
   const c = document.getElementById('models-container');
   if (!c) return;
-  c.innerHTML = '<div style="position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;padding:32px;"><div style="max-width:1200px;margin:0:auto;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;"><button class="btn btn-secondary" onclick="document.getElementById(\'models-container\').innerHTML=\'\'">← Back</button><h1 style="font-size:24px;font-weight:700;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2z"/></svg> Model Usage & Cost Discipline</h1></div><div id="mu-summary" class="stats-grid" style="margin-bottom:20px;"></div><div id="mu-tiers" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:20px;"></div><div class="card"><div class="card-title">Cost-Saving Tips</div><div id="mu-tips"></div></div><div class="card"><div class="card-title">Usage History</div><div id="mu-history" style="max-height:300px;overflow-y:auto;"></div></div></div></div>';
+  c.innerHTML = '<h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Model Usage &amp; Cost Discipline</h1><p style="color:var(--text-muted);margin-bottom:24px;">Model tiers, spend, and cost-saving guidance.</p><div id="mu-summary" class="stats-grid" style="margin-bottom:20px;"></div><div id="mu-tiers" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:20px;"></div><div class="card"><div class="card-title">Cost-Saving Tips</div><div id="mu-tips"></div></div><div class="card"><div class="card-title">Usage History</div><div id="mu-history" style="max-height:300px;overflow-y:auto;"></div></div>';
 
   // Summary
   fetch(BASE + '/api/models/usage/summary').then(r=>r.json()).then(d=>{

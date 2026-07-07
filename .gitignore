@@ -16,5 +16,8 @@ config/gsc_credentials.json
 # Ephemeral runtime state (job queue is regenerated on every run)
 data/analysis_jobs.json
 
+# Local account store — contains password hashes, seeded at runtime
+data/users.json
+
 # Nested clone of the gitlab testing repo — not part of this deploy repo
 docs/kriti-maai-project-testing/

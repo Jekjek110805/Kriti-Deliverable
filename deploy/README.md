@@ -1,9 +1,9 @@
-# Deploying Kriti to Cloud Run with live GSC
+# Deploying Kriti to Cloud Run with live GSC + OpenRouter AI
 
-The Search Console integration needs the service-account key at runtime. We do
-**not** bake it into the Docker image (that would leak the secret to anyone who
-can pull the image). Instead the key lives in **Secret Manager** and is mounted
-into the container as a file.
+Two things need secrets at runtime: the GSC service-account key **and** the
+OpenRouter API key. We do **not** bake either into the Docker image (that would
+leak them to anyone who can pull the image). Both live in **Secret Manager** —
+the GSC key is mounted as a file, the OpenRouter key as an env var.
 
 ## What the scripts do
 
@@ -12,21 +12,29 @@ into the container as a file.
 1. Enable the required APIs (`run`, `secretmanager`, `searchconsole`, `cloudbuild`).
 2. Create the `gsc-credentials` secret (if missing) and push a new version from
    your local `config/gsc_credentials.json`.
-3. Grant the Cloud Run runtime service account `secretAccessor` on that secret.
-4. Deploy, mounting the secret at `/secrets/gsc_credentials.json` and setting:
+3. Create the `openrouter-key` secret (if missing) and push a new version from
+   the `OPENROUTER_API_KEY` in your local `.env` (or a passed parameter).
+4. Grant the Cloud Run runtime service account `secretAccessor` on both secrets.
+5. Deploy, mounting the GSC key at `/secrets/gsc_credentials.json`, injecting the
+   OpenRouter key as an env var, and setting:
    - `GSC_CREDENTIALS_PATH=/secrets/gsc_credentials.json`
-   - `GSC_SITE_URL=https://kriti-maai-268992122217.australia-southeast1.run.app/`
+   - `GSC_SITE_URL=https://selfstorage.help/`
+   - `OPENROUTER_API_KEY` (from the `openrouter-key` secret)
+   - `OPENROUTER_MODEL=nvidia/nemotron-3-super-120b-a12b:free`
 
-The app reads `GSC_CREDENTIALS_PATH` (env var wins over the config default), so
-once deployed the live domain behaves exactly like local.
+The app reads these env vars (env wins over any config-file default), so once
+deployed the live domain behaves exactly like local — **including AI features**,
+which would otherwise fail with `[OpenRouter not configured]` because `.env` is
+never copied into the image.
 
 ## Prerequisites
 
 - `gcloud` CLI installed and authenticated: `gcloud auth login`
 - The service-account JSON present at `config/gsc_credentials.json`
+- `OPENROUTER_API_KEY` present in `.env` (or pass `-OpenRouterKey` / `OPENROUTER_KEY=`)
 - The service account already added in **Search Console → Settings → Users and
-  permissions** with **Full** access (already done for
-  `kriti-project@for-kriti-500207.iam.gserviceaccount.com`).
+  permissions** with **Full** access (done for
+  `selfstorage@for-kriti-500207.iam.gserviceaccount.com` on `selfstorage.help`).
 
 ## Run it
 
@@ -54,12 +62,18 @@ SITE_URL="https://yourdomain.com/" ./deploy/deploy_cloudrun.sh
 
 ## Verify after deploy
 
+GSC (replace with your deployed service URL):
+
 ```bash
-curl https://kriti-maai-268992122217.australia-southeast1.run.app/api/integrations/gsc/status
+curl https://<your-cloud-run-url>/api/integrations/gsc/status
 ```
 
 Expect `"status": "connected"`. The Integrations card in the deployed UI will
 then show GSC as connected (green).
+
+OpenRouter / AI: generate a brief or draft in the deployed UI (Content → Write)
+and confirm the output is real text, **not** `[OpenRouter not configured: set
+OPENROUTER_API_KEY in .env]`.
 
 ## Rotating the key
 

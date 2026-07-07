@@ -430,12 +430,14 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
 
         is_gap = position > 20
 
-        if position < 1 or position > 50:
-            excluded.append({"keyword": keyword, "reason": f"position {position} outside 1-50"})
+        if position < 1 or position > 100:
+            excluded.append({"keyword": keyword, "reason": f"position {position} outside 1-100"})
             continue
 
-        # Gap keywords need stronger signal to be worth surfacing
-        min_impressions = 100 if is_gap else 1
+        # Surface everything with at least 1 impression so live GSC pulls always
+        # show data — even low-signal / early-stage sites whose keywords rank
+        # beyond position 50. The score/priority still reflects the weak signal.
+        min_impressions = 1
         if impressions < min_impressions:
             excluded.append({"keyword": keyword, "reason": f"impressions {impressions} below {min_impressions}"})
             continue

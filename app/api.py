@@ -3298,6 +3298,54 @@ async def pull_gsc_data(request: Request):
     }
 
 
+@app.get("/api/integrations/gsc/performance")
+async def gsc_performance(days: int = 90, row_limit: int = 500):
+    """Return live GSC query performance synchronously (no job), for the
+    Performance Monitor view. Includes per-query rows and aggregate totals."""
+    client = _get_gsc_client()
+    if not client.has_credentials():
+        return JSONResponse({
+            "error": "GSC not configured",
+            "details": client.status(),
+        }, status_code=400)
+
+    from integrations.gsc_client import GSCError
+    try:
+        data = client.get_performance_data(days=days, row_limit=row_limit)
+    except GSCError as e:
+        return JSONResponse({
+            "error": e.message,
+            "error_code": e.code,
+            "details": client.status(),
+        }, status_code=400)
+
+    rows = data or []
+
+    def _num(value):
+        try:
+            return float(str(value).replace("%", "").replace(",", ""))
+        except (ValueError, TypeError):
+            return 0.0
+
+    total_clicks = int(sum(_num(r.get("clicks", 0)) for r in rows))
+    total_impressions = int(sum(_num(r.get("impressions", 0)) for r in rows))
+    avg_position = round(sum(_num(r.get("position", 0)) for r in rows) / len(rows), 1) if rows else 0
+    avg_ctr = round((total_clicks / total_impressions * 100), 2) if total_impressions else 0
+
+    return {
+        "site_url": client.site_url,
+        "days": days,
+        "totals": {
+            "rows": len(rows),
+            "clicks": total_clicks,
+            "impressions": total_impressions,
+            "avg_position": avg_position,
+            "avg_ctr": avg_ctr,
+        },
+        "rows": rows,
+    }
+
+
 # ── 2. SEMRUSH INTEGRATION ──────────────────────────────────────────────────
 
 class SemrushConfig(BaseModel):
@@ -3916,6 +3964,92 @@ async def check_user_permission(request: Request):
         "permission": permission,
         "allowed": has_perm,
     }
+
+
+# ── AUTH / ACCOUNTS ─────────────────────────────────────────────────────────
+import hashlib
+
+# Seed accounts (created on first run if data/users.json is empty).
+DEFAULT_USERS = {"kriti": "admin", "jake": "admin", "paul": "admin", "engana": "admin"}
+DEFAULT_USER_PASSWORD = "kriti2026"
+
+
+def _hash_password(username: str, password: str) -> str:
+    return hashlib.sha256((username.lower() + ":" + password).encode("utf-8")).hexdigest()
+
+
+def ensure_seed_users() -> Dict:
+    """Load users; seed the default admin accounts on first run."""
+    users = load_users()
+    if not users:
+        users = {
+            uname: {"password_hash": _hash_password(uname, DEFAULT_USER_PASSWORD), "role": role}
+            for uname, role in DEFAULT_USERS.items()
+        }
+        save_users(users)
+    return users
+
+
+@app.post("/api/auth/login")
+async def auth_login(request: Request):
+    """Validate credentials against data/users.json."""
+    body = await request.json()
+    username = str(body.get("username", "")).strip().lower()
+    password = str(body.get("password", ""))
+    users = ensure_seed_users()
+    user = users.get(username)
+    if not user or user.get("password_hash") != _hash_password(username, password):
+        return JSONResponse({"error": "Invalid username or password"}, status_code=401)
+    return {"username": username, "role": user.get("role", "user")}
+
+
+@app.get("/api/auth/users")
+async def auth_list_users():
+    """List accounts (no password hashes)."""
+    users = ensure_seed_users()
+    return {"users": [{"username": u, "role": i.get("role", "user")} for u, i in sorted(users.items())]}
+
+
+@app.post("/api/auth/users")
+async def auth_create_user(request: Request):
+    """Create an account. Admin only (actor_role must be 'admin')."""
+    body = await request.json()
+    if str(body.get("actor_role", "")).lower() != "admin":
+        return JSONResponse({"error": "Only admins can add accounts"}, status_code=403)
+    username = str(body.get("username", "")).strip().lower()
+    password = str(body.get("password", ""))
+    role = str(body.get("role", "user")).lower() or "user"
+    if not username or not password:
+        return JSONResponse({"error": "Username and password are required"}, status_code=400)
+    if len(password) < 4:
+        return JSONResponse({"error": "Password must be at least 4 characters"}, status_code=400)
+    users = ensure_seed_users()
+    if username in users:
+        return JSONResponse({"error": "That username already exists"}, status_code=409)
+    users[username] = {"password_hash": _hash_password(username, password), "role": role}
+    save_users(users)
+    return {"status": "created", "user": {"username": username, "role": role}}
+
+
+@app.delete("/api/auth/users/{username}")
+async def auth_delete_user(username: str, request: Request):
+    """Remove an account. Admin only; cannot remove the last admin."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    if str(body.get("actor_role", "")).lower() != "admin":
+        return JSONResponse({"error": "Only admins can remove accounts"}, status_code=403)
+    username = username.strip().lower()
+    users = ensure_seed_users()
+    if username not in users:
+        return JSONResponse({"error": "User not found"}, status_code=404)
+    admins = [u for u, i in users.items() if i.get("role") == "admin"]
+    if users[username].get("role") == "admin" and len(admins) <= 1:
+        return JSONResponse({"error": "Cannot remove the last admin account"}, status_code=400)
+    del users[username]
+    save_users(users)
+    return {"status": "deleted", "username": username}
 
 
 # ── APPROVAL GATES ──────────────────────────────────────────────────────────
