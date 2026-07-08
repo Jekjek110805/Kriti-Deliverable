@@ -3,12 +3,21 @@ __pycache__/
 *.pyo
 config/litellm_key.txt
 config/api_keys.json
+config/gsc_credentials.json
 *.env
 .env
 *.log
 
+# Local media / screen recordings — never commit
+*.mp4
+*.mp3
+*.mov
+
 # Ephemeral runtime state (job queue is regenerated on every run)
 data/analysis_jobs.json
+
+# Local account store — contains password hashes, seeded at runtime
+data/users.json
 
 # Nested clone of the gitlab testing repo — not part of this deploy repo
 docs/kriti-maai-project-testing/

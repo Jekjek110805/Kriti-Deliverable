@@ -12,11 +12,14 @@ Stage 1B additions:
 """
 import json
 import os
+import re
 from typing import Any, Dict, List
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUTS_DIR = os.path.join(BASE_DIR, "outputs")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
+DATA_DIR = os.path.join(os.path.dirname(BASE_DIR), "data")
+EXISTING_PAGES_FILE = os.path.join(DATA_DIR, "existing_pages.json")
 
 
 # ── Intent classification ────────────────────────────────────────────────────
@@ -88,13 +91,13 @@ def classify_content_type(keyword: str, page: str, recommendation: str, intent: 
 
 
 def compute_confidence(score: int, has_page: bool, impressions: int,
-                       recommendation: str, is_gap: bool) -> int:
+                       recommendation: str, is_gap: bool, clicks: int = 0) -> int:
     """Confidence percentage (45–97) for the recommendation."""
-    if score >= 80:
+    if score >= 85:
         base = 88
-    elif score >= 65:
+    elif score >= 70:
         base = 78
-    elif score >= 50:
+    elif score >= 55:
         base = 68
     else:
         base = 55
@@ -139,8 +142,12 @@ def score_impressions(impressions: int) -> int:
         return 12
     elif impressions >= 200:
         return 9
-    elif impressions >= 50:
+    elif impressions >= 100:
         return 5
+    elif impressions >= 50:
+        return 3
+    elif impressions >= 10:
+        return 1
     return 0
 
 
@@ -164,12 +171,28 @@ def score_kd() -> int:
     return 5  # no SEMrush data available
 
 
+def score_clicks(clicks: int) -> int:
+    """Score click-through signal (0-10). Rewards keywords that already
+    prove users want them; penalises zero-click high-impression rows."""
+    if clicks >= 100:
+        return 10
+    elif clicks >= 50:
+        return 8
+    elif clicks >= 20:
+        return 6
+    elif clicks >= 10:
+        return 4
+    elif clicks >= 1:
+        return 2
+    return 0  # zero clicks — no real demand signal
+
+
 def compute_priority(score: int) -> str:
-    if score >= 80:
+    if score >= 85:
         return "Critical"
-    elif score >= 65:
+    elif score >= 70:
         return "High"
-    elif score >= 50:
+    elif score >= 55:
         return "Medium"
     return "Low"
 
@@ -228,6 +251,131 @@ def build_reason(keyword: str, page: str, position: int, impressions: int,
     return ". ".join(parts) + "."
 
 
+# ── Landing page suggestion & matching (deterministic) ──────────────────────
+
+# Common URL stop-words stripped from generated slugs so paths stay clean.
+_SLUG_STOPWORDS = {"a", "an", "the", "for", "to", "of", "and", "in", "on", "is"}
+
+
+def slugify(text: str) -> str:
+    """Deterministic kebab-case slug for a keyword (no AI, fully predictable)."""
+    words = re.sub(r"[^a-z0-9\s-]", "", (text or "").lower()).split()
+    words = [w for w in words if w not in _SLUG_STOPWORDS] or words
+    slug = "-".join(words)
+    slug = re.sub(r"-{2,}", "-", slug).strip("-")
+    return slug or "page"
+
+
+def _site_base_url() -> str:
+    """Best-effort absolute site origin for resolving relative landing pages.
+
+    Reads the configured GSC property and normalises it to an https origin:
+      https://example.com/      -> https://example.com
+      sc-domain:example.com     -> https://example.com
+    Returns "" when no property is configured (relative paths stay relative).
+    """
+    try:
+        from integrations.gsc_client import GSCClient
+        raw = (GSCClient().site_url or "").strip()
+    except Exception:
+        raw = ""
+    if not raw:
+        return ""
+    if raw.startswith("sc-domain:"):
+        return "https://" + raw[len("sc-domain:"):].strip().strip("/")
+    return raw.rstrip("/")
+
+
+def absolutize(path_or_url: str, base: str) -> str:
+    """Turn a page path into a clickable absolute URL when possible."""
+    if not path_or_url:
+        return ""
+    if re.match(r"^https?://", path_or_url, re.IGNORECASE):
+        return path_or_url
+    if not base:
+        return ""  # cannot build an absolute URL without a site domain
+    return base.rstrip("/") + "/" + path_or_url.lstrip("/")
+
+
+def load_existing_pages() -> List[Dict]:
+    """Load the known site pages used to match keywords to real landing pages."""
+    try:
+        with open(EXISTING_PAGES_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def suggest_landing_page(keyword: str, intent: str, content_type: str) -> str:
+    """Deterministically suggest an ideal landing-page path for a keyword.
+
+    Section is chosen from intent / content type — no LLM involved:
+      • Blog content        → /blog/<slug>
+      • BOFU (commercial)   → /solutions/<slug>
+      • everything else     → /services/<slug>
+    """
+    slug = slugify(keyword)
+    if "Blog" in (content_type or ""):
+        return f"/blog/{slug}"
+    if intent == "BOFU":
+        return f"/solutions/{slug}"
+    return f"/services/{slug}"
+
+
+def match_existing_page(keyword: str, gsc_page: str, existing_pages: List[Dict]) -> str:
+    """Return the existing landing page that best matches this keyword, or "".
+
+    Match priority (deterministic):
+      1. The page GSC already ranks for this query (the export's Page column).
+      2. A known site page whose ranking_keywords contains the keyword.
+      3. A known site page whose URL slug contains the keyword slug.
+    """
+    if gsc_page and gsc_page.strip():
+        return gsc_page.strip()
+
+    kw = (keyword or "").lower().strip()
+    for page in existing_pages:
+        ranking = [str(k).lower().strip() for k in page.get("ranking_keywords", [])]
+        if kw in ranking:
+            return page.get("url", "")
+
+    kw_slug = slugify(keyword)
+    for page in existing_pages:
+        url = page.get("url", "")
+        if kw_slug and kw_slug in slugify(url):
+            return url
+    return ""
+
+
+def resolve_landing_page(keyword: str, gsc_page: str, intent: str,
+                         content_type: str, existing_pages: List[Dict],
+                         base_url: str = "") -> Dict[str, str]:
+    """Combine suggestion + matching into the final landing-page decision.
+
+    ``landing_page``     human-readable path/URL of the chosen page.
+    ``landing_page_url`` absolute, clickable URL (resolved against base_url for
+                          relative paths); "" when it cannot be made absolute.
+    """
+    suggested = suggest_landing_page(keyword, intent, content_type)
+    matched = match_existing_page(keyword, gsc_page, existing_pages)
+    if matched:
+        return {
+            "landing_page": matched,
+            "landing_page_url": absolutize(matched, base_url),
+            "landing_page_type": "existing",
+            "suggested_landing_page": suggested,
+            "matched_existing_page": matched,
+        }
+    return {
+        "landing_page": suggested,
+        "landing_page_url": absolutize(suggested, base_url),
+        "landing_page_type": "suggested_new",
+        "suggested_landing_page": suggested,
+        "matched_existing_page": "",
+    }
+
+
 # ── Main analysis ────────────────────────────────────────────────────────────
 
 def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
@@ -238,6 +386,8 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
     total_rows = len(rows)
     opportunities = []
     excluded = []
+    existing_pages = load_existing_pages()
+    site_base = _site_base_url()
 
     for row in rows:
         keyword = (row.get("query") or row.get("Query") or row.get("keyword") or "").strip()
@@ -245,7 +395,13 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
         clicks_str = str(row.get("clicks") or row.get("Clicks") or 0)
         impressions_str = str(row.get("impressions") or row.get("Impressions") or 0)
         position_str = str(row.get("position") or row.get("Position") or 0)
-        ctr_str = str(row.get("ctr") or row.get("CTR") or "0")
+        # GSC exports CTR as "2.33%" (already a percent) or "0.0233" (fraction).
+        # Remember whether a % sign was present so we don't double-scale: a value
+        # written with "%" is already a percentage (e.g. "0.6%" = 0.6%), while a
+        # bare fraction < 1 (e.g. "0.006") must be multiplied by 100.
+        ctr_raw_str = str(row.get("ctr") or row.get("CTR") or "0").strip()
+        ctr_had_percent = "%" in ctr_raw_str
+        ctr_str = ctr_raw_str.replace("%", "").replace(",", "")
 
         try:
             clicks = int(float(clicks_str))
@@ -261,7 +417,10 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
             position = 0
         try:
             ctr_raw = float(ctr_str)
-            ctr_val = ctr_raw * 100 if ctr_raw < 1 else ctr_raw
+            if ctr_had_percent:
+                ctr_val = ctr_raw  # already a percentage
+            else:
+                ctr_val = ctr_raw * 100 if ctr_raw < 1 else ctr_raw
         except (ValueError, TypeError):
             ctr_val = 0.0
 
@@ -271,12 +430,14 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
 
         is_gap = position > 20
 
-        if position < 1 or position > 50:
-            excluded.append({"keyword": keyword, "reason": f"position {position} outside 1-50"})
+        if position < 1 or position > 100:
+            excluded.append({"keyword": keyword, "reason": f"position {position} outside 1-100"})
             continue
 
-        # Gap keywords need stronger signal to be worth surfacing
-        min_impressions = 300 if is_gap else 50
+        # Surface everything with at least 1 impression so live GSC pulls always
+        # show data — even low-signal / early-stage sites whose keywords rank
+        # beyond position 50. The score/priority still reflects the weak signal.
+        min_impressions = 1
         if impressions < min_impressions:
             excluded.append({"keyword": keyword, "reason": f"impressions {impressions} below {min_impressions}"})
             continue
@@ -290,24 +451,33 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
         s_intent = score_intent(intent)
         s_commercial = score_commercial(commercial)
         s_kd = score_kd()
+        s_clicks = score_clicks(clicks)
         total_score = (s_existing + s_position + s_impressions +
-                       s_intent + s_commercial + s_kd)
+                       s_intent + s_commercial + s_kd + s_clicks)
 
         priority = compute_priority(total_score)
         recommendation = compute_recommendation(page, position, intent, ctr_val)
         content_type = classify_content_type(keyword, page, recommendation, intent)
         confidence = compute_confidence(total_score, bool(page), impressions,
-                                        recommendation, is_gap)
+                                        recommendation, is_gap, clicks)
         reason = build_reason(keyword, page, position, impressions, intent,
                               total_score, recommendation, commercial,
                               content_type, is_gap)
 
         ctr_display = f"{ctr_val:.1f}%"
 
+        landing = resolve_landing_page(keyword, page, intent, content_type,
+                                       existing_pages, site_base)
+
         opportunities.append({
             "priority": priority,
             "keyword": keyword,
-            "page": page,
+            "page": page,  # raw GSC ranking URL (kept for backward compatibility)
+            "landing_page": landing["landing_page"],
+            "landing_page_url": landing["landing_page_url"],
+            "landing_page_type": landing["landing_page_type"],
+            "suggested_landing_page": landing["suggested_landing_page"],
+            "matched_existing_page": landing["matched_existing_page"],
             "position": position,
             "impressions": impressions,
             "clicks": clicks,
@@ -315,6 +485,7 @@ def analyze_stage1a(rows: List[Dict]) -> Dict[str, Any]:
             "intent": intent,
             "commercial_potential": commercial,
             "score": total_score,
+            "opportunity_score": total_score,  # alias per Stage 1 spec
             "recommendation": recommendation,
             "content_type": content_type,
             "confidence": confidence,

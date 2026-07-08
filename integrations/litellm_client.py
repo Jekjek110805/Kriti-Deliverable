@@ -13,10 +13,17 @@ import os
 import json
 import urllib.request
 import urllib.error
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class LiteLLMClient:
     def __init__(self):
+        from dotenv import load_dotenv
+        import os as _os
+        _env_path = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), '.env')
+        load_dotenv(_env_path)
         self.base_url = os.getenv("LITELLM_BASE_URL", "")
         self.api_key = self._load_key()
         self.model = os.getenv("LITELLM_MODEL", "fast-model")

@@ -1,0 +1,109 @@
+{
+  "keyword": "Best Medicine for fever",
+  "title": "Best Medicine for fever",
+  "client": "jake",
+  "validated_at": "2026-07-01T01:52:06.341171",
+  "overall_status": "fail",
+  "agents": {
+    "seo_gate": {
+      "agent": "SEO Gate",
+      "passed": 3,
+      "total": 9,
+      "score": 33,
+      "status": "fail",
+      "checks": [
+        {
+          "check": "Keyword in title",
+          "pass": true,
+          "detail": "Title: Best Medicine for fever"
+        },
+        {
+          "check": "Keyword in first paragraph",
+          "pass": false,
+          "detail": "First 500 characters checked"
+        },
+        {
+          "check": "Keyword in at least one H2",
+          "pass": false,
+          "detail": "H2 headings checked"
+        },
+        {
+          "check": "TLDR at top",
+          "pass": true,
+          "detail": "TLDR section should be at the very top"
+        },
+        {
+          "check": "Meta description provided",
+          "pass": false,
+          "detail": "Length: 3 chars"
+        },
+        {
+          "check": "URL slug provided",
+          "pass": true,
+          "detail": "best-medicine-for-fever"
+        },
+        {
+          "check": "Word count >= 1000",
+          "pass": false,
+          "detail": "Current: 549 words"
+        },
+        {
+          "check": "At least 2 internal links",
+          "pass": false,
+          "detail": "Found: 0 links"
+        },
+        {
+          "check": "Images have alt text",
+          "pass": false,
+          "detail": "Images: 0, Alt texts: 0"
+        }
+      ]
+    },
+    "fact_check": {
+      "agent": "Fact Check",
+      "status": "review",
+      "issues": [
+        {
+          "type": "many_specific_numbers",
+          "message": "Found 9 specific numbers/figures. Verify all are sourced.",
+          "count": 9
+        }
+      ],
+      "issue_count": 1,
+      "message": "1 potential issues found \u2014 human review required"
+    },
+    "brand_review": {
+      "agent": "Brand Review",
+      "status": "fail",
+      "issues": [
+        {
+          "type": "em_dash",
+          "message": "Em dashes found \u2014 MAAI house style prohibits em dashes",
+          "severity": "high"
+        },
+        {
+          "type": "competitor_negative",
+          "message": "Potentially negative competitor language: avoid",
+          "severity": "medium"
+        },
+        {
+          "type": "long_paragraphs",
+          "message": "1 paragraphs exceed 150 words \u2014 break up for readability",
+          "severity": "low",
+          "paragraph_indices": [
+            9
+          ]
+        }
+      ],
+      "issue_count": 3,
+      "critical_issues": 1,
+      "message": "3 style issues found"
+    }
+  },
+  "summary": {
+    "seo_score": 33,
+    "fact_issues": 1,
+    "brand_issues": 3,
+    "total_issues": 10
+  }
+}

@@ -14,14 +14,17 @@ import zipfile
 import yaml
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from fastapi import FastAPI, File, UploadFile, Request
+from fastapi import FastAPI, File, UploadFile, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ── App ──────────────────────────────────────────────────────────────────────
 
@@ -58,9 +61,9 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(REPORTS_DIR, exist_ok=True)
 os.makedirs(OUTPUTS_DIR, exist_ok=True)
 
-DEFAULT_MIN_IMPRESSIONS = 50
+DEFAULT_MIN_IMPRESSIONS = 1
 DEFAULT_MIN_POSITION = 3
-DEFAULT_MAX_POSITION = 20
+DEFAULT_MAX_POSITION = 50
 
 # ── Column aliases ───────────────────────────────────────────────────────────
 
@@ -158,8 +161,12 @@ def score_opportunity(row: Dict) -> Dict:
         impressions_score = 12
     elif impressions >= 200:
         impressions_score = 9
-    elif impressions >= 50:
+    elif impressions >= 100:
         impressions_score = 5
+    elif impressions >= 50:
+        impressions_score = 3
+    elif impressions >= 10:
+        impressions_score = 1
     else:
         impressions_score = 0
 
@@ -192,7 +199,22 @@ def score_opportunity(row: Dict) -> Dict:
     else:
         kd_score = 0
 
-    total = existing_page_score + position_score + impressions_score + intent_score + commercial_score + kd_score
+    # 7. Clicks signal (10) — rewards proven demand
+    clicks = row.get("clicks", 0)
+    if clicks >= 100:
+        clicks_score = 10
+    elif clicks >= 50:
+        clicks_score = 8
+    elif clicks >= 20:
+        clicks_score = 6
+    elif clicks >= 10:
+        clicks_score = 4
+    elif clicks >= 1:
+        clicks_score = 2
+    else:
+        clicks_score = 0
+
+    total = existing_page_score + position_score + impressions_score + intent_score + commercial_score + kd_score + clicks_score
 
     if total >= 80:
         priority = "Critical"
@@ -289,11 +311,13 @@ def run_pipeline(
         if not query or not page:
             excluded.append({"reason": "missing query or page", "row": query or "(empty)"})
             continue
+        is_gap = position > 20
         if position < min_position or position > max_position:
             excluded.append({"reason": f"position {position} outside {min_position}-{max_position}", "row": query})
             continue
-        if impressions < min_impressions:
-            excluded.append({"reason": f"impressions {impressions} below min {min_impressions}", "row": query})
+        effective_min = min_impressions if not is_gap else max(min_impressions, 100)
+        if impressions < effective_min:
+            excluded.append({"reason": f"impressions {impressions} below min {effective_min}", "row": query})
             continue
 
         intent = classify_intent(query)
@@ -548,6 +572,34 @@ def gsc_headers_are_usable(headers: List[str]) -> bool:
     return has_query and has_metrics
 
 
+def gsc_headers_have_page(headers: List[str]) -> bool:
+    """True when this header set carries a Page/URL column (combined export)."""
+    return "page" in {normalize_gsc_header(h) for h in headers if h}
+
+
+# Standard GSC "Performance" export sheet name → canonical overview section.
+# A GSC export has SEPARATE per-dimension sheets (Queries, Pages, …); they are
+# NOT joined row-level, so they are surfaced as independent raw sections — never
+# paired together (pairing by row order or word overlap fabricates attribution).
+GSC_SECTION_SHEETS = {
+    "chart": "Chart",
+    "dates": "Chart",
+    "queries": "Queries",
+    "pages": "Pages",
+    "countries": "Countries",
+    "devices": "Devices",
+    "search appearance": "Search Appearance",
+}
+GSC_SECTION_ORDER = ["Chart", "Queries", "Pages", "Countries", "Devices", "Search Appearance"]
+GSC_SECTION_ROW_LIMIT = 1000
+
+PAGE_MISSING_WARNING = (
+    "Landing pages are not available because this export only contains "
+    "query-level data. Please export Search Console data with both Query "
+    "and Page dimensions."
+)
+
+
 def parse_gsc_csv_upload(content: bytes) -> List[Dict[str, str]]:
     csv_text = None
     for encoding in ("utf-8-sig", "utf-8", "latin-1"):
@@ -670,36 +722,276 @@ def rows_from_xlsx_grid(grid: List[List[str]]) -> List[Dict[str, str]]:
     return []
 
 
-def parse_gsc_xlsx_upload(content: bytes) -> List[Dict[str, str]]:
+def grid_header_index(grid: List[List[str]]) -> int:
+    """Index of the first row that looks like a header (has a recognised label)."""
+    for header_index, header_row in enumerate(grid[:20]):
+        normalised = {normalize_gsc_header(v) for v in header_row if v}
+        if normalised & {"query", "page", "clicks", "impressions", "ctr", "position"}:
+            return header_index
+        if any(str(v).strip() for v in header_row):
+            return header_index
+    return 0
+
+
+def extract_overview_section(label: str, grid: List[List[str]]) -> Optional[Dict[str, Any]]:
+    """Turn a raw worksheet grid into a display section with ORIGINAL headers.
+
+    Values pass through verbatim (real URLs included) so the frontend can render
+    and linkify them — nothing is joined, paired, or invented here.
+    """
+    if not grid:
+        return None
+    header_index = grid_header_index(grid)
+    columns = [str(h).strip() for h in grid[header_index]]
+    while columns and not columns[-1]:
+        columns.pop()
+    if not columns:
+        return None
+
+    rows = []
+    for data_row in grid[header_index + 1:]:
+        if not any(str(v).strip() for v in data_row):
+            continue
+        rows.append({col: (data_row[i] if i < len(data_row) else "") for i, col in enumerate(columns)})
+
+    return {
+        "key": re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_"),
+        "label": label,
+        "columns": columns,
+        "rows": rows[:GSC_SECTION_ROW_LIMIT],
+        "total_rows": len(rows),
+    }
+
+
+def topic_from_page_url(url: str) -> str:
+    """Readable topic derived from a page's OWN URL path (not a guessed query).
+
+    e.g. https://site.com/blog/best-places → "blog best places". Used as the
+    keyword for page-level analysis so intent classification has signal and each
+    real page stays distinct (dedupe is by keyword). The page URL itself is real.
+    """
+    clean = (url or "").strip()
+    match = re.match(r"^https?://[^/]+(/.*)?$", clean)
+    path = (match.group(1) if match and match.group(1) else "")
+    path = path.split("?")[0].split("#")[0].strip("/")
+    path = re.sub(r"\.(html?|php|aspx?)$", "", path, flags=re.I)
+    words = re.sub(r"[-_/]+", " ", path).strip()
+    return words or "homepage"
+
+
+def page_metric_rows_from_grid(grid: List[List[str]]) -> List[Dict[str, str]]:
+    """Build analysis rows from a Pages-style grid: REAL page URL + real metrics.
+
+    The keyword is derived from each page's own URL so the existing keyword-based
+    Stage 1A scorer runs — but the landing page is the genuine, visitable URL
+    from the worksheet, never an invented slug or a cross-sheet pairing.
+    """
+    if not grid:
+        return []
+    header_index = grid_header_index(grid)
+    headers = [normalize_gsc_header(v) for v in grid[header_index]]
+    if "page" not in set(headers):
+        return []
+
+    rows = []
+    for data_row in grid[header_index + 1:]:
+        raw = {}
+        for index, header in enumerate(headers):
+            if header:
+                raw[header] = data_row[index] if index < len(data_row) else ""
+        normalized = normalize_gsc_row(raw)
+        page = normalized.get("page", "").strip()
+        if not page:
+            continue
+        normalized["query"] = topic_from_page_url(page)
+        rows.append(normalized)
+    return rows
+
+
+def page_url_rows_from_grid(grid: List[List[str]]) -> List[Dict[str, str]]:
+    """Extract real URL rows from a Pages-style worksheet."""
+    if not grid:
+        return []
+    header_index = grid_header_index(grid)
+    headers = [normalize_gsc_header(v) for v in grid[header_index]]
+    if "page" not in set(headers):
+        return []
+
+    rows = []
+    for data_row in grid[header_index + 1:]:
+        raw = {}
+        for index, header in enumerate(headers):
+            if header:
+                raw[header] = data_row[index] if index < len(data_row) else ""
+        normalized = normalize_gsc_row(raw)
+        if normalized.get("page"):
+            rows.append(normalized)
+    return rows
+
+
+def attach_page_urls_by_row_order(query_rows: List[Dict[str, str]],
+                                  page_rows: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    """Keep Queries-sheet keywords, but use real Pages-sheet URLs by row order."""
+    if not query_rows or not page_rows:
+        return query_rows
+
+    enriched = []
+    for index, row in enumerate(query_rows):
+        enriched_row = dict(row)
+        page = page_rows[index].get("page", "") if index < len(page_rows) else ""
+        if page and not enriched_row.get("page"):
+            enriched_row["page"] = page
+            enriched_row["page_match_source"] = "xlsx_pages_sheet_row_order"
+        enriched.append(enriched_row)
+    return enriched
+
+
+def parse_gsc_xlsx_workbook(content: bytes) -> Dict[str, Any]:
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as workbook:
             shared_strings = read_xlsx_shared_strings(workbook)
             sheets = read_xlsx_sheet_paths(workbook)
-            sheets.sort(key=lambda sheet: (
-                0 if sheet["name"].strip().lower() == "queries" else
-                1 if "query" in sheet["name"].strip().lower() else
-                2
-            ))
+
+            grids = []
             for sheet in sheets:
                 grid = read_xlsx_grid(workbook, sheet["path"], shared_strings)
-                rows = rows_from_xlsx_grid(grid)
-                if rows:
-                    return rows
+                if grid:
+                    grids.append((sheet["name"], grid))
+
+            # 1. A single sheet carrying BOTH Query and Page columns is a true
+            #    row-level export — keyword↔page is genuine, use it directly.
+            analysis_rows = []
+            for _name, grid in grids:
+                header_row = grid[grid_header_index(grid)]
+                if gsc_headers_have_page(header_row) and gsc_headers_are_usable(header_row):
+                    combined = [r for r in rows_from_xlsx_grid(grid) if r.get("query") and r.get("page")]
+                    if combined:
+                        analysis_rows = combined
+                        break
+
+            # 2. No combined sheet, but a Pages sheet exists → run Stage 1A on the
+            #    REAL pages (real URLs + real metrics, keyword derived from each
+            #    page's own URL). This fills the Landing Page column with genuine,
+            #    visitable URLs instead of invented slugs.
+            if not analysis_rows:
+                query_rows = []
+                page_rows = []
+                for name, grid in grids:
+                    label = GSC_SECTION_SHEETS.get(name.strip().lower())
+                    if label == "Queries" and not query_rows:
+                        query_rows = rows_from_xlsx_grid(grid)
+                    elif label == "Pages" and not page_rows:
+                        page_rows = page_url_rows_from_grid(grid)
+                if query_rows and page_rows:
+                    analysis_rows = attach_page_urls_by_row_order(query_rows, page_rows)
+
+            if not analysis_rows:
+                for name, grid in grids:
+                    if GSC_SECTION_SHEETS.get(name.strip().lower()) == "Pages":
+                        analysis_rows = page_metric_rows_from_grid(grid)
+                        if analysis_rows:
+                            break
+
+            # Raw overview sections for the standard per-dimension sheets.
+            sections_by_label = {}
+            for name, grid in grids:
+                label = GSC_SECTION_SHEETS.get(name.strip().lower())
+                if not label or label in sections_by_label:
+                    continue
+                section = extract_overview_section(label, grid)
+                if section and section["rows"]:
+                    sections_by_label[label] = section
+            sections = [sections_by_label[l] for l in GSC_SECTION_ORDER if l in sections_by_label]
+
+            has_page_data = bool(analysis_rows)
+            return {
+                "analysis_rows": analysis_rows,
+                "has_page_data": has_page_data,
+                "warning": None if has_page_data else PAGE_MISSING_WARNING,
+                "sections": sections,
+            }
     except zipfile.BadZipFile as exc:
         raise ValueError("That file is not a valid .xlsx workbook. Please upload CSV or XLSX.") from exc
     except KeyError as exc:
         raise ValueError("That .xlsx workbook is missing worksheet data. Please re-export from GSC.") from exc
-    return []
 
 
-def parse_gsc_upload(content: bytes, filename: str = "") -> List[Dict[str, str]]:
+def parse_gsc_csv_workbook(content: bytes) -> Dict[str, Any]:
+    """Structured parse of a single-table CSV/TSV export.
+
+    A CSV holds one table. If it has both Query and Page columns it can power
+    landing-page analysis; otherwise it is surfaced as a raw section with the
+    missing-page warning — query and page are never joined across sections.
+    """
+    csv_text = None
+    for encoding in ("utf-8-sig", "utf-8", "latin-1"):
+        try:
+            csv_text = content.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    if csv_text is None:
+        raise ValueError("Could not decode CSV file. Please export it as UTF-8 CSV or upload .xlsx.")
+
+    csv_text = csv_text.replace("\r\n", "\n").replace("\r", "\n")
+    analysis_rows = []
+    page_only_rows = []
+    sections = []
+    for raw in re.split(r"\n\s*\n", csv_text.strip()):
+        lines = [line for line in raw.split("\n") if line.strip()]
+        if not lines:
+            continue
+        header_line = lines[0]
+        delimiter = "\t" if "\t" in header_line and header_line.count("\t") >= header_line.count(",") else ","
+        grid = [list(row) for row in csv.reader(io.StringIO("\n".join(lines)), delimiter=delimiter)]
+        if not grid:
+            continue
+        headers = grid[0]
+        norm = {normalize_gsc_header(h) for h in headers if h}
+
+        if gsc_headers_have_page(headers) and gsc_headers_are_usable(headers):
+            # Combined query+page table → genuine keyword↔page rows.
+            reader = csv.DictReader(io.StringIO("\n".join(lines)), delimiter=delimiter)
+            for row in reader:
+                normalized = normalize_gsc_row(row)
+                if normalized.get("query") and normalized.get("page"):
+                    analysis_rows.append(normalized)
+        elif "page" in norm and "query" not in norm:
+            # Page-only table → analyse the REAL pages (keyword from URL).
+            page_only_rows.extend(page_metric_rows_from_grid(grid))
+
+        label = "Pages" if ("page" in norm and "query" not in norm) else "Queries"
+        section = extract_overview_section(label, grid)
+        if section and section["rows"]:
+            sections.append(section)
+
+    # Prefer genuine combined rows; otherwise fall back to real page rows.
+    if not analysis_rows and page_only_rows:
+        analysis_rows = page_only_rows
+
+    has_page_data = bool(analysis_rows)
+    return {
+        "analysis_rows": analysis_rows,
+        "has_page_data": has_page_data,
+        "warning": None if has_page_data else PAGE_MISSING_WARNING,
+        "sections": sections,
+    }
+
+
+def parse_gsc_workbook(content: bytes, filename: str = "") -> Dict[str, Any]:
+    """Parse an uploaded GSC export into analysis rows + raw overview sections."""
     filename_lower = (filename or "").lower()
     is_xlsx = filename_lower.endswith(".xlsx") or content.startswith(b"PK\x03\x04")
     if filename_lower.endswith(".xls") and not filename_lower.endswith(".xlsx"):
         raise ValueError("Old .xls files are not supported. Please save the export as .xlsx or CSV.")
     if is_xlsx:
-        return parse_gsc_xlsx_upload(content)
-    return parse_gsc_csv_upload(content)
+        return parse_gsc_xlsx_workbook(content)
+    return parse_gsc_csv_workbook(content)
+
+
+def parse_gsc_upload(content: bytes, filename: str = "") -> List[Dict[str, str]]:
+    """Backward-compatible helper: return only the query+page analysis rows."""
+    return parse_gsc_workbook(content, filename)["analysis_rows"]
 
 
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -737,14 +1029,86 @@ async def root_old():
 
 
 @app.post("/api/stage1a/analyze")
-async def analyze_csv(file: UploadFile = File(...)):
-    """Upload GSC CSV → queue Hermes analysis job → return job ID for polling."""
+async def analyze_csv(
+    file: Optional[UploadFile] = File(None),
+    days: int = Form(30),
+    row_limit: int = Form(25000),
+):
+    """Run Stage 1A analysis → queue Hermes job → return job ID for polling.
+
+    Data source selection:
+      • If a CSV/XLSX file is uploaded, that file is always used (CSV path).
+      • If NO file is uploaded and live GSC credentials are configured, the
+        Search Console API is queried for the last ``days`` days.
+      • If live GSC is unavailable or fails, the response explains how to fall
+        back to CSV upload. Existing CSV upload behaviour is unchanged.
+    """
+    source = "csv"
     try:
-        content = await file.read()
-        rows = parse_gsc_upload(content, file.filename or "")
+        rows = None
+        gsc_overview = []
+
+        # 1. Explicit file upload always wins — preserves existing CSV behaviour.
+        if file is not None and (file.filename or ""):
+            content = await file.read()
+            parsed = parse_gsc_workbook(content, file.filename or "")
+            gsc_overview = parsed["sections"]
+            source = "csv"
+
+            # Without row-level Query+Page data we CANNOT attribute keywords to
+            # landing pages. Show the raw sections + warning instead of faking it.
+            if not parsed["has_page_data"]:
+                if not gsc_overview:
+                    return JSONResponse({
+                        "error": "No usable GSC data found. Upload a GSC export (CSV or XLSX) "
+                                 "with at least a Queries or Pages sheet.",
+                    }, status_code=400)
+                return JSONResponse({
+                    "status": "overview_only",
+                    "source": source,
+                    "warning": parsed["warning"],
+                    "gsc_overview": gsc_overview,
+                    "message": "GSC Overview loaded. Landing-page opportunity analysis needs "
+                               "an export with both Query and Page dimensions.",
+                })
+
+            rows = parsed["analysis_rows"]
+        else:
+            # 2. No file: try the live Search Console API when configured.
+            client = _get_gsc_client()
+            if client.has_credentials():
+                from integrations.gsc_client import GSCError
+                try:
+                    end_date = datetime.utcnow().date() - timedelta(days=2)  # GSC lags ~2 days
+                    start_date = end_date - timedelta(days=max(int(days), 1) - 1)
+                    rows = client.get_search_analytics(
+                        start_date=start_date,
+                        end_date=end_date,
+                        dimensions=["query", "page"],
+                        row_limit=row_limit,
+                    )
+                    source = "gsc_live"
+                except GSCError as gsc_err:
+                    # 3. API failed → fall back to asking for a CSV upload.
+                    return JSONResponse({
+                        "error": gsc_err.message,
+                        "error_code": gsc_err.code,
+                        "source_attempted": "gsc_live",
+                        "fallback": "Upload a GSC CSV/XLSX export to this endpoint to continue.",
+                        "details": client.status(),
+                    }, status_code=400)
+            else:
+                # 4. No file and no live credentials → instruct CSV fallback.
+                return JSONResponse({
+                    "error": "No file uploaded and live GSC credentials are not configured.",
+                    "error_code": "not_configured",
+                    "fallback": "Upload a GSC CSV/XLSX export, or configure live GSC (see /api/integrations/gsc/status).",
+                }, status_code=400)
+
         if not rows:
             return JSONResponse({
-                "error": "No usable GSC query data found. Upload a CSV with query/clicks/impressions/position columns or a GSC .xlsx export with a Queries sheet."
+                "error": "No usable GSC query data found. Upload a CSV/XLSX export with "
+                         "row-level query, page, clicks, impressions, ctr and position columns."
             }, status_code=400)
 
         # Create async job
@@ -756,8 +1120,10 @@ async def analyze_csv(file: UploadFile = File(...)):
 
         return JSONResponse({
             "status": "queued",
+            "source": source,
             "job_id": job_id,
             "rows_received": len(rows),
+            "gsc_overview": gsc_overview,
             "message": f"Analysis queued. Poll GET /api/jobs/{job_id} for results.",
         })
     except ValueError as e:
@@ -2015,14 +2381,86 @@ def _clean_llm_output(text: str) -> str:
     return "\n".join(cleaned).strip()
 
 
+def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
+    if not text:
+        return None
+
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+
+    candidates = [cleaned]
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidates.append(cleaned[start : end + 1])
+
+    for candidate in candidates:
+        try:
+            parsed = json.loads(candidate)
+            return parsed if isinstance(parsed, dict) else None
+        except json.JSONDecodeError:
+            continue
+    return None
+
+
+def _parse_labeled_content(text: str) -> Dict[str, str]:
+    if not text:
+        return {}
+
+    labels = {
+        "tldr": "tldr",
+        "tl;dr": "tldr",
+        "introduction": "introduction",
+        "main content": "main_content",
+        "faq": "faq",
+        "cta": "cta",
+    }
+    pattern = re.compile(
+        r"(?im)^\s*(TLDR|TL;DR|INTRODUCTION|MAIN CONTENT|FAQ|CTA)\s*:?\s*"
+    )
+    matches = list(pattern.finditer(text))
+    sections: Dict[str, str] = {}
+
+    for index, match in enumerate(matches):
+        key = labels[match.group(1).lower()]
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        value = _clean_llm_output(text[start:end])
+        if value and "[" not in value and "]" not in value:
+            sections[key] = value
+
+    return sections
+
+
+def _article_text(value: Any) -> str:
+    if isinstance(value, str):
+        return _clean_llm_output(value)
+    if isinstance(value, list):
+        parts = []
+        for item in value:
+            if isinstance(item, dict):
+                question = _clean_llm_output(str(item.get("question", "")))
+                answer = _clean_llm_output(str(item.get("answer", "")))
+                if question and answer:
+                    parts.append(f"Q: {question}\nA: {answer}")
+                elif answer:
+                    parts.append(answer)
+            elif item:
+                parts.append(_clean_llm_output(str(item)))
+        return "\n\n".join(part for part in parts if part)
+    return ""
+
+
 def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int) -> Dict:
-    """Generate a content draft by calling Hermes (LLM) for each section.
+    """Generate a content draft by calling OpenRouter (NVIDIA Nemotron 3 Super).
 
     Every section is generated uniquely — no templates, no placeholders.
-    Hermes writes ALL content. The output is formal, original, and natural.
-    If Hermes is unavailable, falls back to a clear message.
+    The configured OpenRouter model writes ALL content. The output is formal,
+    original, and natural. If the model is unavailable, falls back to a clear message.
     """
-    from integrations.litellm_client import client as llm_client
+    from integrations.hermes_llm import hermes_generate
 
     h2_outline = brief.get("h2_outline", ["Introduction", "Main Content", "Conclusion"])
     faq = brief.get("faq_questions", [])
@@ -2036,60 +2474,83 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
 
     sections = []
 
-    # Always try Hermes first — attempt the call regardless of key check
-    tldr = llm_client.generate_tldr(keyword, intent, tone)
-    tldr = _clean_llm_output(tldr)
-    if tldr and not tldr.startswith("[LiteLLM") and len(tldr) > 30:
-        sections.append({"type": "tldr", "content": tldr})
-    else:
-        sections.append({"type": "tldr", "content": f"Key considerations and practical guidance on {keyword}, distilled into actionable insights."})
+    # Helper: generate text via the configured OpenRouter model.
+    def _gen(prompt, min_len=30):
+        result = hermes_generate(prompt)
+        if result and not result.startswith("[") and len(result) > min_len:
+            return result
+        return None
 
-    # Introduction — Hermes
-    intro = llm_client.generate_content_section(keyword, intent, h2_outline[0] if h2_outline else "Introduction", tone, words_per_section)
-    intro = _clean_llm_output(intro)
-    if intro and not intro.startswith("[LiteLLM") and len(intro) > 50:
-        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": intro})
-    else:
-        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction",
-                         "content": f"[{keyword.title()} — LLM unavailable for content generation]"})
-
-    # Body sections — each generated uniquely by Hermes
-    for h2 in h2_outline[1:]:
-        if h2.lower() in ("frequently asked questions", "faq", "next steps", "conclusion"):
-            continue
-        content = llm_client.generate_content_section(keyword, intent, h2, tone, words_per_section)
-        content = _clean_llm_output(content)
-        if content and not content.startswith("[LiteLLM") and len(content) > 50:
-            sections.append({"type": "h2", "title": h2, "content": content})
-        else:
-            sections.append({"type": "h2", "title": h2,
-                             "content": f"[{keyword.title()} — LLM unavailable for content generation]"})
-
-    # FAQ section — each answer generated uniquely by Hermes
-    if faq:
-        faq_parts = []
-        for q in faq:
-            answer = llm_client.generate_faq_answer(keyword, q, tone)
-            answer = _clean_llm_output(answer)
-            if answer and not answer.startswith("[LiteLLM") and len(answer) > 10:
-                faq_parts.append(f"**Q: {q}**\n\nA: {answer}")
+    # Helper: extract section between two markers
+    def _extract_section(text, start_marker, end_marker):
+        try:
+            start_idx = text.index(start_marker)
+            text_after = text[start_idx + len(start_marker):]
+            if end_marker:
+                end_idx = text_after.index(end_marker)
+                section = text_after[:end_idx]
             else:
-                faq_parts.append(f"**Q: {q}**\n\nA: [Answer unavailable — LLM not configured]")
-        sections.append({
-            "type": "h2",
-            "title": "Frequently Asked Questions",
-            "content": "\n\n".join(faq_parts),
-        })
+                section = text_after
+            # Clean up: remove leading ":", "+", newlines; strip Hermes chatter
+            lines = []
+            for line in section.split('\n'):
+                line = line.strip()
+                if line.startswith('+'):
+                    line = line[1:].strip()
+                if line.startswith(':'):
+                    line = line[1:].strip()
+                if line and not line.startswith('Article written') and not line.startswith("Here's the full"):
+                    lines.append(line)
+            return '\n'.join(lines).strip()
+        except (ValueError, IndexError):
+            return None
 
-    # CTA — Hermes
-    cta = llm_client.generate_cta(keyword, intent, tone)
-    cta = _clean_llm_output(cta)
-    if cta and not cta.startswith("[LiteLLM") and len(cta) > 15:
-        sections.append({"type": "cta", "content": cta})
-    else:
-        sections.append({"type": "cta", "content": f"Explore how {keyword} can work for your organisation. Speak with our team to discuss your requirements."})
+    full_prompt = (
+        f"Write a complete article about '{keyword}' for {intent} intent.\n"
+        f"Tone: {tone}.\n"
+        f"Target audience: {brief.get('target_audience', 'general audience')}.\n"
+        f"Word count target: about {word_count} words total.\n\n"
+        "Return only valid JSON. Do not include markdown fences, analysis, notes, "
+        "placeholders, or text outside the JSON object.\n"
+        "Use exactly this schema:\n"
+        '{'
+        '"tldr":"2-3 sentence summary",'
+        '"introduction":"engaging introduction paragraph",'
+        '"main_content":"detailed body with multiple paragraphs",'
+        '"faq":[{"question":"question text","answer":"answer text"}],'
+        '"cta":"1-2 sentence call to action"'
+        '}\n'
+        "All values must be final reader-facing article copy."
+    )
 
-    # Compile full content — NO # headers in the output, just clean prose
+    full_content_raw = _gen(full_prompt, min_len=100)
+    parsed_content = _extract_json_object(full_content_raw or "")
+    labeled_content = _parse_labeled_content(full_content_raw or "") if not parsed_content else {}
+
+    if parsed_content:
+        sections.append({"type": "tldr", "content": _article_text(parsed_content.get("tldr")) or f"Key considerations and practical guidance on {keyword}."})
+        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": _article_text(parsed_content.get("introduction"))})
+        sections.append({"type": "h2", "title": "Main Content", "content": _article_text(parsed_content.get("main_content"))})
+        sections.append({"type": "h2", "title": "Frequently Asked Questions", "content": _article_text(parsed_content.get("faq"))})
+        sections.append({"type": "cta", "content": _article_text(parsed_content.get("cta")) or f"Explore how {keyword} can work for your needs."})
+    elif labeled_content:
+        sections.append({"type": "tldr", "content": labeled_content.get("tldr") or f"Key considerations and practical guidance on {keyword}."})
+        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": labeled_content.get("introduction", "")})
+        sections.append({"type": "h2", "title": "Main Content", "content": labeled_content.get("main_content", "")})
+        sections.append({"type": "h2", "title": "Frequently Asked Questions", "content": labeled_content.get("faq", "")})
+        sections.append({"type": "cta", "content": labeled_content.get("cta") or f"Explore how {keyword} can work for your needs."})
+    elif full_content_raw:
+        cleaned_content = _clean_llm_output(full_content_raw)
+        sections.append({"type": "tldr", "content": f"Key considerations and practical guidance on {keyword}."})
+        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Draft", "content": cleaned_content})
+        sections.append({"type": "cta", "content": f"Explore how {keyword} can work for your needs."})
+
+    if not sections:
+        sections.append({"type": "tldr", "content": f"Key considerations and practical guidance on {keyword}, distilled into actionable insights."})
+        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": "Draft generation is unavailable because the configured OpenRouter model did not return usable content."})
+        sections.append({"type": "cta", "content": f"Explore how {keyword} can work for your organisation."})
+
+    # Compile full content
     full_content = ""
     for section in sections:
         if section["type"] == "tldr":
@@ -2113,7 +2574,7 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
         "ai_generated": True,
         "human_edited": False,
         "created_at": datetime.utcnow().isoformat(),
-        "notes": "This draft was written by Hermes (LLM). A human must review, edit, fact-check, and approve before publishing.",
+        "notes": "This draft was written with OpenRouter (NVIDIA Nemotron 3 Super). A human must review, edit, fact-check, and approve before publishing.",
     }
     return draft
 
@@ -2676,11 +3137,15 @@ async def gsc_integration_status():
     """Check GSC integration status."""
     client = _get_gsc_client()
     connected = client.has_credentials()
+    client_status = client.status()
 
     if connected:
         return {
             "status": "connected",
             "mode": "oauth_service_account",
+            "site_url": client_status.get("site_url"),
+            "service_account_email": client_status.get("service_account_email"),
+            "credentials_file_exists": client_status.get("credentials_file_exists"),
             "capabilities": [
                 "Live query data via Search Console API",
                 "Performance metrics (clicks, impressions, CTR, position)",
@@ -2692,6 +3157,10 @@ async def gsc_integration_status():
     return {
         "status": "not_connected",
         "mode": "csv_upload",
+        "site_url": client_status.get("site_url"),
+        "credentials_path": client_status.get("credentials_path"),
+        "credentials_file_exists": client_status.get("credentials_file_exists"),
+        "service_account_email": client_status.get("service_account_email"),
         "capabilities": [
             "Upload CSV export (works today)",
             "Live query data (requires service account)",
@@ -2723,6 +3192,7 @@ async def configure_gsc(config: GSCConfig):
 
     keys["GSC_API_KEY"] = config.api_key
     keys["GSC_SITE_URL"] = config.site_url
+    keys["GSC_CREDENTIALS_PATH"] = config.credentials_path
 
     os.makedirs(os.path.dirname(keys_path), exist_ok=True)
     with open(keys_path, "w") as f:
@@ -2746,12 +3216,33 @@ async def validate_gsc():
         return JSONResponse({
             "valid": False,
             "error": "GSC not configured",
+            "details": client.status(),
+            "setup_instructions": client.setup_instructions(),
         }, status_code=400)
 
-    data = client.get_performance_data(days=7, row_limit=5)
-    if data is not None:
-        return {"valid": True, "test_rows": len(data), "message": "Connection successful"}
-    return {"valid": False, "error": "Could not fetch data. Check API key and site URL."}
+    from integrations.gsc_client import GSCError
+    try:
+        data = client.get_performance_data(days=7, row_limit=5)
+    except GSCError as e:
+        return JSONResponse({
+            "valid": False,
+            "error": e.message,
+            "error_code": e.code,
+            "details": client.status(),
+        }, status_code=400)
+    except Exception as e:
+        return JSONResponse({
+            "valid": False,
+            "error": str(e),
+            "error_code": "api_error",
+            "details": client.status(),
+        }, status_code=400)
+    return {
+        "valid": True,
+        "test_rows": len(data or []),
+        "site_url": client.site_url,
+        "message": "Connection successful",
+    }
 
 
 @app.post("/api/integrations/gsc/pull")
@@ -2762,23 +3253,96 @@ async def pull_gsc_data(request: Request):
         return JSONResponse({
             "error": "GSC not configured",
             "endpoint": "/api/integrations/gsc/configure",
+            "details": client.status(),
+            "setup_instructions": client.setup_instructions(),
         }, status_code=400)
 
     body = await request.json() if request.headers.get("content-length", "0") != "0" else {}
     days = body.get("days", 30)
     row_limit = body.get("row_limit", 250)
 
-    data = client.get_performance_data(days=days, row_limit=row_limit)
+    from integrations.gsc_client import GSCError
+    try:
+        data = client.get_performance_data(days=days, row_limit=row_limit)
+    except GSCError as e:
+        return JSONResponse({
+            "status": "error",
+            "message": e.message,
+            "error_code": e.code,
+            "details": client.status(),
+        }, status_code=400)
+    except Exception as e:
+        return JSONResponse({
+            "status": "error",
+            "message": str(e),
+            "error_code": "api_error",
+            "details": client.status(),
+        }, status_code=400)
+
     if data is not None:
+        from jobs import create_job, run_job_analysis
+        job_id = create_job(data)
+        asyncio.create_task(run_job_analysis(job_id))
         return {
-            "status": "live_data",
-            "rows": len(data),
-            "data": data,
+            "status": "queued",
+            "source": "gsc_live",
+            "job_id": job_id,
+            "rows_received": len(data),
+            "site_url": client.site_url,
+            "message": f"Pulled {len(data)} live GSC rows. Poll GET /api/jobs/{job_id} for results.",
         }
 
     return {
         "status": "error",
-        "message": "Failed to fetch from GSC API. Check credentials.",
+        "message": "Failed to fetch from GSC API. Check credentials and site URL.",
+    }
+
+
+@app.get("/api/integrations/gsc/performance")
+async def gsc_performance(days: int = 90, row_limit: int = 500):
+    """Return live GSC query performance synchronously (no job), for the
+    Performance Monitor view. Includes per-query rows and aggregate totals."""
+    client = _get_gsc_client()
+    if not client.has_credentials():
+        return JSONResponse({
+            "error": "GSC not configured",
+            "details": client.status(),
+        }, status_code=400)
+
+    from integrations.gsc_client import GSCError
+    try:
+        data = client.get_performance_data(days=days, row_limit=row_limit)
+    except GSCError as e:
+        return JSONResponse({
+            "error": e.message,
+            "error_code": e.code,
+            "details": client.status(),
+        }, status_code=400)
+
+    rows = data or []
+
+    def _num(value):
+        try:
+            return float(str(value).replace("%", "").replace(",", ""))
+        except (ValueError, TypeError):
+            return 0.0
+
+    total_clicks = int(sum(_num(r.get("clicks", 0)) for r in rows))
+    total_impressions = int(sum(_num(r.get("impressions", 0)) for r in rows))
+    avg_position = round(sum(_num(r.get("position", 0)) for r in rows) / len(rows), 1) if rows else 0
+    avg_ctr = round((total_clicks / total_impressions * 100), 2) if total_impressions else 0
+
+    return {
+        "site_url": client.site_url,
+        "days": days,
+        "totals": {
+            "rows": len(rows),
+            "clicks": total_clicks,
+            "impressions": total_impressions,
+            "avg_position": avg_position,
+            "avg_ctr": avg_ctr,
+        },
+        "rows": rows,
     }
 
 
@@ -3400,6 +3964,92 @@ async def check_user_permission(request: Request):
         "permission": permission,
         "allowed": has_perm,
     }
+
+
+# ── AUTH / ACCOUNTS ─────────────────────────────────────────────────────────
+import hashlib
+
+# Seed accounts (created on first run if data/users.json is empty).
+DEFAULT_USERS = {"kriti": "admin", "jake": "admin", "paul": "admin", "engana": "admin"}
+DEFAULT_USER_PASSWORD = "kriti2026"
+
+
+def _hash_password(username: str, password: str) -> str:
+    return hashlib.sha256((username.lower() + ":" + password).encode("utf-8")).hexdigest()
+
+
+def ensure_seed_users() -> Dict:
+    """Load users; seed the default admin accounts on first run."""
+    users = load_users()
+    if not users:
+        users = {
+            uname: {"password_hash": _hash_password(uname, DEFAULT_USER_PASSWORD), "role": role}
+            for uname, role in DEFAULT_USERS.items()
+        }
+        save_users(users)
+    return users
+
+
+@app.post("/api/auth/login")
+async def auth_login(request: Request):
+    """Validate credentials against data/users.json."""
+    body = await request.json()
+    username = str(body.get("username", "")).strip().lower()
+    password = str(body.get("password", ""))
+    users = ensure_seed_users()
+    user = users.get(username)
+    if not user or user.get("password_hash") != _hash_password(username, password):
+        return JSONResponse({"error": "Invalid username or password"}, status_code=401)
+    return {"username": username, "role": user.get("role", "user")}
+
+
+@app.get("/api/auth/users")
+async def auth_list_users():
+    """List accounts (no password hashes)."""
+    users = ensure_seed_users()
+    return {"users": [{"username": u, "role": i.get("role", "user")} for u, i in sorted(users.items())]}
+
+
+@app.post("/api/auth/users")
+async def auth_create_user(request: Request):
+    """Create an account. Admin only (actor_role must be 'admin')."""
+    body = await request.json()
+    if str(body.get("actor_role", "")).lower() != "admin":
+        return JSONResponse({"error": "Only admins can add accounts"}, status_code=403)
+    username = str(body.get("username", "")).strip().lower()
+    password = str(body.get("password", ""))
+    role = str(body.get("role", "user")).lower() or "user"
+    if not username or not password:
+        return JSONResponse({"error": "Username and password are required"}, status_code=400)
+    if len(password) < 4:
+        return JSONResponse({"error": "Password must be at least 4 characters"}, status_code=400)
+    users = ensure_seed_users()
+    if username in users:
+        return JSONResponse({"error": "That username already exists"}, status_code=409)
+    users[username] = {"password_hash": _hash_password(username, password), "role": role}
+    save_users(users)
+    return {"status": "created", "user": {"username": username, "role": role}}
+
+
+@app.delete("/api/auth/users/{username}")
+async def auth_delete_user(username: str, request: Request):
+    """Remove an account. Admin only; cannot remove the last admin."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    if str(body.get("actor_role", "")).lower() != "admin":
+        return JSONResponse({"error": "Only admins can remove accounts"}, status_code=403)
+    username = username.strip().lower()
+    users = ensure_seed_users()
+    if username not in users:
+        return JSONResponse({"error": "User not found"}, status_code=404)
+    admins = [u for u, i in users.items() if i.get("role") == "admin"]
+    if users[username].get("role") == "admin" and len(admins) <= 1:
+        return JSONResponse({"error": "Cannot remove the last admin account"}, status_code=400)
+    del users[username]
+    save_users(users)
+    return {"status": "deleted", "username": username}
 
 
 # ── APPROVAL GATES ──────────────────────────────────────────────────────────

@@ -1,0 +1,50 @@
+{
+  "admin": {
+    "permissions": [
+      "*"
+    ],
+    "description": "Full system access"
+  },
+  "editor": {
+    "permissions": [
+      "brief:create",
+      "brief:edit",
+      "brief:approve",
+      "content:create",
+      "content:edit",
+      "content:submit",
+      "validation:run",
+      "validation:review",
+      "publish:schedule",
+      "queue:view",
+      "queue:approve",
+      "calendar:manage",
+      "integrations:view"
+    ],
+    "description": "Can create and edit content, approve briefs"
+  },
+  "reviewer": {
+    "permissions": [
+      "brief:view",
+      "brief:comment",
+      "content:view",
+      "content:comment",
+      "validation:view",
+      "validation:review",
+      "queue:view",
+      "calendar:view"
+    ],
+    "description": "Read-only access with commenting"
+  },
+  "publisher": {
+    "permissions": [
+      "content:view",
+      "publish:execute",
+      "publish:schedule",
+      "indexing:request",
+      "monitor:view",
+      "integrations:manage"
+    ],
+    "description": "Can publish and manage integrations"
+  }
+}
