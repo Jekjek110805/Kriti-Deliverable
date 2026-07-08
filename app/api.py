@@ -3329,7 +3329,10 @@ async def gsc_performance(days: int = 90, row_limit: int = 500):
 
     total_clicks = int(sum(_num(r.get("clicks", 0)) for r in rows))
     total_impressions = int(sum(_num(r.get("impressions", 0)) for r in rows))
-    avg_position = round(sum(_num(r.get("position", 0)) for r in rows) / len(rows), 1) if rows else 0
+    avg_position = 0
+    if total_impressions and rows:
+        weighted_position = sum(_num(r.get("position", 0)) * _num(r.get("impressions", 0)) for r in rows)
+        avg_position = round(weighted_position / total_impressions, 1)
     avg_ctr = round((total_clicks / total_impressions * 100), 2) if total_impressions else 0
 
     return {
