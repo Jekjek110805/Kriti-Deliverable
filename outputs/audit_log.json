@@ -292,5 +292,47 @@
       "notes": "Approved via governance page",
       "keyword": ""
     }
+  },
+  {
+    "id": 28,
+    "action": "gate_rejected",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-07-08T05:28:59.075447",
+    "details": {
+      "notes": "hehehe"
+    }
+  },
+  {
+    "id": 29,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-07-08T05:29:00.461739",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
+  },
+  {
+    "id": 30,
+    "action": "gate_rejected",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-07-08T05:29:05.363398",
+    "details": {
+      "notes": "Sorry"
+    }
+  },
+  {
+    "id": 31,
+    "action": "gate_approved",
+    "resource": "topic_approval",
+    "actor": "human",
+    "timestamp": "2026-07-08T05:29:06.345980",
+    "details": {
+      "notes": "Approved via governance page",
+      "keyword": ""
+    }
   }
 ]
