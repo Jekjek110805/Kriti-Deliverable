@@ -448,6 +448,10 @@
   .modal-overlay.open { display: flex; }
   .modal { background: var(--glass-strong); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 32px; width: 580px; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); }
   .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.4px; }
+  .modal-copy { color: var(--text-muted); font-size: 13px; line-height: 1.6; margin: -8px 0 18px; }
+  .modal-error { display: none; margin-top: 12px; }
+  .modal-error.open { display: block; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
 
   /* Inputs */
   input, select, textarea { background: var(--glass-strong); border: 1px solid var(--glass-border); border-radius: var(--radius-md); padding: 12px 16px; color: var(--text); font-size: 13.5px; width: 100%; transition: all .2s; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
@@ -1304,6 +1308,24 @@
     <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button class="btn btn-secondary" onclick="closeAddCalendarModal()">Cancel</button>
       <button class="btn btn-primary" onclick="addCalendarEntry()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- GOVERNANCE REJECTION MODAL -->
+<div class="modal-overlay" id="gateRejectModal">
+  <div class="modal" style="width:540px;">
+    <div class="modal-title">Reject Governance Gate</div>
+    <p class="modal-copy">Add the rejection reason before this gate is marked as rejected.</p>
+    <label for="gateRejectNotes">Rejection reason</label>
+    <textarea id="gateRejectNotes" rows="4" placeholder="Write the reason for rejecting this gate..."></textarea>
+    <div class="alert alert-error modal-error" id="gateRejectError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" type="button" onclick="closeRejectGateModal()">Cancel</button>
+      <button class="btn btn-danger" type="button" id="gateRejectSubmit" onclick="submitRejectGate()">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        Reject
+      </button>
     </div>
   </div>
 </div>
@@ -3390,14 +3412,70 @@ function approveGate(gateId) {
   }).then(() => loadGates());
 }
 
+let gateRejectId = '';
+const gateRejectButtonLabel = '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Reject';
+
 function rejectGate(gateId) {
-  const notes = prompt('Rejection reason:');
-  if (!notes) return;
-  fetch(BASE + '/api/governance/gates/' + gateId + '/reject', {
+  gateRejectId = gateId;
+  const modal = document.getElementById('gateRejectModal');
+  const notesEl = document.getElementById('gateRejectNotes');
+  const errorEl = document.getElementById('gateRejectError');
+  const submitBtn = document.getElementById('gateRejectSubmit');
+  notesEl.value = '';
+  errorEl.textContent = '';
+  errorEl.classList.remove('open');
+  submitBtn.disabled = false;
+  submitBtn.innerHTML = gateRejectButtonLabel;
+  modal.classList.add('open');
+  setTimeout(() => notesEl.focus(), 0);
+}
+
+function closeRejectGateModal() {
+  document.getElementById('gateRejectModal').classList.remove('open');
+  gateRejectId = '';
+}
+
+function showRejectGateError(message) {
+  const errorEl = document.getElementById('gateRejectError');
+  errorEl.textContent = message;
+  errorEl.classList.add('open');
+}
+
+function submitRejectGate() {
+  const notes = document.getElementById('gateRejectNotes').value.trim();
+  if (!gateRejectId) return;
+  if (!notes) {
+    showRejectGateError('Please enter a rejection reason.');
+    return;
+  }
+  const submitBtn = document.getElementById('gateRejectSubmit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Rejecting...';
+  fetch(BASE + '/api/governance/gates/' + encodeURIComponent(gateRejectId) + '/reject', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ reviewer: 'human', notes }),
-  }).then(() => loadGates());
+  })
+    .then(r => {
+      if (!r.ok) throw new Error('Failed to reject gate.');
+      closeRejectGateModal();
+      loadGates();
+    })
+    .catch(err => {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = gateRejectButtonLabel;
+      showRejectGateError(err.message || 'Failed to reject gate.');
+    });
 }
+
+document.getElementById('gateRejectModal').addEventListener('click', e => {
+  if (e.target.id === 'gateRejectModal') closeRejectGateModal();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('gateRejectModal').classList.contains('open')) {
+    closeRejectGateModal();
+  }
+});
 
 function submitBriefGov() {
   const keyword = document.getElementById('govBriefKeyword').value;
