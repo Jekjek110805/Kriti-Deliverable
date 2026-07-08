@@ -201,6 +201,13 @@
   /* Sections */
   .lp-section { padding: 84px 0; }
   .lp-section.alt { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .lp-workflows { position: relative; overflow: hidden; background: color-mix(in srgb, var(--bg) 92%, #183059 8%); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .lp-workflows .lp-wrap { position: relative; z-index: 1; }
+  .lp-workflows-waves { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; pointer-events: none; opacity: 0.58; }
+  .lp-workflows::after { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 70%, transparent), transparent 30%, color-mix(in srgb, var(--bg) 76%, transparent)); }
+  .lp-workflows .lp-card { background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  body:not(.light) .lp-workflows { background: color-mix(in srgb, var(--surface) 88%, #183059 12%); }
+  body:not(.light) .lp-workflows-waves { opacity: 0.78; }
   .lp-eyebrow { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); background: var(--accent-subtle); padding: 6px 14px; border-radius: 999px; margin-bottom: 20px; }
   .lp-h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 800; line-height: 1.08; letter-spacing: -1.2px; color: var(--text); margin-bottom: 20px; }
   .lp-h1 em { font-style: normal; color: var(--accent); }
@@ -707,7 +714,9 @@
   </div></section>
 
   <!-- Workflows -->
-  <section class="lp-section"><div class="lp-wrap">
+  <section class="lp-section lp-workflows">
+    <canvas class="lp-workflows-waves" id="workflows-waves-bg" aria-hidden="true" data-line-color="#183059" data-wave-speed-x="0.01"></canvas>
+    <div class="lp-wrap">
     <div class="lp-section-head lp-center">
       <div class="lp-eyebrow">Workflows</div>
       <h2 class="lp-h2">AI-powered SEO workflows <em>at scale</em></h2>
@@ -1764,6 +1773,86 @@ function lpFaq(q) {
     }
     requestAnimationFrame(frame);
   }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+
+// ReactBits-style Waves background for the Workflows section.
+(function () {
+  function init() {
+    const canvas = document.getElementById('workflows-waves-bg');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const lineColor = canvas.dataset.lineColor || '#183059';
+    const waveSpeedX = parseFloat(canvas.dataset.waveSpeedX || '0.01');
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+
+    function resize() {
+      const bounds = canvas.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = Math.max(1, Math.floor(bounds.width));
+      height = Math.max(1, Math.floor(bounds.height));
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function waveY(x, line, phase) {
+      const depth = line / 12;
+      return Math.sin((x * 0.008) + phase + depth * 2.1) * (18 + depth * 16) +
+        Math.sin((x * 0.017) - phase * 0.72 + line) * (8 + depth * 8);
+    }
+
+    function draw(now) {
+      const time = now * 0.001;
+      const phase = time * waveSpeedX * 120;
+      ctx.clearRect(0, 0, width, height);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      for (let i = 0; i < 13; i += 1) {
+        const progress = i / 12;
+        const baseY = height * (0.18 + progress * 0.68);
+        const alpha = 0.08 + (1 - Math.abs(progress - 0.5) * 1.4) * 0.16;
+        ctx.globalAlpha = Math.max(0.06, alpha);
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 1 + (1 - progress) * 1.2;
+        ctx.beginPath();
+
+        for (let x = -32; x <= width + 32; x += 18) {
+          const y = baseY + waveY(x, i, phase);
+          if (x === -32) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+
+        ctx.stroke();
+      }
+
+      ctx.globalAlpha = 1;
+      if (!reduceMotion) requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', function () {
+      resize();
+      if (reduceMotion) draw(0);
+    });
+    if (window.ResizeObserver) {
+      try {
+        new ResizeObserver(function () {
+          resize();
+          if (reduceMotion) draw(0);
+        }).observe(canvas);
+      } catch (_) {}
+    }
+    resize();
+    requestAnimationFrame(draw);
+  }
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
