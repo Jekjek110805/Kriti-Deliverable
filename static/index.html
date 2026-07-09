@@ -320,6 +320,9 @@
   .page-head-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); margin-bottom: 4px; }
   .page-head-sub { color: var(--text-muted); font-size: 13.5px; }
   .upload-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .gsc-pull-controls { display: grid; grid-template-columns: minmax(190px, 260px) minmax(260px, 420px); gap: 12px; align-items: end; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .gsc-custom-range { display: grid; grid-template-columns: repeat(2, minmax(128px, 1fr)); gap: 12px; }
+  .gsc-pull-note { color: var(--text-muted); font-size: 12px; line-height: 1.45; margin-top: 8px; }
   .upload-icon { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; border-radius: 50%; background: var(--accent-subtle); border: 1px solid var(--glass-border); color: var(--accent); }
   .upload-icon svg { width: 26px; height: 26px; }
 
@@ -629,7 +632,10 @@
     .toolbar > select,
     .toolbar > button,
     .results-actions > button,
+    .gsc-pull-controls,
     .upload-actions > button { width: 100%; justify-content: center; }
+    .gsc-pull-controls { grid-template-columns: 1fr; }
+    .gsc-custom-range { grid-template-columns: 1fr; }
     .results-card-header { margin-bottom: 16px; }
     .results-actions { width: 100%; }
     .table-wrap { max-height: none; }
@@ -978,6 +984,26 @@
           <div class="upload-hint">Expected columns: query, clicks, impressions, position</div>
         </div>
         <input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="handleFile(this)">
+        <div class="gsc-pull-controls">
+          <div>
+            <label>Date range for live GSC</label>
+            <select id="gscDatePreset" onchange="toggleGscCustomDates()">
+              <option value="last_90_days" selected>Last 90 days</option>
+              <option value="latest_day">This day</option>
+              <option value="this_week">This week</option>
+              <option value="this_month">This month</option>
+              <option value="this_year">This year</option>
+              <option value="last_7_days">Last 7 days</option>
+              <option value="last_30_days">Last 30 days</option>
+              <option value="custom">Custom dates</option>
+            </select>
+            <div class="gsc-pull-note">Live pulls use the latest available Search Console date.</div>
+          </div>
+          <div id="gscCustomRange" class="gsc-custom-range hidden">
+            <div><label>Start date</label><input type="date" id="gscStartDate"></div>
+            <div><label>End date</label><input type="date" id="gscEndDate"></div>
+          </div>
+        </div>
         <div class="upload-actions">
           <button class="btn btn-primary" onclick="requestFileUpload()">Upload CSV</button>
           <button class="btn btn-secondary" onclick="runLiveGSC()">Pull live GSC</button>
@@ -1977,6 +2003,39 @@ function setUploadCardVisible(visible) {
   document.getElementById('upload-card').classList.toggle('hidden', !visible);
 }
 
+function toggleGscCustomDates() {
+  const preset = document.getElementById('gscDatePreset')?.value || 'last_90_days';
+  const custom = document.getElementById('gscCustomRange');
+  if (custom) custom.classList.toggle('hidden', preset !== 'custom');
+}
+
+function getLiveGscPullPayload(rangeOptions = null, rowLimit = 500) {
+  if (rangeOptions && typeof rangeOptions === 'object') {
+    return { row_limit: rowLimit, ...rangeOptions };
+  }
+  if (typeof rangeOptions === 'number') {
+    return { days: rangeOptions, row_limit: rowLimit };
+  }
+
+  const preset = document.getElementById('gscDatePreset')?.value || 'last_90_days';
+  const payload = { date_preset: preset, row_limit: rowLimit };
+  if (preset === 'custom') {
+    const startDate = document.getElementById('gscStartDate')?.value || '';
+    const endDate = document.getElementById('gscEndDate')?.value || '';
+    if (!startDate || !endDate) {
+      alert('Choose both start and end dates before pulling live GSC data.');
+      return null;
+    }
+    if (startDate > endDate) {
+      alert('The GSC start date must be before the end date.');
+      return null;
+    }
+    payload.start_date = startDate;
+    payload.end_date = endDate;
+  }
+  return payload;
+}
+
 function requestFileUpload() {
   if (analysisInProgress || hasVisibleResults()) {
     alert('Please cancel or upload another file from the results table first.');
@@ -2070,11 +2129,14 @@ function handleFile(input) {
     });
 }
 
-function runLiveGSC(days = 90, rowLimit = 500) {
+function runLiveGSC(rangeOptions = null, rowLimit = 500) {
   if (analysisInProgress || hasVisibleResults()) {
     alert('Please cancel the current results before pulling live GSC data.');
     return;
   }
+
+  const payload = getLiveGscPullPayload(rangeOptions, rowLimit);
+  if (!payload) return;
 
   analysisInProgress = true;
   setUploadCardVisible(false);
@@ -2084,7 +2146,7 @@ function runLiveGSC(days = 90, rowLimit = 500) {
   fetch(BASE + '/api/integrations/gsc/pull', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ days, row_limit: rowLimit })
+    body: JSON.stringify(payload)
   })
     .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
     .then(({ ok, data }) => {
@@ -2159,10 +2221,15 @@ function safeBadgeClass(value) {
 function showQueuedStatus(d) {
   analysisInProgress = true;
   setUploadCardVisible(false);
+  const range = d.date_range || {};
+  const rangeLabel = range.start_date && range.end_date
+    ? `${range.start_date} to ${range.end_date}`
+    : 'Uploaded file';
   document.getElementById('results-section').classList.remove('hidden');
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-card"><div class="stat-value" style="color:var(--accent)"><svg class="icon spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="stat-label">Analyzing...</div></div>
     <div class="stat-card"><div class="stat-value">${d.rows_received}</div><div class="stat-label">Rows received</div></div>
+    <div class="stat-card"><div class="stat-value" style="font-size:13px">${escapeHtml(rangeLabel)}</div><div class="stat-label">Date range</div></div>
     <div class="stat-card"><div class="stat-value" style="font-size:13px">${d.job_id}</div><div class="stat-label">Job ID</div></div>
   `;
   document.getElementById('oppsTable').innerHTML = `<div class="loading-inline"><img class="loading-mark loading-mark-analysis" src="/static/analysis-loading-mark.png" alt=""><div class="loading-text">Analyzing your data.. please wait</div></div>`;

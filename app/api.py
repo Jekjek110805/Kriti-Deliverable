@@ -1033,13 +1033,16 @@ async def analyze_csv(
     file: Optional[UploadFile] = File(None),
     days: int = Form(30),
     row_limit: int = Form(25000),
+    date_preset: Optional[str] = Form(None),
+    start_date: Optional[str] = Form(None),
+    end_date: Optional[str] = Form(None),
 ):
     """Run Stage 1A analysis → queue Hermes job → return job ID for polling.
 
     Data source selection:
       • If a CSV/XLSX file is uploaded, that file is always used (CSV path).
       • If NO file is uploaded and live GSC credentials are configured, the
-        Search Console API is queried for the last ``days`` days.
+        Search Console API is queried for the requested date preset/range.
       • If live GSC is unavailable or fails, the response explains how to fall
         back to CSV upload. Existing CSV upload behaviour is unchanged.
     """
@@ -1079,11 +1082,17 @@ async def analyze_csv(
             if client.has_credentials():
                 from integrations.gsc_client import GSCError
                 try:
-                    end_date = datetime.utcnow().date() - timedelta(days=2)  # GSC lags ~2 days
-                    start_date = end_date - timedelta(days=max(int(days), 1) - 1)
+                    gsc_range = resolve_gsc_date_range(
+                        {
+                            "date_preset": date_preset,
+                            "start_date": start_date,
+                            "end_date": end_date,
+                        },
+                        days=days,
+                    )
                     rows = client.get_search_analytics(
-                        start_date=start_date,
-                        end_date=end_date,
+                        start_date=gsc_range["start_date"],
+                        end_date=gsc_range["end_date"],
                         dimensions=["query", "page"],
                         row_limit=row_limit,
                     )
@@ -1124,6 +1133,12 @@ async def analyze_csv(
             "job_id": job_id,
             "rows_received": len(rows),
             "gsc_overview": gsc_overview,
+            "date_range": {
+                "preset": gsc_range["preset"],
+                "start_date": gsc_range["start_date"].isoformat(),
+                "end_date": gsc_range["end_date"].isoformat(),
+                "latest_available_date": gsc_range["latest_available_date"].isoformat(),
+            } if source == "gsc_live" else None,
             "message": f"Analysis queued. Poll GET /api/jobs/{job_id} for results.",
         })
     except ValueError as e:
@@ -3132,6 +3147,90 @@ def _get_gsc_client():
     return GSCClient()
 
 
+GSC_DATE_PRESETS = {
+    "latest_day",
+    "today",
+    "yesterday",
+    "this_week",
+    "this_month",
+    "this_year",
+    "last_7_days",
+    "last_30_days",
+    "last_90_days",
+    "custom",
+}
+
+
+def _parse_iso_date(value: Any, field_name: str):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value)).date()
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be a YYYY-MM-DD date.") from exc
+
+
+def resolve_gsc_date_range(payload: Optional[Dict[str, Any]] = None, days: Optional[int] = None) -> Dict[str, Any]:
+    """Resolve UI/API GSC range options into concrete start/end dates."""
+    payload = payload or {}
+    latest_available = datetime.utcnow().date() - timedelta(days=2)
+    preset = str(payload.get("date_preset") or payload.get("preset") or "").strip().lower()
+    start = _parse_iso_date(payload.get("start_date"), "start_date")
+    end = _parse_iso_date(payload.get("end_date"), "end_date")
+
+    if start or end:
+        preset = "custom"
+    elif not preset:
+        preset = "last_90_days" if days is None else "days"
+
+    if preset not in GSC_DATE_PRESETS and preset != "days":
+        raise ValueError(
+            "date_preset must be one of: "
+            + ", ".join(sorted(GSC_DATE_PRESETS))
+            + "."
+        )
+
+    if preset == "custom":
+        if not start or not end:
+            raise ValueError("Custom GSC pulls require both start_date and end_date.")
+    elif preset in ("latest_day", "today", "yesterday"):
+        start = end = latest_available
+    elif preset == "this_week":
+        start = latest_available - timedelta(days=latest_available.weekday())
+        end = latest_available
+    elif preset == "this_month":
+        start = latest_available.replace(day=1)
+        end = latest_available
+    elif preset == "this_year":
+        start = latest_available.replace(month=1, day=1)
+        end = latest_available
+    else:
+        if preset == "last_7_days":
+            requested_days = 7
+        elif preset == "last_30_days":
+            requested_days = 30
+        elif preset == "last_90_days":
+            requested_days = 90
+        else:
+            requested_days = max(int(days or payload.get("days") or 90), 1)
+        end = latest_available
+        start = end - timedelta(days=requested_days - 1)
+
+    if end > latest_available:
+        end = latest_available
+    if start > latest_available:
+        start = latest_available
+    if start > end:
+        raise ValueError(f"start_date {start} is after end_date {end}.")
+
+    return {
+        "preset": preset,
+        "start_date": start,
+        "end_date": end,
+        "latest_available_date": latest_available,
+    }
+
+
 @app.get("/api/integrations/gsc/status")
 async def gsc_integration_status():
     """Check GSC integration status."""
@@ -3258,12 +3357,25 @@ async def pull_gsc_data(request: Request):
         }, status_code=400)
 
     body = await request.json() if request.headers.get("content-length", "0") != "0" else {}
-    days = body.get("days", 30)
+    days = body.get("days")
     row_limit = body.get("row_limit", 250)
 
     from integrations.gsc_client import GSCError
     try:
-        data = client.get_performance_data(days=days, row_limit=row_limit)
+        gsc_range = resolve_gsc_date_range(body, days=days)
+        data = client.get_search_analytics(
+            start_date=gsc_range["start_date"],
+            end_date=gsc_range["end_date"],
+            dimensions=["query", "page"],
+            row_limit=row_limit,
+        )
+    except ValueError as e:
+        return JSONResponse({
+            "status": "error",
+            "message": str(e),
+            "error_code": "bad_request",
+            "details": client.status(),
+        }, status_code=400)
     except GSCError as e:
         return JSONResponse({
             "status": "error",
@@ -3289,7 +3401,17 @@ async def pull_gsc_data(request: Request):
             "job_id": job_id,
             "rows_received": len(data),
             "site_url": client.site_url,
-            "message": f"Pulled {len(data)} live GSC rows. Poll GET /api/jobs/{job_id} for results.",
+            "date_range": {
+                "preset": gsc_range["preset"],
+                "start_date": gsc_range["start_date"].isoformat(),
+                "end_date": gsc_range["end_date"].isoformat(),
+                "latest_available_date": gsc_range["latest_available_date"].isoformat(),
+            },
+            "message": (
+                f"Pulled {len(data)} live GSC rows from "
+                f"{gsc_range['start_date'].isoformat()} to {gsc_range['end_date'].isoformat()}. "
+                f"Poll GET /api/jobs/{job_id} for results."
+            ),
         }
 
     return {
