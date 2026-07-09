@@ -3189,6 +3189,7 @@ function writeContent() {
   })
   .then(d => {
     const content = d.full_content || '';
+    window.lastContentDraft = d;
     document.getElementById('content-result').innerHTML = `
       <div class="card">
         <div class="card-title">Draft: ${d.keyword}</div>
@@ -3211,9 +3212,11 @@ function writeContent() {
 
 function contentToValidate(keyword) {
   showPage('validate');
+  const draft = window.lastContentDraft || {};
   document.getElementById('valKeyword').value = keyword;
-  document.getElementById('valTitle').value = keyword;
-  document.getElementById('valSlug').value = keyword.toLowerCase().replace(/ /g, '-');
+  document.getElementById('valTitle').value = draft.title || keyword;
+  document.getElementById('valSlug').value = draft.url_slug || keyword.toLowerCase().replace(/ /g, '-');
+  document.getElementById('valMeta').value = draft.meta_description || '';
   const editor = document.getElementById('draftEditor');
   if (editor) document.getElementById('valContent').value = editor.value;
 }

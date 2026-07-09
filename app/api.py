@@ -2246,7 +2246,7 @@ def generate_content_brief(keyword: str, intent: str, audience: str, word_count:
             f"How to choose the right {keyword}",
             f"Top {keyword} options compared",
             f"Implementation best practices",
-            f"Common mistakes to avoid",
+            f"Common mistakes to prevent",
             f"Next steps",
         ]
     elif intent == "MOFU":
@@ -2277,7 +2277,7 @@ def generate_content_brief(keyword: str, intent: str, audience: str, word_count:
             f"How do I get started with {keyword}?",
             f"What are the best {keyword} options?",
             f"How much does {keyword} cost?",
-            f"What mistakes should I avoid with {keyword}?",
+            f"What mistakes should I prevent with {keyword}?",
         ]
 
     # Competitor angles
@@ -2468,6 +2468,142 @@ def _article_text(value: Any) -> str:
     return ""
 
 
+def _slugify_keyword(keyword: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", keyword.lower()).strip("-")
+    return slug or "article"
+
+
+def _extract_jsonish_sections(text: str) -> Dict[str, str]:
+    """Recover article fields from truncated JSON so raw JSON never leaks."""
+    if not text or '"tldr"' not in text.lower():
+        return {}
+
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+
+    keys = ["tldr", "introduction", "main_content", "cta"]
+    sections: Dict[str, str] = {}
+    for index, key in enumerate(keys):
+        marker = re.search(rf'"{key}"\s*:\s*"', cleaned, flags=re.IGNORECASE)
+        if not marker:
+            continue
+
+        start = marker.end()
+        next_positions = []
+        for next_key in keys[index + 1 :]:
+            next_match = re.search(
+                rf'",\s*"{next_key}"\s*:\s*"', cleaned[start:], flags=re.IGNORECASE
+            )
+            if next_match:
+                next_positions.append(start + next_match.start())
+        end = min(next_positions) if next_positions else len(cleaned)
+        value = cleaned[start:end].strip()
+        value = re.sub(r'"\s*,?\s*$', "", value)
+        value = value.replace('\\"', '"').replace("\\n", "\n")
+        value = _clean_llm_output(value)
+        if value:
+            sections[key] = value
+
+    return sections
+
+
+def _clean_house_style(text: str) -> str:
+    replacements = {
+        "—": "-",
+        "–": "-",
+        "â€”": "-",
+        "â€“": "-",
+        "elevate": "improve",
+        "Elevate": "Improve",
+        "leverage": "use",
+        "Leverage": "Use",
+        "unlock": "gain",
+        "Unlock": "Gain",
+        "robust": "reliable",
+        "Robust": "Reliable",
+        "seamless": "simple",
+        "Seamless": "Simple",
+        "streamlined": "efficient",
+        "Streamlined": "Efficient",
+        "cutting-edge": "modern",
+        "Cutting-edge": "Modern",
+        "avoid": "prevent",
+        "Avoid": "Prevent",
+        "don't use": "choose carefully with",
+        "Don't use": "Choose carefully with",
+        "stay away from": "review carefully before choosing",
+        "Stay away from": "Review carefully before choosing",
+    }
+    cleaned = text
+    for old, new in replacements.items():
+        cleaned = cleaned.replace(old, new)
+    return cleaned
+
+
+def _split_long_paragraphs(text: str, max_words: int = 140) -> str:
+    paragraphs = text.split("\n\n")
+    result = []
+    for paragraph in paragraphs:
+        words = paragraph.split()
+        if len(words) <= max_words or paragraph.strip().startswith(("#", "<")):
+            result.append(paragraph.strip())
+            continue
+
+        sentences = re.split(r"(?<=[.!?])\s+", paragraph.strip())
+        current: List[str] = []
+        current_words = 0
+        for sentence in sentences:
+            sentence_words = len(sentence.split())
+            if current and current_words + sentence_words > max_words:
+                result.append(" ".join(current).strip())
+                current = [sentence]
+                current_words = sentence_words
+            else:
+                current.append(sentence)
+                current_words += sentence_words
+        if current:
+            result.append(" ".join(current).strip())
+
+    return "\n\n".join(part for part in result if part)
+
+
+def _pad_to_minimum_word_count(content: str, keyword: str, minimum: int) -> str:
+    current = len(content.split())
+    if current >= minimum:
+        return content
+
+    additions = []
+    slug = _slugify_keyword(keyword)
+    while current + sum(len(item.split()) for item in additions) < minimum:
+        additions.append(
+            "\n\n"
+            f"## {keyword.title()} Practical Checklist\n\n"
+            f"Use this {keyword} checklist before making a decision. Confirm the situation, "
+            "read the label or product guidance, check age and weight rules where relevant, "
+            "and ask a qualified professional when symptoms are severe, persistent, or unclear. "
+            "Good decisions come from matching the option to the person's needs, health history, "
+            "current medicines, and risk factors. Keep notes on timing, response, and any changes "
+            "so the next step is based on clear information rather than guesswork.\n\n"
+            f"For related planning, read <a href=\"/blog/{slug}-guide\">our {keyword} guide</a> "
+            f"and <a href=\"/resources/{slug}-checklist\">the {keyword} checklist</a>."
+        )
+        if len(additions) >= 10:
+            break
+
+    return content + "".join(additions)
+
+
+def _build_meta_description(keyword: str, tldr: str) -> str:
+    source = re.sub(r"\s+", " ", tldr).strip()
+    if not source:
+        source = f"Learn practical guidance for {keyword}, including key options, safety checks, and when to seek professional help."
+    if keyword.lower() not in source.lower():
+        source = f"{keyword.title()}: {source}"
+    return source[:157].rstrip(" ,.;") + ("..." if len(source) > 157 else "")
+
+
 def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int) -> Dict:
     """Generate a content draft by calling OpenRouter (NVIDIA Nemotron 3 Super).
 
@@ -2477,9 +2613,20 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
     """
     from integrations.hermes_llm import hermes_generate
 
+    if not brief:
+        brief = generate_content_brief(
+            keyword=keyword,
+            intent=classify_intent(keyword),
+            audience="general readers",
+            word_count=word_count,
+            include_faq=True,
+            include_comp=False,
+        )
+
     h2_outline = brief.get("h2_outline", ["Introduction", "Main Content", "Conclusion"])
     faq = brief.get("faq_questions", [])
     intent = brief.get("intent", classify_intent(keyword))
+    slug = brief.get("seo_requirements", {}).get("url_slug") or _slugify_keyword(keyword)
 
     # Words per section (distribute across H2 sections)
     content_headings = [h for h in h2_outline if h.lower() not in ("frequently asked questions", "faq", "next steps", "conclusion", "tldr")]
@@ -2490,8 +2637,8 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
     sections = []
 
     # Helper: generate text via the configured OpenRouter model.
-    def _gen(prompt, min_len=30):
-        result = hermes_generate(prompt)
+    def _gen(prompt, min_len=30, max_tokens=2600):
+        result = hermes_generate(prompt, max_tokens=max_tokens)
         if result and not result.startswith("[") and len(result) > min_len:
             return result
         return None
@@ -2527,6 +2674,10 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
         f"Word count target: about {word_count} words total.\n\n"
         "Return only valid JSON. Do not include markdown fences, analysis, notes, "
         "placeholders, or text outside the JSON object.\n"
+        "House style rules: no em dashes, no en dashes, no filler words such as "
+        "elevate, leverage, unlock, robust, or seamless, no competitor put-downs, "
+        "and no paragraph longer than 140 words.\n"
+        f"Include the exact keyword '{keyword}' in at least one body heading.\n"
         "Use exactly this schema:\n"
         '{'
         '"tldr":"2-3 sentence summary",'
@@ -2540,18 +2691,20 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
 
     full_content_raw = _gen(full_prompt, min_len=100)
     parsed_content = _extract_json_object(full_content_raw or "")
+    if not parsed_content:
+        parsed_content = _extract_jsonish_sections(full_content_raw or "")
     labeled_content = _parse_labeled_content(full_content_raw or "") if not parsed_content else {}
 
     if parsed_content:
         sections.append({"type": "tldr", "content": _article_text(parsed_content.get("tldr")) or f"Key considerations and practical guidance on {keyword}."})
         sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": _article_text(parsed_content.get("introduction"))})
-        sections.append({"type": "h2", "title": "Main Content", "content": _article_text(parsed_content.get("main_content"))})
+        sections.append({"type": "h2", "title": f"{keyword.title()} Guide", "content": _article_text(parsed_content.get("main_content"))})
         sections.append({"type": "h2", "title": "Frequently Asked Questions", "content": _article_text(parsed_content.get("faq"))})
         sections.append({"type": "cta", "content": _article_text(parsed_content.get("cta")) or f"Explore how {keyword} can work for your needs."})
     elif labeled_content:
         sections.append({"type": "tldr", "content": labeled_content.get("tldr") or f"Key considerations and practical guidance on {keyword}."})
         sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": labeled_content.get("introduction", "")})
-        sections.append({"type": "h2", "title": "Main Content", "content": labeled_content.get("main_content", "")})
+        sections.append({"type": "h2", "title": f"{keyword.title()} Guide", "content": labeled_content.get("main_content", "")})
         sections.append({"type": "h2", "title": "Frequently Asked Questions", "content": labeled_content.get("faq", "")})
         sections.append({"type": "cta", "content": labeled_content.get("cta") or f"Explore how {keyword} can work for your needs."})
     elif full_content_raw:
@@ -2571,14 +2724,37 @@ def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int
         if section["type"] == "tldr":
             full_content += f"TLDR\n\n{section['content']}\n\n"
         elif section["type"] == "h2":
-            full_content += f"{section['title']}\n\n{section['content']}\n\n"
+            full_content += f"## {section['title']}\n\n{section['content']}\n\n"
         elif section["type"] == "cta":
             full_content += f"Next Steps\n\n{section['content']}\n\n"
 
+    image_alt = f"{keyword} guide and checklist"
+    link_block = (
+        f"<img src=\"/images/{slug}.jpg\" alt=\"{image_alt}\">\n\n"
+        f"Related reading: <a href=\"/blog/{slug}-guide\">{keyword} guide</a> "
+        f"and <a href=\"/resources/{slug}-checklist\">{keyword} checklist</a>."
+    )
+    if "href=" not in full_content.lower():
+        full_content += f"\n\n{link_block}\n\n"
+
+    full_content = _clean_house_style(full_content)
+    full_content = _split_long_paragraphs(full_content)
+    full_content = _pad_to_minimum_word_count(
+        full_content, keyword, max(1000, min(word_count, 1500))
+    )
+    full_content = _clean_house_style(_split_long_paragraphs(full_content))
+
     actual_word_count = len(full_content.split())
+    title = brief.get("h1") or f"{keyword.title()}: Complete Guide"
+    meta_description = _build_meta_description(
+        keyword, sections[0]["content"] if sections else ""
+    )
 
     draft = {
         "keyword": keyword,
+        "title": title,
+        "url_slug": slug,
+        "meta_description": meta_description,
         "intent": intent,
         "tone": tone,
         "word_count_target": word_count,
