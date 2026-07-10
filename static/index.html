@@ -592,6 +592,21 @@
   .sidebar.collapsed .sidebar-account { justify-content: center; padding: 10px; }
   .sidebar.collapsed .sidebar-account-meta { display: none; }
   .sidebar.collapsed .sidebar-logout { display: none; }
+  /* Toast notifications */
+  .toast-region { position: fixed; top: 18px; right: 18px; z-index: 10000; display: grid; gap: 10px; width: min(380px, calc(100vw - 28px)); pointer-events: none; }
+  .toast { pointer-events: auto; display: grid; grid-template-columns: 10px 1fr auto; gap: 12px; align-items: start; padding: 14px 14px 14px 12px; border: 1px solid var(--glass-border); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--surface) 92%, transparent); color: var(--text); box-shadow: var(--shadow-lg); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); transform: translateY(-8px); opacity: 0; animation: toastIn .18s ease forwards; }
+  .toast.closing { animation: toastOut .16s ease forwards; }
+  .toast-bar { width: 4px; height: 100%; min-height: 38px; border-radius: 999px; background: var(--accent); }
+  .toast-success .toast-bar { background: var(--green); }
+  .toast-warning .toast-bar { background: var(--yellow); }
+  .toast-error .toast-bar { background: var(--red); }
+  .toast-title { font-size: 13px; font-weight: 800; margin-bottom: 3px; }
+  .toast-message { font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); overflow-wrap: anywhere; }
+  .toast-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .toast-close { width: 28px; height: 28px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--glass-strong); color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+  .toast-close:hover { color: var(--text); border-color: var(--border-light); }
+  @keyframes toastIn { to { transform: translateY(0); opacity: 1; } }
+  @keyframes toastOut { to { transform: translateY(-8px); opacity: 0; } }
 
   @media (max-width: 920px) {
     .auth-left { display: none; }
@@ -612,6 +627,7 @@
     .sidebar.collapsed .theme-toggle-track { display: block; }
     .sidebar.collapsed .sidebar-account-meta { display: flex; }
     .sidebar.collapsed .sidebar-logout { display: flex; }
+    .toast-region { top: 12px; right: 14px; left: 14px; width: auto; }
     .sidebar-toggle { display: none; }
     .app.drawer-open .app-nav-overlay { opacity: 1; pointer-events: auto; }
     .main { min-height: 100dvh; height: auto; overflow: visible; padding: 18px 14px 28px; }
@@ -1434,6 +1450,8 @@
   </div>
 </div>
 
+<div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+
 <script>
 const BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : window.location.origin;
 let opportunities = [];
@@ -1441,6 +1459,59 @@ let activeJobPoll = null;
 let analysisInProgress = false;
 let oppCurrentPage = 1;
 const OPP_PAGE_SIZE = 100;
+function showToast(message, type = 'info', options = {}) {
+  const region = document.getElementById('toastRegion');
+  if (!region) return;
+  const toast = document.createElement('div');
+  const toastType = ['success', 'warning', 'error', 'info'].includes(type) ? type : 'info';
+  const titles = { success: 'Success', warning: 'Needs attention', error: 'Something went wrong', info: 'Notice' };
+  const duration = options.duration === 0 ? 0 : (options.duration || 4500);
+  toast.className = 'toast toast-' + toastType;
+  toast.setAttribute('role', toastType === 'error' ? 'alert' : 'status');
+  toast.innerHTML = `
+    <div class="toast-bar"></div>
+    <div>
+      <div class="toast-title">${options.title || titles[toastType]}</div>
+      <div class="toast-message"></div>
+      <div class="toast-actions"></div>
+    </div>
+    <button class="toast-close" type="button" aria-label="Dismiss">&times;</button>
+  `;
+  toast.querySelector('.toast-message').textContent = message;
+  const actions = toast.querySelector('.toast-actions');
+  (options.actions || []).forEach(action => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = action.className || 'btn btn-sm btn-secondary';
+    btn.textContent = action.label;
+    btn.addEventListener('click', () => {
+      if (typeof action.onClick === 'function') action.onClick();
+      closeToast(toast);
+    });
+    actions.appendChild(btn);
+  });
+  if (!actions.children.length) actions.remove();
+  toast.querySelector('.toast-close').addEventListener('click', () => closeToast(toast));
+  region.prepend(toast);
+  if (duration) setTimeout(() => closeToast(toast), duration);
+}
+
+function closeToast(toast) {
+  if (!toast || toast.classList.contains('closing')) return;
+  toast.classList.add('closing');
+  setTimeout(() => toast.remove(), 180);
+}
+
+function showConfirmToast(message, onConfirm, options = {}) {
+  showToast(message, 'warning', {
+    title: options.title || 'Confirm action',
+    duration: 0,
+    actions: [
+      { label: options.cancelText || 'Cancel', className: 'btn btn-sm btn-secondary' },
+      { label: options.confirmText || 'Confirm', className: options.confirmClass || 'btn btn-sm btn-danger', onClick: onConfirm },
+    ],
+  });
+}
 
 const NAV_GROUPS = {
   discover: {
@@ -1959,15 +2030,20 @@ function createUser() {
 }
 
 function deleteUser(username) {
-  if (!confirm('Remove account "' + username + '"? They will no longer be able to sign in.')) return;
-  const auth = currentAuth();
-  fetch(BASE + '/api/auth/users/' + encodeURIComponent(username), {
-    method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ actor_role: auth.role })
-  })
-    .then(r => r.json().then(d => ({ ok: r.ok, d })))
-    .then(({ ok, d }) => { if (!ok) alert(d.error || 'Failed to remove account.'); loadUsers(); })
-    .catch(err => alert('Failed: ' + err));
+  showConfirmToast('Remove account "' + username + '"? They will no longer be able to sign in.', () => {
+    const auth = currentAuth();
+    fetch(BASE + '/api/auth/users/' + encodeURIComponent(username), {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actor_role: auth.role })
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok) showToast(d.error || 'Failed to remove account.', 'error');
+        else showToast('Account removed.', 'success');
+        loadUsers();
+      })
+      .catch(err => showToast('Failed: ' + err, 'error'));
+  }, { confirmText: 'Remove', title: 'Remove account' });
 }
 
 function initAuth() {
@@ -2023,11 +2099,11 @@ function getLiveGscPullPayload(rangeOptions = null, rowLimit = 500) {
     const startDate = document.getElementById('gscStartDate')?.value || '';
     const endDate = document.getElementById('gscEndDate')?.value || '';
     if (!startDate || !endDate) {
-      alert('Choose both start and end dates before pulling live GSC data.');
+      showToast('Choose both start and end dates before pulling live GSC data.', 'warning');
       return null;
     }
     if (startDate > endDate) {
-      alert('The GSC start date must be before the end date.');
+      showToast('The GSC start date must be before the end date.', 'warning');
       return null;
     }
     payload.start_date = startDate;
@@ -2038,7 +2114,7 @@ function getLiveGscPullPayload(rangeOptions = null, rowLimit = 500) {
 
 function requestFileUpload() {
   if (analysisInProgress || hasVisibleResults()) {
-    alert('Please cancel or upload another file from the results table first.');
+    showToast('Please cancel or upload another file from the results table first.', 'warning');
     return;
   }
   document.getElementById('fileInput').click();
@@ -2077,13 +2153,13 @@ function handleFile(input) {
   const file = input.files ? input.files[0] : input;
   if (!file) return;
   if (analysisInProgress || hasVisibleResults()) {
-    alert('Please cancel or upload another file from the results table first.');
+    showToast('Please cancel or upload another file from the results table first.', 'warning');
     if (input.files) input.value = '';
     return;
   }
   const allowedFile = /\.(csv|tsv|xlsx)$/i.test(file.name || '');
   if (!allowedFile) {
-    alert('Please upload a CSV, TSV, or XLSX export.');
+    showToast('Please upload a CSV, TSV, or XLSX export.', 'warning');
     if (input.files) input.value = '';
     return;
   }
@@ -2099,7 +2175,7 @@ function handleFile(input) {
     .then(r => r.json())
     .then(d => {
       document.getElementById('loading').classList.remove('active');
-      if (d.error) { alert('Error: ' + d.error); resetDiscoverUpload(); return; }
+      if (d.error) { showToast('Error: ' + d.error, 'error'); resetDiscoverUpload(); return; }
 
       if (d.status === 'queued' && d.job_id) {
         // Analysis queued -- poll for results. Keep the raw sections (all rows)
@@ -2118,20 +2194,20 @@ function handleFile(input) {
         opportunities = d.opportunities;
         renderResults(d);
       } else {
-        alert('No analysis results were returned. Please try another export.');
+        showToast('No analysis results were returned. Please try another export.', 'warning');
         resetDiscoverUpload();
       }
     })
     .catch(err => {
       document.getElementById('loading').classList.remove('active');
       resetDiscoverUpload();
-      alert('Error: ' + err);
+      showToast('Error: ' + err, 'error');
     });
 }
 
 function runLiveGSC(rangeOptions = null, rowLimit = 500) {
   if (analysisInProgress || hasVisibleResults()) {
-    alert('Please cancel the current results before pulling live GSC data.');
+    showToast('Please cancel the current results before pulling live GSC data.', 'warning');
     return;
   }
 
@@ -2152,7 +2228,7 @@ function runLiveGSC(rangeOptions = null, rowLimit = 500) {
     .then(({ ok, data }) => {
       document.getElementById('loading').classList.remove('active');
       if (!ok || data.error || data.status === 'error') {
-        alert('GSC pull failed: ' + (data.error || data.message || 'Check GSC configuration.'));
+        showToast('GSC pull failed: ' + (data.error || data.message || 'Check GSC configuration.'), 'error');
         resetDiscoverUpload();
         return;
       }
@@ -2163,14 +2239,14 @@ function runLiveGSC(rangeOptions = null, rowLimit = 500) {
         showQueuedStatus(data);
         pollJob(data.job_id);
       } else {
-        alert('No live GSC analysis job was returned.');
+        showToast('No live GSC analysis job was returned.', 'warning');
         resetDiscoverUpload();
       }
     })
     .catch(err => {
       document.getElementById('loading').classList.remove('active');
       resetDiscoverUpload();
-      alert('GSC pull failed: ' + err);
+      showToast('GSC pull failed: ' + err, 'error');
     });
 }
 
@@ -2251,7 +2327,7 @@ function pollJob(jobId) {
           clearInterval(activeJobPoll);
           activeJobPoll = null;
           analysisInProgress = false;
-          alert('Analysis failed: ' + job.error);
+          showToast('Analysis failed: ' + job.error, 'error');
           resetDiscoverUpload();
         }
         // else still running, keep polling
@@ -2701,7 +2777,7 @@ async function setApproval(index, action) {
     });
     o.approval_status = statusMap[action] || o.approval_status;
   } catch (e) {
-    alert('Could not update approval: ' + e);
+    showToast('Could not update approval: ' + e, 'error');
     return;
   }
   applyOppFilters();
@@ -2808,7 +2884,10 @@ function runDecision() {
     clicks: parseInt(document.getElementById('decClicks').value) || 0,
     intent: document.getElementById('decIntent').value,
   };
-  if (!body.keyword) return alert('Keyword is required');
+  if (!body.keyword) {
+    showToast('Keyword is required', 'warning');
+    return;
+  }
 
   fetch(BASE + '/api/decide/should-optimize', {
     method: 'POST',
@@ -3003,7 +3082,10 @@ function getSelectedKeywords() {
 
 function batchAction(action) {
   const keywords = getSelectedKeywords();
-  if (!keywords.length) return alert('Select at least one item');
+  if (!keywords.length) {
+    showToast('Select at least one item', 'warning');
+    return;
+  }
 
   fetch(BASE + '/api/queue/batch', {
     method: 'POST',
@@ -3059,7 +3141,10 @@ function addCalendarEntry() {
     impressions: parseInt(document.getElementById('calImpressions').value) || null,
     month: document.getElementById('calMonth').value || undefined,
   };
-  if (!body.keyword) return alert('Keyword is required');
+  if (!body.keyword) {
+    showToast('Keyword is required', 'warning');
+    return;
+  }
 
   fetch(BASE + '/api/calendar', {
     method: 'POST',
@@ -3082,7 +3167,10 @@ function submitReview() {
     meta_description: document.getElementById('revMeta').value,
     client: document.getElementById('revClient').value || 'default',
   };
-  if (!body.keyword || !body.content) return alert('Keyword and content are required');
+  if (!body.keyword || !body.content) {
+    showToast('Keyword and content are required', 'warning');
+    return;
+  }
 
   fetch(BASE + '/api/review/submit', {
     method: 'POST',
@@ -3129,7 +3217,10 @@ function generateBrief() {
     intent: document.getElementById('briefIntent').value,
     word_count_target: parseInt(document.getElementById('briefWords').value) || 1500,
   };
-  if (!body.keyword) return alert('Keyword is required');
+  if (!body.keyword) {
+    showToast('Keyword is required', 'warning');
+    return;
+  }
 
   fetch(BASE + '/api/brief/generate', {
     method: 'POST',
@@ -3169,10 +3260,19 @@ function briefToContent(keyword) {
 // ── Content Writer ───────────────────────────────────────────────────────────
 function writeContent() {
   const keyword = document.getElementById('writeKeyword').value;
-  if (!keyword) return alert('Keyword is required');
+  if (!keyword) {
+    showToast('Keyword is required', 'warning');
+    return;
+  }
   let brief = {};
   const briefText = document.getElementById('writeBrief').value;
-  if (briefText) { try { brief = JSON.parse(briefText); } catch(e) { alert('Invalid brief JSON'); return; } }
+  if (briefText) {
+    try { brief = JSON.parse(briefText); }
+    catch(e) {
+      showToast('Invalid brief JSON', 'warning');
+      return;
+    }
+  }
 
   // Show loading state
   const resultEl = document.getElementById('content-result');
@@ -3226,7 +3326,7 @@ function saveDraftChanges(keyword) {
   fetch(BASE + '/api/content/draft/' + encodeURIComponent(keyword), {
     method: 'PATCH', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ full_content: content, human_edited: true }),
-  }).then(() => alert('Draft saved!'));
+  }).then(() => showToast('Draft saved.', 'success'));
 }
 
 // ── Validation ───────────────────────────────────────────────────────────────
@@ -3239,7 +3339,10 @@ function runValidation() {
     meta_description: document.getElementById('valMeta').value,
     client: document.getElementById('valClient').value || 'default',
   };
-  if (!body.keyword || !body.content) return alert('Keyword and content required');
+  if (!body.keyword || !body.content) {
+    showToast('Keyword and content required', 'warning');
+    return;
+  }
 
   fetch(BASE + '/api/validate', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -3379,7 +3482,7 @@ function loadMonitor() {
 }
 
 function requestIndexing(keyword) {
-  fetch(BASE + '/api/publish/' + encodeURIComponent(keyword) + '/index', { method: 'POST' }).then(() => { alert('Indexing requested'); loadMonitor(); });
+  fetch(BASE + '/api/publish/' + encodeURIComponent(keyword) + '/index', { method: 'POST' }).then(() => { showToast('Indexing requested.', 'success'); loadMonitor(); });
 }
 
 // ── Integrations ─────────────────────────────────────────────────────────────
@@ -3771,7 +3874,10 @@ function submitBriefGov() {
   const keyword = document.getElementById('govBriefKeyword').value;
   const action = document.getElementById('govBriefAction').value;
   const notes = document.getElementById('govBriefNotes').value;
-  if (!keyword) return alert('Keyword required');
+  if (!keyword) {
+    showToast('Keyword required', 'warning');
+    return;
+  }
 
   const endpoints = {
     submit: '/api/governance/brief/' + encodeURIComponent(keyword) + '/submit',
@@ -3798,7 +3904,10 @@ function submitFinalReview() {
   const keyword = document.getElementById('govFinalKeyword').value;
   const action = document.getElementById('govFinalAction').value;
   const notes = document.getElementById('govFinalNotes').value;
-  if (!keyword) return alert('Keyword required');
+  if (!keyword) {
+    showToast('Keyword required', 'warning');
+    return;
+  }
 
   const endpoints = {
     submit: '/api/governance/final-review/' + encodeURIComponent(keyword) + '/submit',
@@ -3818,7 +3927,10 @@ function submitFinalReview() {
 
 function checkCompliance(keyword) {
   if (!keyword) keyword = document.getElementById('govComplianceKeyword').value;
-  if (!keyword) return alert('Keyword required');
+  if (!keyword) {
+    showToast('Keyword required', 'warning');
+    return;
+  }
 
   fetch(BASE + '/api/governance/compliance/' + encodeURIComponent(keyword))
     .then(r => r.json())
