@@ -320,6 +320,11 @@
   .page-head-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); margin-bottom: 4px; }
   .page-head-sub { color: var(--text-muted); font-size: 13.5px; }
   .upload-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .upload-mode-toggle { display: inline-flex; gap: 4px; padding: 4px; border-radius: var(--radius-lg); background: var(--surface2); border: 1px solid var(--glass-border); margin-bottom: 18px; }
+  .upload-mode-btn { border: none; background: transparent; color: var(--text-muted); font-size: 12.5px; font-weight: 700; padding: 9px 16px; border-radius: var(--radius-md); cursor: pointer; transition: all .18s; white-space: nowrap; }
+  .upload-mode-btn:hover { color: var(--text); }
+  .upload-mode-btn.active { background: var(--accent); color: #fff; }
+  .upload-mode-desc { color: var(--text-muted); font-size: 12px; margin: -10px 0 16px; line-height: 1.5; }
   .gsc-pull-controls { display: grid; grid-template-columns: minmax(190px, 260px) minmax(260px, 420px); gap: 12px; align-items: end; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
   .gsc-custom-range { display: grid; grid-template-columns: repeat(2, minmax(128px, 1fr)); gap: 12px; }
   .gsc-pull-note { color: var(--text-muted); font-size: 12px; line-height: 1.45; margin-top: 8px; }
@@ -348,6 +353,43 @@
   .stat-critical { color: var(--crimson); }
   .stat-high { color: var(--yellow); }
   .stat-approved { color: var(--green); }
+
+  /* Funnel topic view (SEMrush keyword uploads) */
+  .funnel-stage { margin-bottom: 28px; }
+  .funnel-head { display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; border-radius: var(--radius-lg); border: 1px solid var(--glass-border); background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+  .funnel-marker { width: 6px; align-self: stretch; border-radius: 6px; flex-shrink: 0; }
+  .funnel-tofu .funnel-marker { background: var(--accent); }
+  .funnel-mofu .funnel-marker { background: var(--yellow); }
+  .funnel-bofu .funnel-marker { background: var(--green); }
+  .funnel-head-title { font-size: 15px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .funnel-head-desc { font-size: 12.5px; color: var(--text-muted); margin-top: 5px; max-width: 720px; line-height: 1.5; }
+  .funnel-count { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+  .topic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .topic-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 10px; transition: border-color .2s, box-shadow .2s; }
+  .topic-card:hover { border-color: var(--border-light); box-shadow: var(--shadow-md); }
+  .topic-title { font-size: 14.5px; font-weight: 700; color: var(--text); line-height: 1.35; }
+  .topic-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tbadge { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; letter-spacing: 0.02em; border: 1px solid var(--glass-border); color: var(--text-secondary); background: var(--surface2); white-space: nowrap; }
+  .tbadge-blog { color: var(--accent); border-color: var(--accent-glow-strong); background: var(--accent-subtle); }
+  .tbadge-landing { color: var(--green); border-color: var(--green-glow); background: var(--green-glow); }
+  .tbadge-high { color: var(--green); border-color: var(--green-glow); background: var(--green-glow); }
+  .tbadge-medium { color: var(--yellow); border-color: var(--yellow-glow); background: var(--yellow-glow); }
+  .tbadge-low { color: var(--text-muted); }
+  .tbadge-ai { color: var(--accent); border-color: var(--accent-glow-strong); background: var(--accent-subtle); }
+  .topic-meta-line { font-size: 11.5px; color: var(--text-secondary); }
+  .topic-meta-key { display: inline-block; min-width: 52px; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); }
+  .topic-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .tmetric { text-align: center; }
+  .tmetric-value { font-size: 15px; font-weight: 800; color: var(--text); }
+  .tmetric-label { font-size: 9.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 2px; }
+  .topic-rec { font-size: 12px; font-weight: 700; color: var(--text-secondary); }
+  .topic-rec .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: middle; background: var(--accent); }
+  .topic-reason { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+  .topic-keywords { font-size: 11.5px; color: var(--text-muted); }
+  .topic-keywords summary { cursor: pointer; font-weight: 700; color: var(--text-secondary); outline: none; }
+  .topic-kw-list { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .topic-kw { font-size: 10.5px; padding: 2px 7px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-secondary); }
+  .topic-inferred { font-size: 10px; font-weight: 700; color: var(--yellow); }
 
   /* Table */
   .table-wrap { border-radius: var(--radius-lg); border: 1px solid var(--glass-border); overflow: auto; max-height: min(68vh, 620px); background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); scrollbar-gutter: stable; }
@@ -592,6 +634,7 @@
   .sidebar.collapsed .sidebar-account { justify-content: center; padding: 10px; }
   .sidebar.collapsed .sidebar-account-meta { display: none; }
   .sidebar.collapsed .sidebar-logout { display: none; }
+
   /* Toast notifications */
   .toast-region { position: fixed; top: 18px; right: 18px; z-index: 10000; display: grid; gap: 10px; width: min(380px, calc(100vw - 28px)); pointer-events: none; }
   .toast { pointer-events: auto; display: grid; grid-template-columns: 10px 1fr auto; gap: 12px; align-items: start; padding: 14px 14px 14px 12px; border: 1px solid var(--glass-border); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--surface) 92%, transparent); color: var(--text); box-shadow: var(--shadow-lg); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); transform: translateY(-8px); opacity: 0; animation: toastIn .18s ease forwards; }
@@ -990,17 +1033,23 @@
     <div id="page-discover" class="page active">
       <div class="page-head">
         <h1 class="page-head-title">Discover</h1>
-        <p class="page-head-sub">Upload a Search Console CSV to surface ranked optimization opportunities.</p>
+        <p class="page-head-sub" id="pageHeadSub">Upload a Google Search Console export to surface ranked page opportunities.</p>
       </div>
 
       <div class="card" id="upload-card">
+        <div class="upload-mode-toggle" id="uploadModeToggle">
+          <button type="button" class="upload-mode-btn active" data-mode="gsc" onclick="setUploadMode('gsc')">Google Search Console</button>
+          <button type="button" class="upload-mode-btn" data-mode="keyword_research" onclick="setUploadMode('keyword_research')">SEMrush / Keyword Research</button>
+        </div>
+        <div class="upload-mode-desc" id="uploadModeDesc">Analyzes your website's own performance data (query, clicks, impressions, position) to find pages worth improving.</div>
+
         <div class="upload-zone" id="uploadZone" onclick="requestFileUpload()">
           <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v13"/></svg></div>
-          <div class="upload-text">Click or drag your CSV file here</div>
-          <div class="upload-hint">Expected columns: query, clicks, impressions, position</div>
+          <div class="upload-text" id="uploadZoneText">Click or drag your GSC CSV or XLSX file here</div>
+          <div class="upload-hint" id="uploadZoneHint">Expected columns: query, clicks, impressions, position</div>
         </div>
         <input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="handleFile(this)">
-        <div class="gsc-pull-controls">
+        <div class="gsc-pull-controls" id="gscOnlyControls">
           <div>
             <label>Date range for live GSC</label>
             <select id="gscDatePreset" onchange="toggleGscCustomDates()">
@@ -1021,14 +1070,14 @@
           </div>
         </div>
         <div class="upload-actions">
-          <button class="btn btn-primary" onclick="requestFileUpload()">Upload CSV</button>
-          <button class="btn btn-secondary" onclick="runLiveGSC()">Pull live GSC</button>
+          <button class="btn btn-primary" onclick="requestFileUpload()" id="uploadActionBtn">Upload GSC Export</button>
+          <button class="btn btn-secondary" onclick="runLiveGSC()" id="pullLiveGscBtn">Pull live GSC</button>
         </div>
       </div>
 
       <div class="loading" id="loading">
         <img class="loading-mark" src="/static/loading-mark.png" alt="">
-        <div class="loading-text">Analyzing opportunities...</div>
+        <div class="loading-text" id="analysisLoadingText">Analyzing opportunities...</div>
       </div>
 
       <div id="results-section" class="hidden">
@@ -1459,6 +1508,75 @@ let activeJobPoll = null;
 let analysisInProgress = false;
 let oppCurrentPage = 1;
 const OPP_PAGE_SIZE = 100;
+const ANALYSIS_LOADING_LINES = [
+  'Analyzing opportunities...',
+  'Reading your search data...',
+  'Scoring the best moves...',
+  'Checking keyword intent...',
+  'Almost there...',
+  'Preparing your recommendations...'
+];
+const loadingTextTimers = new Map();
+
+function resolveLoadingTextTarget(target) {
+  return typeof target === 'string' ? document.querySelector(target) : target;
+}
+
+function startLoadingTextCycle(target, startIndex = 0) {
+  const el = resolveLoadingTextTarget(target);
+  if (!el) return;
+  stopLoadingTextCycle(el);
+  let index = Math.max(0, startIndex) % ANALYSIS_LOADING_LINES.length;
+  el.textContent = ANALYSIS_LOADING_LINES[index];
+  const timer = setInterval(() => {
+    if (!document.body.contains(el)) {
+      clearInterval(timer);
+      loadingTextTimers.delete(el);
+      return;
+    }
+    index = (index + 1) % ANALYSIS_LOADING_LINES.length;
+    el.textContent = ANALYSIS_LOADING_LINES[index];
+  }, 2200);
+  loadingTextTimers.set(el, timer);
+}
+
+function stopLoadingTextCycle(target) {
+  const el = resolveLoadingTextTarget(target);
+  if (!el) return;
+  const timer = loadingTextTimers.get(el);
+  if (timer) clearInterval(timer);
+  loadingTextTimers.delete(el);
+}
+
+function stopAllLoadingTextCycles() {
+  loadingTextTimers.forEach(timer => clearInterval(timer));
+  loadingTextTimers.clear();
+}
+
+// Discover upload mode: 'gsc' analyzes your site's own performance data;
+// 'keyword_research' analyzes a SEMrush/Ahrefs keyword export instead. The
+// mode is sent to the backend explicitly (source_type) so it never has to
+// guess which kind of file was uploaded.
+let uploadMode = 'gsc';
+const UPLOAD_MODES = {
+  gsc: {
+    sub: "Upload a Google Search Console export to surface ranked page opportunities.",
+    desc: "Analyzes your website's own performance data (query, clicks, impressions, position) to find pages worth improving.",
+    zoneText: 'Click or drag your GSC CSV or XLSX file here',
+    zoneHint: 'Expected columns: query, clicks, impressions, position',
+    actionLabel: 'Upload GSC Export',
+    showGscControls: true,
+  },
+  keyword_research: {
+    sub: "Upload a SEMrush or Ahrefs keyword export to get blog & landing-page topic ideas grouped by funnel.",
+    desc: 'Analyzes search-market keyword data (Keyword, Intent, Volume, Keyword Difficulty, CPC) — no clicks or pages required. Groups keywords into TOFU / MOFU / BOFU topic suggestions.',
+    zoneText: 'Click or drag your SEMrush CSV or XLSX file here',
+    zoneHint: 'Expected columns: keyword, intent, volume, keyword difficulty, cpc',
+    actionLabel: 'Upload Keyword File',
+    showGscControls: false,
+  },
+};
+
 function showToast(message, type = 'info', options = {}) {
   const region = document.getElementById('toastRegion');
   if (!region) return;
@@ -1511,6 +1629,29 @@ function showConfirmToast(message, onConfirm, options = {}) {
       { label: options.confirmText || 'Confirm', className: options.confirmClass || 'btn btn-sm btn-danger', onClick: onConfirm },
     ],
   });
+}
+
+function setUploadMode(mode) {
+  if (!UPLOAD_MODES[mode] || analysisInProgress) return;
+  uploadMode = mode;
+  const cfg = UPLOAD_MODES[mode];
+  document.querySelectorAll('#uploadModeToggle .upload-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  const sub = document.getElementById('pageHeadSub');
+  const desc = document.getElementById('uploadModeDesc');
+  const zoneText = document.getElementById('uploadZoneText');
+  const zoneHint = document.getElementById('uploadZoneHint');
+  const actionBtn = document.getElementById('uploadActionBtn');
+  const gscControls = document.getElementById('gscOnlyControls');
+  const pullBtn = document.getElementById('pullLiveGscBtn');
+  if (sub) sub.textContent = cfg.sub;
+  if (desc) desc.textContent = cfg.desc;
+  if (zoneText) zoneText.textContent = cfg.zoneText;
+  if (zoneHint) zoneHint.textContent = cfg.zoneHint;
+  if (actionBtn) actionBtn.textContent = cfg.actionLabel;
+  if (gscControls) gscControls.classList.toggle('hidden', !cfg.showGscControls);
+  if (pullBtn) pullBtn.classList.toggle('hidden', !cfg.showGscControls);
 }
 
 const NAV_GROUPS = {
@@ -2134,7 +2275,10 @@ function resetDiscoverUpload() {
   rawSectionPages = {};
   const titleEl = document.getElementById('resultsCardTitle');
   if (titleEl) titleEl.textContent = 'Ranked Opportunities';
+  stopAllLoadingTextCycles();
   document.getElementById('loading').classList.remove('active');
+  const loadingText = document.getElementById('analysisLoadingText');
+  if (loadingText) loadingText.textContent = ANALYSIS_LOADING_LINES[0];
   document.getElementById('results-section').classList.add('hidden');
   document.getElementById('statsGrid').innerHTML = '';
   document.getElementById('oppsTable').innerHTML = '';
@@ -2165,15 +2309,18 @@ function handleFile(input) {
   }
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('source_type', uploadMode);
 
   analysisInProgress = true;
   setUploadCardVisible(false);
   document.getElementById('loading').classList.add('active');
+  startLoadingTextCycle('#analysisLoadingText');
   document.getElementById('results-section').classList.add('hidden');
 
   fetch(BASE + '/api/stage1a/analyze', { method: 'POST', body: formData })
     .then(r => r.json())
     .then(d => {
+      stopLoadingTextCycle('#analysisLoadingText');
       document.getElementById('loading').classList.remove('active');
       if (d.error) { showToast('Error: ' + d.error, 'error'); resetDiscoverUpload(); return; }
 
@@ -2184,6 +2331,10 @@ function handleFile(input) {
         rawSectionPages = {};
         showQueuedStatus(d);
         pollJob(d.job_id);
+      } else if (d.status === 'keyword_topics') {
+        // SEMrush keyword export: funnel-grouped blog/landing topic ideas.
+        analysisInProgress = false;
+        renderFunnelTopics(d);
       } else if (d.status === 'overview_only') {
         // Query-only export: show raw GSC sections (real URLs), no fake pages.
         analysisInProgress = false;
@@ -2199,6 +2350,7 @@ function handleFile(input) {
       }
     })
     .catch(err => {
+      stopLoadingTextCycle('#analysisLoadingText');
       document.getElementById('loading').classList.remove('active');
       resetDiscoverUpload();
       showToast('Error: ' + err, 'error');
@@ -2217,6 +2369,7 @@ function runLiveGSC(rangeOptions = null, rowLimit = 500) {
   analysisInProgress = true;
   setUploadCardVisible(false);
   document.getElementById('loading').classList.add('active');
+  startLoadingTextCycle('#analysisLoadingText', 1);
   document.getElementById('results-section').classList.add('hidden');
 
   fetch(BASE + '/api/integrations/gsc/pull', {
@@ -2226,6 +2379,7 @@ function runLiveGSC(rangeOptions = null, rowLimit = 500) {
   })
     .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
     .then(({ ok, data }) => {
+      stopLoadingTextCycle('#analysisLoadingText');
       document.getElementById('loading').classList.remove('active');
       if (!ok || data.error || data.status === 'error') {
         showToast('GSC pull failed: ' + (data.error || data.message || 'Check GSC configuration.'), 'error');
@@ -2244,6 +2398,7 @@ function runLiveGSC(rangeOptions = null, rowLimit = 500) {
       }
     })
     .catch(err => {
+      stopLoadingTextCycle('#analysisLoadingText');
       document.getElementById('loading').classList.remove('active');
       resetDiscoverUpload();
       showToast('GSC pull failed: ' + err, 'error');
@@ -2645,6 +2800,104 @@ function renderGscOverview(d) {
     <div id="gscSections"></div>
   `;
   renderGscSections();
+}
+
+// SEMrush keyword export → blog/landing-page topic ideas grouped by funnel.
+function renderFunnelTopics(d) {
+  analysisInProgress = false;
+  setUploadCardVisible(false);
+  document.getElementById('loading').classList.remove('active');
+  document.getElementById('results-section').classList.remove('hidden');
+  opportunities = [];
+
+  const titleEl = document.getElementById('resultsCardTitle');
+  if (titleEl) titleEl.textContent = 'Blog & Topic Ideas by Funnel';
+
+  const s = d.summary || {};
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${formatNumber(s.total_keywords || 0)}</div><div class="stat-label">Keywords</div></div>
+    <div class="stat-card"><div class="stat-value">${formatNumber(s.total_topics || 0)}</div><div class="stat-label">Topics</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--accent)">${formatNumber(s.tofu_topics || 0)}</div><div class="stat-label">TOFU · Awareness</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--yellow)">${formatNumber(s.mofu_topics || 0)}</div><div class="stat-label">MOFU · Consideration</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--green)">${formatNumber(s.bofu_topics || 0)}</div><div class="stat-label">BOFU · Decision</div></div>
+  `;
+
+  const filters = document.getElementById('oppsFilters');
+  if (filters) filters.innerHTML = '';
+  const raw = document.getElementById('rawSections');
+  if (raw) { raw.classList.add('hidden'); raw.innerHTML = ''; }
+
+  const funnels = Array.isArray(d.funnels) ? d.funnels : [];
+  const sections = funnels.map(f => funnelStageHtml(f)).join('');
+  const ai = d.ai || {};
+  const aiLine = d.strategist === 'ai'
+    ? `<span style="color:var(--accent);font-weight:700;">✦ AI SEO strategist</span> enriched the top ${formatNumber(ai.enriched || 0)} topics (titles, personas, CTAs, reasoning). Remaining topics use the deterministic rule engine.`
+    : `Showing deterministic rule-based recommendations.${ai.note ? ' ' + escapeHtml(ai.note) : ''}`;
+  document.getElementById('oppsTable').innerHTML = `
+    ${d.message ? `<div class="alert alert-info">${escapeHtml(d.message)}<div style="margin-top:6px;font-size:12px;opacity:.85;">${aiLine}</div></div>` : ''}
+    ${sections || '<div class="alert alert-warning">No topics could be built from this keyword file.</div>'}
+  `;
+}
+
+function funnelStageHtml(f) {
+  const stage = String(f.stage || '').toLowerCase();
+  const topics = Array.isArray(f.topics) ? f.topics : [];
+  if (!topics.length) return '';
+  const more = (f.topic_count || topics.length) - topics.length;
+  const cards = topics.map(topicCardHtml).join('');
+  return `
+    <div class="funnel-stage funnel-${escapeHtml(stage)}">
+      <div class="funnel-head">
+        <div class="funnel-marker"></div>
+        <div style="flex:1;">
+          <div class="funnel-head-title">
+            ${escapeHtml(f.label || f.stage || '')}
+            <span class="funnel-count">${formatNumber(f.topic_count || topics.length)} topics · ${formatNumber(f.keyword_count || 0)} keywords</span>
+          </div>
+          <div class="funnel-head-desc">${escapeHtml(f.description || '')}</div>
+        </div>
+      </div>
+      <div class="topic-grid">${cards}</div>
+      ${more > 0 ? `<div style="margin-top:12px;font-size:12px;color:var(--text-muted);">+ ${formatNumber(more)} more ${escapeHtml(f.stage || '')} topics (showing top ${topics.length} by opportunity score)</div>` : ''}
+    </div>
+  `;
+}
+
+function topicCardHtml(t) {
+  const ct = String(t.content_type || '').toLowerCase().includes('landing') ? 'landing' : 'blog';
+  const pr = String(t.priority || '').toLowerCase();
+  const kws = Array.isArray(t.keywords) ? t.keywords : [];
+  const kwChips = kws.map(k => `<span class="topic-kw" title="vol ${formatNumber(k.volume || 0)} · KD ${k.keyword_difficulty ?? '—'}">${escapeHtml(k.keyword || '')}</span>`).join('');
+  const inferred = t.intent_source && t.intent_source !== 'semrush'
+    ? `<span class="topic-inferred" title="Funnel stage inferred from keyword wording — SEMrush left Intent blank for this keyword.">◑ inferred intent</span>` : '';
+  const buyer = t.has_deeper_intent
+    ? `<span class="tbadge" title="Some keywords in this topic show stronger buyer intent.">+ buyer sub-intent</span>` : '';
+  const aiBadge = t.strategist === 'ai'
+    ? `<span class="tbadge tbadge-ai" title="Title, funnel, persona, CTA and reasoning by the AI SEO strategist.">✦ AI strategist</span>` : '';
+  const persona = t.persona ? `<div class="topic-meta-line"><span class="topic-meta-key">Persona</span> ${escapeHtml(t.persona)}</div>` : '';
+  const cta = t.cta ? `<div class="topic-meta-line"><span class="topic-meta-key">${ct === 'landing' ? 'CTA' : 'Hook'}</span> ${escapeHtml(t.cta)}</div>` : '';
+  return `
+    <div class="topic-card">
+      <div class="topic-title">${escapeHtml(t.title || t.topic || '')}</div>
+      <div class="topic-badges">
+        <span class="tbadge tbadge-${ct}">${escapeHtml(t.content_type || '')}</span>
+        <span class="tbadge tbadge-${pr}">${escapeHtml(t.priority || '')} priority</span>
+        ${aiBadge}
+        ${buyer}
+        ${inferred}
+      </div>
+      <div class="topic-metrics">
+        <div class="tmetric"><div class="tmetric-value">${formatNumber(t.volume_total || 0)}</div><div class="tmetric-label">Volume</div></div>
+        <div class="tmetric"><div class="tmetric-value">${formatNumber(t.keyword_count || 0)}</div><div class="tmetric-label">Keywords</div></div>
+        <div class="tmetric"><div class="tmetric-value">${t.avg_keyword_difficulty ?? '—'}</div><div class="tmetric-label">Avg KD</div></div>
+      </div>
+      <div class="topic-rec"><span class="dot"></span>${escapeHtml(t.recommendation || '')} · ${Number(t.confidence) || 0}% confidence · score ${Number(t.score) || 0}</div>
+      <div class="topic-reason">${escapeHtml(t.reason || '')}</div>
+      ${persona}
+      ${cta}
+      ${kws.length ? `<details class="topic-keywords"><summary>${kws.length} keyword${kws.length === 1 ? '' : 's'}</summary><div class="topic-kw-list">${kwChips}</div></details>` : ''}
+    </div>
+  `;
 }
 
 // Shared builder: one paginated card per GSC section (100 rows/page).

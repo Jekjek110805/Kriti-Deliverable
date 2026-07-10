@@ -577,6 +577,74 @@ def gsc_headers_have_page(headers: List[str]) -> bool:
     return "page" in {normalize_gsc_header(h) for h in headers if h}
 
 
+# ── Keyword-research (SEMrush / Ahrefs / etc.) detection ──────────────────────
+# A keyword-research export describes the MARKET (search demand), not the site.
+# The reliable distinguishing rule: it has a Keyword column but NONE of GSC's
+# performance metrics (clicks / impressions), because those only exist for a
+# site you own. Column names vary a lot between tools and export types
+# ("Volume" vs "Search Volume", "Intent" vs "Keyword Intents", "KD" vs
+# "Keyword Difficulty"), so each field is matched loosely below.
+# Such files can't be scored for landing pages, but they CAN be turned into
+# funnel-grouped blog/topic suggestions (see agents/funnel_topics.py).
+
+
+def _kw_field_index(norm: List[str]) -> Dict[str, int]:
+    """Map research fields → column index, tolerating tool/name variations."""
+    def find(predicate) -> int:
+        for index, header in enumerate(norm):
+            if header and predicate(header):
+                return index
+        return -1
+
+    return {
+        # keyword column: "keyword"/"query"/"queries" all normalise to "query";
+        # also accept a plain "keyword(s)"/"phrase" header just in case.
+        "keyword": find(lambda h: h == "query" or h in ("keyword", "keywords", "phrase", "term")),
+        "intent": find(lambda h: "intent" in h),
+        "volume": find(lambda h: h == "volume" or "search volume" in h
+                       or (h.endswith("volume")) or h in ("vol", "sv")),
+        "keyword_difficulty": find(lambda h: "difficulty" in h or h in ("kd", "kd %", "kd%")),
+        "cpc": find(lambda h: h.startswith("cpc") or h == "cpc"),
+        "serp_features": find(lambda h: "serp" in h),
+    }
+
+
+def headers_are_keyword_research(headers: List[str]) -> bool:
+    norm = [normalize_gsc_header(h) for h in headers]
+    hset = {h for h in norm if h}
+    has_gsc_metrics = bool(hset & {"clicks", "impressions"})
+    has_page = "page" in hset
+    idx = _kw_field_index(norm)
+    has_keyword = idx["keyword"] >= 0
+    # At least one research signal so we don't grab an odd single-column list.
+    signals = sum(1 for k in ("intent", "volume", "keyword_difficulty", "cpc", "serp_features")
+                  if idx[k] >= 0)
+    # Keyword column + real research metrics + no GSC performance data + no page.
+    return has_keyword and signals >= 1 and not has_gsc_metrics and not has_page
+
+
+def keyword_rows_from_grid(grid: List[List[str]]) -> List[Dict[str, str]]:
+    """Extract keyword-research rows from a grid, or [] if not one."""
+    if not grid:
+        return []
+    header_index = grid_header_index(grid)
+    raw_headers = grid[header_index]
+    if not headers_are_keyword_research(raw_headers):
+        return []
+    norm = [normalize_gsc_header(h) for h in raw_headers]
+    idx = _kw_field_index(norm)
+
+    rows = []
+    for data_row in grid[header_index + 1:]:
+        def cell(i: int) -> str:
+            return str(data_row[i]).strip() if 0 <= i < len(data_row) else ""
+        keyword = cell(idx["keyword"])
+        if not keyword:
+            continue
+        rows.append({field: cell(i) for field, i in idx.items()})
+    return rows
+
+
 # Standard GSC "Performance" export sheet name → canonical overview section.
 # A GSC export has SEPARATE per-dimension sheets (Queries, Pages, …); they are
 # NOT joined row-level, so they are surfaced as independent raw sections — never
@@ -620,7 +688,8 @@ def parse_gsc_csv_upload(content: bytes) -> List[Dict[str, str]]:
         if not lines:
             continue
         header_line = lines[0]
-        delimiter = "\t" if "\t" in header_line and header_line.count("\t") >= header_line.count(",") else ","
+        _delim_counts = {",": header_line.count(","), "\t": header_line.count("\t"), ";": header_line.count(";")}
+        delimiter = max(_delim_counts, key=_delim_counts.get) if max(_delim_counts.values()) > 0 else ","
         reader = csv.DictReader(io.StringIO("\n".join(lines)), delimiter=delimiter)
         if not reader.fieldnames or not gsc_headers_are_usable(reader.fieldnames):
             continue
@@ -903,10 +972,20 @@ def parse_gsc_xlsx_workbook(content: bytes) -> Dict[str, Any]:
                     sections_by_label[label] = section
             sections = [sections_by_label[l] for l in GSC_SECTION_ORDER if l in sections_by_label]
 
+            # Keyword-research (SEMrush) detection: first sheet that looks like
+            # a keyword export wins. Only meaningful when there is no page-level
+            # analysis to run.
+            keyword_research = []
+            for _name, grid in grids:
+                keyword_research = keyword_rows_from_grid(grid)
+                if keyword_research:
+                    break
+
             has_page_data = bool(analysis_rows)
             return {
                 "analysis_rows": analysis_rows,
                 "has_page_data": has_page_data,
+                "keyword_research": keyword_research,
                 "warning": None if has_page_data else PAGE_MISSING_WARNING,
                 "sections": sections,
             }
@@ -936,18 +1015,23 @@ def parse_gsc_csv_workbook(content: bytes) -> Dict[str, Any]:
     csv_text = csv_text.replace("\r\n", "\n").replace("\r", "\n")
     analysis_rows = []
     page_only_rows = []
+    keyword_research = []
     sections = []
     for raw in re.split(r"\n\s*\n", csv_text.strip()):
         lines = [line for line in raw.split("\n") if line.strip()]
         if not lines:
             continue
         header_line = lines[0]
-        delimiter = "\t" if "\t" in header_line and header_line.count("\t") >= header_line.count(",") else ","
+        _delim_counts = {",": header_line.count(","), "\t": header_line.count("\t"), ";": header_line.count(";")}
+        delimiter = max(_delim_counts, key=_delim_counts.get) if max(_delim_counts.values()) > 0 else ","
         grid = [list(row) for row in csv.reader(io.StringIO("\n".join(lines)), delimiter=delimiter)]
         if not grid:
             continue
         headers = grid[0]
         norm = {normalize_gsc_header(h) for h in headers if h}
+
+        if not keyword_research:
+            keyword_research = keyword_rows_from_grid(grid)
 
         if gsc_headers_have_page(headers) and gsc_headers_are_usable(headers):
             # Combined query+page table → genuine keyword↔page rows.
@@ -973,6 +1057,7 @@ def parse_gsc_csv_workbook(content: bytes) -> Dict[str, Any]:
     return {
         "analysis_rows": analysis_rows,
         "has_page_data": has_page_data,
+        "keyword_research": keyword_research,
         "warning": None if has_page_data else PAGE_MISSING_WARNING,
         "sections": sections,
     }
@@ -1036,6 +1121,8 @@ async def analyze_csv(
     date_preset: Optional[str] = Form(None),
     start_date: Optional[str] = Form(None),
     end_date: Optional[str] = Form(None),
+    use_ai: bool = Form(True),
+    source_type: Optional[str] = Form(None),
 ):
     """Run Stage 1A analysis → queue Hermes job → return job ID for polling.
 
@@ -1045,6 +1132,14 @@ async def analyze_csv(
         Search Console API is queried for the requested date preset/range.
       • If live GSC is unavailable or fails, the response explains how to fall
         back to CSV upload. Existing CSV upload behaviour is unchanged.
+
+    source_type ("gsc" | "keyword_research" | None): the frontend now shows two
+    explicit upload modes so the caller tells us which kind of file this is,
+    instead of the backend guessing from headers. "gsc" only ever runs the
+    Search-Console page-opportunity path; "keyword_research" only ever runs the
+    SEMrush/Ahrefs funnel-topic path. Either mode returns a clear, mode-specific
+    error if the uploaded file doesn't actually match. Leaving it unset (older
+    callers / direct API use) keeps the previous auto-detect behaviour.
     """
     source = "csv"
     try:
@@ -1058,13 +1153,67 @@ async def analyze_csv(
             gsc_overview = parsed["sections"]
             source = "csv"
 
+            explicit_mode = (source_type or "").strip().lower()
+            wants_keyword_mode = explicit_mode == "keyword_research"
+            wants_gsc_mode = explicit_mode == "gsc"
+            # No explicit mode (older callers / direct API use) → auto-detect,
+            # exactly as before: a keyword file with no page data wins.
+            auto_keyword_route = (
+                not explicit_mode
+                and parsed.get("keyword_research")
+                and not parsed["has_page_data"]
+            )
+
+            # ── Mode: SEMrush / keyword research → funnel-grouped topics ──────
+            if wants_keyword_mode or auto_keyword_route:
+                if not parsed.get("keyword_research"):
+                    return JSONResponse({
+                        "error": "This doesn't look like a keyword-research file. A "
+                                 "SEMrush/Ahrefs export needs a 'Keyword' column plus "
+                                 "columns like Intent, Volume, Keyword Difficulty or CPC. "
+                                 "If this is actually a Google Search Console export, "
+                                 "switch to the 'Google Search Console' upload option.",
+                    }, status_code=400)
+
+                from agents.funnel_topics import build_topics, group_by_funnel
+                # Python layer: cluster + metrics + tentative funnel (deterministic).
+                topics = build_topics(parsed["keyword_research"])
+                # AI layer: enrich the top topics with strategist reasoning.
+                ai_meta = {"available": False, "enriched": 0, "note": "AI disabled."}
+                if use_ai:
+                    from agents.ai_topic_strategist import enrich_topics
+                    topics, ai_meta = enrich_topics(topics)
+                result = group_by_funnel(
+                    topics,
+                    strategist=("ai" if ai_meta.get("available") else "rule-based"),
+                )
+                result.update({
+                    "source": "semrush",
+                    "ai": ai_meta,
+                    "message": (
+                        "Keyword file detected. Blog & landing-page topics grouped "
+                        "by funnel stage (awareness → decision)."
+                    ),
+                })
+                return JSONResponse(result)
+
+            # ── Mode: Google Search Console (explicit or auto fallback) ───────
             # Without row-level Query+Page data we CANNOT attribute keywords to
             # landing pages. Show the raw sections + warning instead of faking it.
             if not parsed["has_page_data"]:
                 if not gsc_overview:
+                    if wants_gsc_mode:
+                        return JSONResponse({
+                            "error": "Couldn't read a Google Search Console export from "
+                                     "that file — it needs a Queries or Pages sheet. If "
+                                     "this is a SEMrush/Ahrefs keyword file, switch to the "
+                                     "'SEMrush / Keyword Research' upload option instead.",
+                        }, status_code=400)
                     return JSONResponse({
-                        "error": "No usable GSC data found. Upload a GSC export (CSV or XLSX) "
-                                 "with at least a Queries or Pages sheet.",
+                        "error": "Couldn't read that file. Upload either a Google Search "
+                                 "Console export (with a Queries or Pages sheet), or a "
+                                 "keyword file (SEMrush/Ahrefs) that has a Keyword column "
+                                 "plus columns like Intent, Volume, Keyword Difficulty or CPC.",
                     }, status_code=400)
                 return JSONResponse({
                     "status": "overview_only",
