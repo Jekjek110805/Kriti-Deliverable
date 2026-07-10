@@ -2463,7 +2463,8 @@ function showQueuedStatus(d) {
     <div class="stat-card"><div class="stat-value" style="font-size:13px">${escapeHtml(rangeLabel)}</div><div class="stat-label">Date range</div></div>
     <div class="stat-card"><div class="stat-value" style="font-size:13px">${d.job_id}</div><div class="stat-label">Job ID</div></div>
   `;
-  document.getElementById('oppsTable').innerHTML = `<div class="loading-inline"><img class="loading-mark loading-mark-analysis" src="/static/analysis-loading-mark.png" alt=""><div class="loading-text">Analyzing your data.. please wait</div></div>`;
+  document.getElementById('oppsTable').innerHTML = `<div class="loading-inline"><img class="loading-mark loading-mark-analysis" src="/static/analysis-loading-mark.png" alt=""><div class="loading-text" id="queuedLoadingText">Analyzing opportunities...</div></div>`;
+  startLoadingTextCycle('#queuedLoadingText', 2);
 }
 
 function pollJob(jobId) {
@@ -2476,12 +2477,14 @@ function pollJob(jobId) {
           clearInterval(activeJobPoll);
           activeJobPoll = null;
           analysisInProgress = false;
+          stopLoadingTextCycle('#queuedLoadingText');
           opportunities = job.result.opportunities;
           renderResults(job.result);
         } else if (job.status === 'error') {
           clearInterval(activeJobPoll);
           activeJobPoll = null;
           analysisInProgress = false;
+          stopLoadingTextCycle('#queuedLoadingText');
           showToast('Analysis failed: ' + job.error, 'error');
           resetDiscoverUpload();
         }
