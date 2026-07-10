@@ -390,6 +390,9 @@
   .topic-kw-list { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
   .topic-kw { font-size: 10.5px; padding: 2px 7px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-secondary); }
   .topic-inferred { font-size: 10px; font-weight: 700; color: var(--yellow); }
+  .source-tag { display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; margin-left: 8px; vertical-align: middle; border: 1px solid var(--glass-border); }
+  .source-tag-gsc { color: var(--green); background: var(--green-glow); border-color: var(--green-glow); }
+  .source-tag-keyword { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent-glow-strong); }
 
   /* Table */
   .table-wrap { border-radius: var(--radius-lg); border: 1px solid var(--glass-border); overflow: auto; max-height: min(68vh, 620px); background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); scrollbar-gutter: stable; }
@@ -1139,14 +1142,11 @@
       <p style="color:var(--text-muted);margin-bottom:24px;">View the last generated opportunity report.</p>
 
       <div id="report-empty" class="card">
-        <div class="alert alert-info">No results yet. Go to Discover → upload a GSC CSV first.</div>
+        <div class="alert alert-info">No results yet. Go to Discover → upload a Google Search Console export or a SEMrush keyword file first.</div>
       </div>
       <div id="report-content" class="hidden">
         <div id="report-stats" class="stats-grid"></div>
-        <div class="card">
-          <div class="card-title">Opportunities</div>
-          <div class="table-wrap"><table><thead><tr><th>#</th><th>Priority</th><th>Keyword</th><th>Page</th><th>Pos</th><th>Imp</th><th>Intent</th><th>Score</th><th>Recommendation</th></tr></thead><tbody id="reportTable"></tbody></table></div>
-        </div>
+        <div id="reportBody"></div>
       </div>
     </div>
 
@@ -1558,6 +1558,12 @@ function stopAllLoadingTextCycles() {
 // mode is sent to the backend explicitly (source_type) so it never has to
 // guess which kind of file was uploaded.
 let uploadMode = 'gsc';
+
+// Data-source accountability: Results & Monitor must reflect whichever file
+// type was last analyzed, and never blend GSC rows with SEMrush topics.
+// lastAnalysisSource is the single source of truth both pages branch on.
+let lastAnalysisSource = null; // 'gsc' | 'keyword_research' | null (nothing yet)
+let lastKeywordTopicsResult = null; // full funnel-topics payload, for Results/Monitor reuse
 const UPLOAD_MODES = {
   gsc: {
     sub: "Upload a Google Search Console export to surface ranked page opportunities.",
@@ -2268,6 +2274,8 @@ function resetDiscoverUpload() {
   }
   analysisInProgress = false;
   opportunities = [];
+  lastAnalysisSource = null;
+  lastKeywordTopicsResult = null;
   oppCurrentPage = 1;
   gscOverviewSections = [];
   gscSectionPages = {};
@@ -2545,6 +2553,10 @@ function renderResults(d) {
   const rows = Array.isArray(d.opportunities) ? d.opportunities : [];
   opportunities = rows;
   oppCurrentPage = 1;
+  // Data accountability: this is GSC data — Results & Monitor must show GSC,
+  // never a leftover SEMrush topic report from an earlier upload.
+  lastAnalysisSource = 'gsc';
+  lastKeywordTopicsResult = null;
 
   const opportunitiesFound = d.opportunities_found ?? d.summary?.opportunities_found ?? rows.length;
   const critical = rows.filter(o => o.priority === 'Critical').length;
@@ -2778,6 +2790,8 @@ function renderGscOverview(d) {
   document.getElementById('loading').classList.remove('active');
   document.getElementById('results-section').classList.remove('hidden');
   opportunities = [];
+  lastAnalysisSource = 'gsc';
+  lastKeywordTopicsResult = null;
 
   const titleEl = document.getElementById('resultsCardTitle');
   if (titleEl) titleEl.textContent = 'GSC Overview';
@@ -2812,6 +2826,10 @@ function renderFunnelTopics(d) {
   document.getElementById('loading').classList.remove('active');
   document.getElementById('results-section').classList.remove('hidden');
   opportunities = [];
+  // Data accountability: this is SEMrush keyword data — Results & Monitor must
+  // show the funnel-topics report, never leftover GSC opportunity rows.
+  lastAnalysisSource = 'keyword_research';
+  lastKeywordTopicsResult = d;
 
   const titleEl = document.getElementById('resultsCardTitle');
   if (titleEl) titleEl.textContent = 'Blog & Topic Ideas by Funnel';
@@ -3659,6 +3677,16 @@ function publishContent(now) {
 function loadReport() {
   const empty = document.getElementById('report-empty');
   const content = document.getElementById('report-content');
+
+  // Data accountability: branch on whichever source was last analyzed. GSC
+  // rows and SEMrush topics are never combined in one report.
+  if (lastAnalysisSource === 'keyword_research' && lastKeywordTopicsResult) {
+    empty.classList.add('hidden');
+    content.classList.remove('hidden');
+    renderKeywordReport(lastKeywordTopicsResult);
+    return;
+  }
+
   const opps = Array.isArray(opportunities) ? opportunities : [];
   if (!opps.length) {
     empty.classList.remove('hidden');
@@ -3667,7 +3695,10 @@ function loadReport() {
   }
   empty.classList.add('hidden');
   content.classList.remove('hidden');
+  renderGscReport(opps);
+}
 
+function renderGscReport(opps) {
   const critical = opps.filter(o => o.priority === 'Critical').length;
   const high = opps.filter(o => o.priority === 'High').length;
   const bofu = opps.filter(o => o.intent === 'BOFU').length;
@@ -3677,7 +3708,7 @@ function loadReport() {
     <div class="stat-card"><div class="stat-value stat-high">${high}</div><div class="stat-label">High</div></div>
     <div class="stat-card"><div class="stat-value">${bofu}</div><div class="stat-label">BOFU</div></div>`;
 
-  document.getElementById('reportTable').innerHTML = opps.map((o, i) => `
+  const rows = opps.map((o, i) => `
     <tr>
       <td>${i + 1}</td>
       <td><span class="badge badge-${(o.priority || '').toLowerCase()}">${o.priority || ''}</span></td>
@@ -3689,11 +3720,44 @@ function loadReport() {
       <td>${o.score != null ? o.score : (o.opportunity_score || 0)}</td>
       <td>${o.recommendation || ''}</td>
     </tr>`).join('');
+
+  document.getElementById('reportBody').innerHTML = `
+    <div class="card">
+      <div class="card-title">Opportunities <span class="source-tag source-tag-gsc">Google Search Console</span></div>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>Priority</th><th>Keyword</th><th>Page</th><th>Pos</th><th>Imp</th><th>Intent</th><th>Score</th><th>Recommendation</th></tr></thead><tbody>${rows}</tbody></table></div>
+    </div>`;
+}
+
+function renderKeywordReport(d) {
+  const s = d.summary || {};
+  document.getElementById('report-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${formatNumber(s.total_keywords || 0)}</div><div class="stat-label">Keywords</div></div>
+    <div class="stat-card"><div class="stat-value">${formatNumber(s.total_topics || 0)}</div><div class="stat-label">Topics</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--accent)">${formatNumber(s.tofu_topics || 0)}</div><div class="stat-label">TOFU · Awareness</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--yellow)">${formatNumber(s.mofu_topics || 0)}</div><div class="stat-label">MOFU · Consideration</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--green)">${formatNumber(s.bofu_topics || 0)}</div><div class="stat-label">BOFU · Decision</div></div>`;
+
+  const funnels = Array.isArray(d.funnels) ? d.funnels : [];
+  document.getElementById('reportBody').innerHTML = `
+    <div class="card" style="margin-bottom:0;">
+      <div class="card-title">Blog & Topic Ideas by Funnel <span class="source-tag source-tag-keyword">SEMrush / Keyword Research</span></div>
+    </div>
+    ${funnels.map(f => funnelStageHtml(f)).join('') || '<div class="alert alert-warning">No topics in this report.</div>'}`;
 }
 
 // ── Performance Monitor ──────────────────────────────────────────────────────
 function loadMonitor() {
   const container = document.getElementById('monitor-content');
+
+  // Data accountability: a SEMrush keyword file has no live site to monitor —
+  // showing GSC's live performance call here would be misleading (it's not
+  // this file's data). Show an honest snapshot of the last keyword analysis
+  // instead of silently falling back to GSC.
+  if (lastAnalysisSource === 'keyword_research' && lastKeywordTopicsResult) {
+    renderKeywordMonitor(lastKeywordTopicsResult);
+    return;
+  }
+
   container.innerHTML = '<div class="card"><div class="alert alert-info">Loading live GSC performance…</div></div>';
 
   fetch(BASE + '/api/integrations/gsc/performance?days=90&row_limit=500')
@@ -3735,6 +3799,26 @@ function loadMonitor() {
       }).catch(() => { container.innerHTML = html; });
     })
     .catch(err => { container.innerHTML = '<div class="card"><div class="alert alert-danger">Failed to load performance: ' + err + '</div></div>'; });
+}
+
+// Honest SEMrush "monitor" view: a keyword-research file is a point-in-time
+// export, not a live-tracked metric, so this is a snapshot of the last
+// analysis — never a live GSC call pretending to be about this file.
+function renderKeywordMonitor(d) {
+  const container = document.getElementById('monitor-content');
+  const s = d.summary || {};
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-title">Keyword Research Snapshot <span class="source-tag source-tag-keyword">SEMrush / Keyword Research</span></div>
+      <div class="alert alert-info">Live rank/position monitoring needs a real, tracked website — a SEMrush keyword file is a point-in-time market snapshot, not something with a "live" state to poll. This is your last uploaded keyword analysis. Switch to a Google Search Console upload for live performance monitoring.</div>
+      <div class="stats-grid" style="margin-top:14px;">
+        <div class="stat-card"><div class="stat-value">${formatNumber(s.total_keywords || 0)}</div><div class="stat-label">Keywords</div></div>
+        <div class="stat-card"><div class="stat-value">${formatNumber(s.total_topics || 0)}</div><div class="stat-label">Topics</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--accent)">${formatNumber(s.tofu_topics || 0)}</div><div class="stat-label">TOFU</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--yellow)">${formatNumber(s.mofu_topics || 0)}</div><div class="stat-label">MOFU</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--green)">${formatNumber(s.bofu_topics || 0)}</div><div class="stat-label">BOFU</div></div>
+      </div>
+    </div>`;
 }
 
 function requestIndexing(keyword) {
