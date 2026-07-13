@@ -461,9 +461,14 @@ def build_topics(keyword_rows: List[Dict[str, Any]],
 
 
 def group_by_funnel(topics: List[Dict[str, Any]],
-                    top_per_stage: int = 15,
+                    top_per_stage: int = 60,
                     strategist: str = "rule-based") -> Dict[str, Any]:
-    """Bucket a flat topic list into TOFU/MOFU/BOFU sections for the frontend."""
+    """Bucket a flat topic list into TOFU/MOFU/BOFU sections for the frontend.
+
+    top_per_stage caps what's sent per stage (the frontend paginates client-side
+    over whatever's fetched); topic_count on each stage is always the real total
+    so the UI can say "+N more not fetched" if a stage exceeds this cap.
+    """
     funnels = []
     for stage in STAGE_ORDER:
         stage_topics = [t for t in topics if t.get("funnel") == stage]

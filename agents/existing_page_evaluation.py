@@ -1,3 +1,5 @@
+# Part of the CLI/monthly-report pipeline (agents/workflow.py, invoked from
+# app/main.py) only — not used by the live FastAPI web app.
 class ExistingPageEvaluationAgent:
     def run(self, topics):
         from integrations.litellm_client import client

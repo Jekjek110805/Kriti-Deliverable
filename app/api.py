@@ -2780,407 +2780,39 @@ class ContentRequest(BaseModel):
     word_count: int = 1500
 
 
-def _clean_llm_output(text: str) -> str:
-    """Clean LLM output — remove markdown # headers and extra formatting."""
-    if not text:
-        return text
-    lines = text.strip().split("\n")
-    cleaned = []
-    for line in lines:
-        stripped = line.strip()
-        # Skip markdown headers (lines starting with #)
-        if stripped.startswith("#"):
-            continue
-        # Skip separator lines
-        if stripped in ("---", "***", "```", "* * *"):
-            continue
-        cleaned.append(line)
-    return "\n".join(cleaned).strip()
-
-
-def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
-    if not text:
-        return None
-
-    cleaned = text.strip()
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r"\s*```$", "", cleaned)
-
-    candidates = [cleaned]
-    start = cleaned.find("{")
-    end = cleaned.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        candidates.append(cleaned[start : end + 1])
-
-    for candidate in candidates:
-        try:
-            parsed = json.loads(candidate)
-            return parsed if isinstance(parsed, dict) else None
-        except json.JSONDecodeError:
-            continue
-    return None
-
-
-def _parse_labeled_content(text: str) -> Dict[str, str]:
-    if not text:
-        return {}
-
-    labels = {
-        "tldr": "tldr",
-        "tl;dr": "tldr",
-        "introduction": "introduction",
-        "main content": "main_content",
-        "faq": "faq",
-        "cta": "cta",
-    }
-    pattern = re.compile(
-        r"(?im)^\s*(TLDR|TL;DR|INTRODUCTION|MAIN CONTENT|FAQ|CTA)\s*:?\s*"
-    )
-    matches = list(pattern.finditer(text))
-    sections: Dict[str, str] = {}
-
-    for index, match in enumerate(matches):
-        key = labels[match.group(1).lower()]
-        start = match.end()
-        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
-        value = _clean_llm_output(text[start:end])
-        if value and "[" not in value and "]" not in value:
-            sections[key] = value
-
-    return sections
-
-
-def _article_text(value: Any) -> str:
-    if isinstance(value, str):
-        return _clean_llm_output(value)
-    if isinstance(value, list):
-        parts = []
-        for item in value:
-            if isinstance(item, dict):
-                question = _clean_llm_output(str(item.get("question", "")))
-                answer = _clean_llm_output(str(item.get("answer", "")))
-                if question and answer:
-                    parts.append(f"Q: {question}\nA: {answer}")
-                elif answer:
-                    parts.append(answer)
-            elif item:
-                parts.append(_clean_llm_output(str(item)))
-        return "\n\n".join(part for part in parts if part)
-    return ""
-
-
-def _slugify_keyword(keyword: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", keyword.lower()).strip("-")
-    return slug or "article"
-
-
-def _extract_jsonish_sections(text: str) -> Dict[str, str]:
-    """Recover article fields from truncated JSON so raw JSON never leaks."""
-    if not text or '"tldr"' not in text.lower():
-        return {}
-
-    cleaned = text.strip()
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r"\s*```$", "", cleaned)
-
-    keys = ["tldr", "introduction", "main_content", "cta"]
-    sections: Dict[str, str] = {}
-    for index, key in enumerate(keys):
-        marker = re.search(rf'"{key}"\s*:\s*"', cleaned, flags=re.IGNORECASE)
-        if not marker:
-            continue
-
-        start = marker.end()
-        next_positions = []
-        for next_key in keys[index + 1 :]:
-            next_match = re.search(
-                rf'",\s*"{next_key}"\s*:\s*"', cleaned[start:], flags=re.IGNORECASE
-            )
-            if next_match:
-                next_positions.append(start + next_match.start())
-        end = min(next_positions) if next_positions else len(cleaned)
-        value = cleaned[start:end].strip()
-        value = re.sub(r'"\s*,?\s*$', "", value)
-        value = value.replace('\\"', '"').replace("\\n", "\n")
-        value = _clean_llm_output(value)
-        if value:
-            sections[key] = value
-
-    return sections
-
-
-def _clean_house_style(text: str) -> str:
-    replacements = {
-        "—": "-",
-        "–": "-",
-        "â€”": "-",
-        "â€“": "-",
-        "elevate": "improve",
-        "Elevate": "Improve",
-        "leverage": "use",
-        "Leverage": "Use",
-        "unlock": "gain",
-        "Unlock": "Gain",
-        "robust": "reliable",
-        "Robust": "Reliable",
-        "seamless": "simple",
-        "Seamless": "Simple",
-        "streamlined": "efficient",
-        "Streamlined": "Efficient",
-        "cutting-edge": "modern",
-        "Cutting-edge": "Modern",
-        "avoid": "prevent",
-        "Avoid": "Prevent",
-        "don't use": "choose carefully with",
-        "Don't use": "Choose carefully with",
-        "stay away from": "review carefully before choosing",
-        "Stay away from": "Review carefully before choosing",
-    }
-    cleaned = text
-    for old, new in replacements.items():
-        cleaned = cleaned.replace(old, new)
-    return cleaned
-
-
-def _split_long_paragraphs(text: str, max_words: int = 140) -> str:
-    paragraphs = text.split("\n\n")
-    result = []
-    for paragraph in paragraphs:
-        words = paragraph.split()
-        if len(words) <= max_words or paragraph.strip().startswith(("#", "<")):
-            result.append(paragraph.strip())
-            continue
-
-        sentences = re.split(r"(?<=[.!?])\s+", paragraph.strip())
-        current: List[str] = []
-        current_words = 0
-        for sentence in sentences:
-            sentence_words = len(sentence.split())
-            if current and current_words + sentence_words > max_words:
-                result.append(" ".join(current).strip())
-                current = [sentence]
-                current_words = sentence_words
-            else:
-                current.append(sentence)
-                current_words += sentence_words
-        if current:
-            result.append(" ".join(current).strip())
-
-    return "\n\n".join(part for part in result if part)
-
-
-def _pad_to_minimum_word_count(content: str, keyword: str, minimum: int) -> str:
-    current = len(content.split())
-    if current >= minimum:
-        return content
-
-    additions = []
-    slug = _slugify_keyword(keyword)
-    while current + sum(len(item.split()) for item in additions) < minimum:
-        additions.append(
-            "\n\n"
-            f"## {keyword.title()} Practical Checklist\n\n"
-            f"Use this {keyword} checklist before making a decision. Confirm the situation, "
-            "read the label or product guidance, check age and weight rules where relevant, "
-            "and ask a qualified professional when symptoms are severe, persistent, or unclear. "
-            "Good decisions come from matching the option to the person's needs, health history, "
-            "current medicines, and risk factors. Keep notes on timing, response, and any changes "
-            "so the next step is based on clear information rather than guesswork.\n\n"
-            f"For related planning, read <a href=\"/blog/{slug}-guide\">our {keyword} guide</a> "
-            f"and <a href=\"/resources/{slug}-checklist\">the {keyword} checklist</a>."
-        )
-        if len(additions) >= 10:
-            break
-
-    return content + "".join(additions)
-
-
-def _build_meta_description(keyword: str, tldr: str) -> str:
-    source = re.sub(r"\s+", " ", tldr).strip()
-    if not source:
-        source = f"Learn practical guidance for {keyword}, including key options, safety checks, and when to seek professional help."
-    if keyword.lower() not in source.lower():
-        source = f"{keyword.title()}: {source}"
-    return source[:157].rstrip(" ,.;") + ("..." if len(source) > 157 else "")
-
-
-def generate_content_draft(keyword: str, brief: Dict, tone: str, word_count: int) -> Dict:
-    """Generate a content draft by calling OpenRouter (NVIDIA Nemotron 3 Super).
-
-    Every section is generated uniquely — no templates, no placeholders.
-    The configured OpenRouter model writes ALL content. The output is formal,
-    original, and natural. If the model is unavailable, falls back to a clear message.
-    """
-    from integrations.hermes_llm import hermes_generate
-
-    if not brief:
-        brief = generate_content_brief(
-            keyword=keyword,
-            intent=classify_intent(keyword),
-            audience="general readers",
-            word_count=word_count,
-            include_faq=True,
-            include_comp=False,
-        )
-
-    h2_outline = brief.get("h2_outline", ["Introduction", "Main Content", "Conclusion"])
-    faq = brief.get("faq_questions", [])
-    intent = brief.get("intent", classify_intent(keyword))
-    slug = brief.get("seo_requirements", {}).get("url_slug") or _slugify_keyword(keyword)
-
-    # Words per section (distribute across H2 sections)
-    content_headings = [h for h in h2_outline if h.lower() not in ("frequently asked questions", "faq", "next steps", "conclusion", "tldr")]
-    if not content_headings:
-        content_headings = ["Main Content"]
-    words_per_section = max(150, word_count // len(content_headings))
-
-    sections = []
-
-    # Helper: generate text via the configured OpenRouter model.
-    def _gen(prompt, min_len=30, max_tokens=2600):
-        result = hermes_generate(prompt, max_tokens=max_tokens)
-        if result and not result.startswith("[") and len(result) > min_len:
-            return result
-        return None
-
-    # Helper: extract section between two markers
-    def _extract_section(text, start_marker, end_marker):
-        try:
-            start_idx = text.index(start_marker)
-            text_after = text[start_idx + len(start_marker):]
-            if end_marker:
-                end_idx = text_after.index(end_marker)
-                section = text_after[:end_idx]
-            else:
-                section = text_after
-            # Clean up: remove leading ":", "+", newlines; strip Hermes chatter
-            lines = []
-            for line in section.split('\n'):
-                line = line.strip()
-                if line.startswith('+'):
-                    line = line[1:].strip()
-                if line.startswith(':'):
-                    line = line[1:].strip()
-                if line and not line.startswith('Article written') and not line.startswith("Here's the full"):
-                    lines.append(line)
-            return '\n'.join(lines).strip()
-        except (ValueError, IndexError):
-            return None
-
-    full_prompt = (
-        f"Write a complete article about '{keyword}' for {intent} intent.\n"
-        f"Tone: {tone}.\n"
-        f"Target audience: {brief.get('target_audience', 'general audience')}.\n"
-        f"Word count target: about {word_count} words total.\n\n"
-        "Return only valid JSON. Do not include markdown fences, analysis, notes, "
-        "placeholders, or text outside the JSON object.\n"
-        "House style rules: no em dashes, no en dashes, no filler words such as "
-        "elevate, leverage, unlock, robust, or seamless, no competitor put-downs, "
-        "and no paragraph longer than 140 words.\n"
-        f"Include the exact keyword '{keyword}' in at least one body heading.\n"
-        "Use exactly this schema:\n"
-        '{'
-        '"tldr":"2-3 sentence summary",'
-        '"introduction":"engaging introduction paragraph",'
-        '"main_content":"detailed body with multiple paragraphs",'
-        '"faq":[{"question":"question text","answer":"answer text"}],'
-        '"cta":"1-2 sentence call to action"'
-        '}\n'
-        "All values must be final reader-facing article copy."
-    )
-
-    full_content_raw = _gen(full_prompt, min_len=100)
-    parsed_content = _extract_json_object(full_content_raw or "")
-    if not parsed_content:
-        parsed_content = _extract_jsonish_sections(full_content_raw or "")
-    labeled_content = _parse_labeled_content(full_content_raw or "") if not parsed_content else {}
-
-    if parsed_content:
-        sections.append({"type": "tldr", "content": _article_text(parsed_content.get("tldr")) or f"Key considerations and practical guidance on {keyword}."})
-        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": _article_text(parsed_content.get("introduction"))})
-        sections.append({"type": "h2", "title": f"{keyword.title()} Guide", "content": _article_text(parsed_content.get("main_content"))})
-        sections.append({"type": "h2", "title": "Frequently Asked Questions", "content": _article_text(parsed_content.get("faq"))})
-        sections.append({"type": "cta", "content": _article_text(parsed_content.get("cta")) or f"Explore how {keyword} can work for your needs."})
-    elif labeled_content:
-        sections.append({"type": "tldr", "content": labeled_content.get("tldr") or f"Key considerations and practical guidance on {keyword}."})
-        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": labeled_content.get("introduction", "")})
-        sections.append({"type": "h2", "title": f"{keyword.title()} Guide", "content": labeled_content.get("main_content", "")})
-        sections.append({"type": "h2", "title": "Frequently Asked Questions", "content": labeled_content.get("faq", "")})
-        sections.append({"type": "cta", "content": labeled_content.get("cta") or f"Explore how {keyword} can work for your needs."})
-    elif full_content_raw:
-        cleaned_content = _clean_llm_output(full_content_raw)
-        sections.append({"type": "tldr", "content": f"Key considerations and practical guidance on {keyword}."})
-        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Draft", "content": cleaned_content})
-        sections.append({"type": "cta", "content": f"Explore how {keyword} can work for your needs."})
-
-    if not sections:
-        sections.append({"type": "tldr", "content": f"Key considerations and practical guidance on {keyword}, distilled into actionable insights."})
-        sections.append({"type": "h2", "title": h2_outline[0] if h2_outline else "Introduction", "content": "Draft generation is unavailable because the configured OpenRouter model did not return usable content."})
-        sections.append({"type": "cta", "content": f"Explore how {keyword} can work for your organisation."})
-
-    # Compile full content
-    full_content = ""
-    for section in sections:
-        if section["type"] == "tldr":
-            full_content += f"TLDR\n\n{section['content']}\n\n"
-        elif section["type"] == "h2":
-            full_content += f"## {section['title']}\n\n{section['content']}\n\n"
-        elif section["type"] == "cta":
-            full_content += f"Next Steps\n\n{section['content']}\n\n"
-
-    image_alt = f"{keyword} guide and checklist"
-    link_block = (
-        f"<img src=\"/images/{slug}.jpg\" alt=\"{image_alt}\">\n\n"
-        f"Related reading: <a href=\"/blog/{slug}-guide\">{keyword} guide</a> "
-        f"and <a href=\"/resources/{slug}-checklist\">{keyword} checklist</a>."
-    )
-    if "href=" not in full_content.lower():
-        full_content += f"\n\n{link_block}\n\n"
-
-    full_content = _clean_house_style(full_content)
-    full_content = _split_long_paragraphs(full_content)
-    full_content = _pad_to_minimum_word_count(
-        full_content, keyword, max(1000, min(word_count, 1500))
-    )
-    full_content = _clean_house_style(_split_long_paragraphs(full_content))
-
-    actual_word_count = len(full_content.split())
-    title = brief.get("h1") or f"{keyword.title()}: Complete Guide"
-    meta_description = _build_meta_description(
-        keyword, sections[0]["content"] if sections else ""
-    )
-
-    draft = {
-        "keyword": keyword,
-        "title": title,
-        "url_slug": slug,
-        "meta_description": meta_description,
-        "intent": intent,
-        "tone": tone,
-        "word_count_target": word_count,
-        "word_count_actual": actual_word_count,
-        "sections": sections,
-        "full_content": full_content,
-        "status": "draft",
-        "ai_generated": True,
-        "human_edited": False,
-        "created_at": datetime.utcnow().isoformat(),
-        "notes": "This draft was written with OpenRouter (NVIDIA Nemotron 3 Super). A human must review, edit, fact-check, and approve before publishing.",
-    }
-    return draft
-
-
 @app.post("/api/content/write")
 async def write_content(request: ContentRequest):
-    """Generate a content draft from a brief."""
-    draft = generate_content_draft(
-        keyword=request.keyword,
-        brief=request.brief,
-        tone=request.tone,
-        word_count=request.word_count,
-    )
+    """Generate a content draft from a brief using the MAAI Blog Production SOP."""
+    from agents.blog_automation import BlogGenerationError, generate_blog_draft
+    from integrations.site_inventory import inventory_existing_pages
+
+    brief = request.brief or {}
+    site_url = "https://www.selfstorage.help"
+    try:
+        existing_pages = inventory_existing_pages(site_url)
+    except Exception:
+        existing_pages = []
+
+    kwargs: Dict[str, Any] = {
+        "keyword": request.keyword,
+        "tone": request.tone,
+        "word_count": request.word_count,
+        "site_url": site_url,
+        "existing_pages": existing_pages,
+    }
+    if brief.get("h1"):
+        kwargs["title"] = brief["h1"]
+    if brief.get("target_audience"):
+        kwargs["audience"] = brief["target_audience"]
+
+    try:
+        draft = generate_blog_draft(**kwargs)
+    except BlogGenerationError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=502)
+
+    # generate_blog_draft doesn't know the funnel stage; carry it through from
+    # the brief (or classify fresh) so the UI's TOFU/MOFU/BOFU badge still works.
+    draft["intent"] = brief.get("intent") or classify_intent(request.keyword)
 
     # Save draft
     drafts_dir = os.path.join(OUTPUTS_DIR, "drafts")
@@ -3532,6 +3164,12 @@ def _load_cms_config() -> Dict[str, Any]:
         "api_key": "CMS_API_KEY",
         "username": "CMS_USERNAME",
         "author_id": "CMS_AUTHOR_ID",
+        # GitHub adapter (Git-backed CMSs such as TinaCMS) — reuses api_key as
+        # the GitHub token so the generic publish/config plumbing needs no changes.
+        "owner": "CMS_GITHUB_OWNER",
+        "repo": "CMS_GITHUB_REPO",
+        "base_branch": "CMS_GITHUB_BASE_BRANCH",
+        "content_path": "CMS_GITHUB_CONTENT_PATH",
     }
     for field, env_name in env_map.items():
         if not config.get(field) and os.getenv(env_name, "").strip():
@@ -3636,6 +3274,11 @@ async def publish_content(request: PublishRequest):
     except Exception as exc:
         return JSONResponse({"error": f"Remote CMS publish failed: {exc}"}, status_code=502)
 
+    # Trust what the CMS adapter actually did, not just the caller's intent —
+    # e.g. a "github" publish always opens a pull request, never goes live
+    # immediately even when publish_now=True.
+    went_live = remote.get("status") == "publish"
+
     publish_record = _save_publish_record(
         keyword=request.keyword,
         title=request.title,
@@ -3644,21 +3287,23 @@ async def publish_content(request: PublishRequest):
         client=request.client,
         validation=validation,
         remote=remote,
-        publish_now=request.publish_now,
+        publish_now=went_live,
     )
 
+    if went_live:
+        message = f"Content for '{request.keyword}' is live on the remote site."
+        next_steps = ["Verify the live URL", "Confirm sitemap inclusion", "Monitor the URL in GSC"]
+    elif remote.get("cms_type") == "github":
+        message = f"A pull request for '{request.keyword}' was opened: {remote.get('url', '')}"
+        next_steps = ["Review the deploy preview linked on the pull request", "Merge to publish"]
+    else:
+        message = f"A remote CMS draft for '{request.keyword}' was created."
+        next_steps = ["Review the remote CMS draft", "Approve media and facts", "Publish after final approval"]
+
     return {
-        "status": "published" if request.publish_now else "cms_draft",
-        "message": (
-            f"Content for '{request.keyword}' is live on the remote site."
-            if request.publish_now
-            else f"A remote CMS draft for '{request.keyword}' was created."
-        ),
-        "next_steps": (
-            ["Verify the live URL", "Confirm sitemap inclusion", "Monitor the URL in GSC"]
-            if request.publish_now
-            else ["Review the remote CMS draft", "Approve media and facts", "Publish after final approval"]
-        ),
+        "status": "published" if went_live else "cms_draft",
+        "message": message,
+        "next_steps": next_steps,
         "publish_record": publish_record,
     }
 
@@ -3764,8 +3409,26 @@ async def run_full_pipeline(request: Request):
     results["steps"].append({"step": "brief", "status": "complete", "data": brief})
 
     # Step 2: Generate Content Draft
-    draft = generate_content_draft(keyword, brief, "professional", 1500)
-    results["steps"].append({"step": "write", "status": "complete", "data": {"status": draft["status"], "word_count": len(draft["full_content"].split())}})
+    from agents.blog_automation import BlogGenerationError, generate_blog_draft
+    from integrations.site_inventory import inventory_existing_pages
+
+    try:
+        existing_pages = inventory_existing_pages("https://www.selfstorage.help")
+    except Exception:
+        existing_pages = []
+    try:
+        draft = generate_blog_draft(
+            keyword=keyword,
+            title=brief.get("h1", ""),
+            audience=brief.get("target_audience", ""),
+            tone="professional",
+            word_count=1500,
+            existing_pages=existing_pages,
+        )
+    except BlogGenerationError as exc:
+        return JSONResponse({"error": str(exc), "steps": results["steps"] + [{"step": "write", "status": "failed"}]}, status_code=502)
+    draft["intent"] = brief.get("intent") or classify_intent(keyword)
+    results["steps"].append({"step": "write", "status": "complete", "data": {"status": draft["status"], "word_count": draft["word_count_actual"]}})
 
     # Step 3: Validate
     seo = run_seo_gate(draft["full_content"], keyword, title or brief["h1"], brief["seo_requirements"]["url_slug"], "")
@@ -4142,7 +3805,7 @@ async def gsc_performance(days: int = 90, row_limit: int = 500):
 async def semrush_recommendations(
     file: Optional[UploadFile] = File(None),
     use_ai: bool = Form(True),
-    top_per_stage: int = Form(30),
+    top_per_stage: int = Form(60),
     existing_site_url: Optional[str] = Form(None),
 ):
     """AI Content Strategy Engine v1 — SEMrush keyword file → SEO content plan.
@@ -4410,20 +4073,27 @@ async def cms_integration_status():
 
     config = _load_cms_config()
     if configured_for_publish(config):
-        return {
+        cms_type = config.get("cms_type", "unknown")
+        response: Dict[str, Any] = {
             "status": "configured",
-            "cms_type": config.get("cms_type", "unknown"),
-            "api_url": config.get("api_url", ""),
-            "username_configured": bool(config.get("username")),
+            "cms_type": cms_type,
             "capabilities": ["Create remote drafts", "Publish approved posts"],
         }
+        if cms_type == "github":
+            response["repo"] = f"{config.get('owner', '')}/{config.get('repo', '')}"
+            response["base_branch"] = config.get("base_branch", "main")
+            response["capabilities"] = ["Open a pull request with the generated post"]
+        else:
+            response["api_url"] = config.get("api_url", "")
+            response["username_configured"] = bool(config.get("username"))
+        return response
 
     return {
         "status": "not_configured",
-        "supported_cms": ["custom", "wordpress"],
+        "supported_cms": ["custom", "wordpress", "github"],
         "setup_instructions": {
-            "step1": "Expose a secure publishing endpoint or create a WordPress Application Password",
-            "step2": "POST to /api/integrations/cms/configure",
+            "step1": "Expose a secure publishing endpoint, create a WordPress Application Password, or (for Git-backed CMSs like TinaCMS) set CMS_TYPE=github plus CMS_GITHUB_OWNER/REPO/BASE_BRANCH/CONTENT_PATH and CMS_API_KEY in .env",
+            "step2": "POST to /api/integrations/cms/configure (wordpress/custom) or set the CMS_GITHUB_* env vars directly (github)",
             "step3": "Test with /api/integrations/cms/test",
         },
     }
@@ -4433,7 +4103,9 @@ async def cms_integration_status():
 async def configure_cms(config: CMSConfig):
     """Configure CMS API credentials."""
     if config.cms_type not in ("wordpress", "custom", "custom_api"):
-        return JSONResponse({"error": "CMS type must be wordpress or custom."}, status_code=400)
+        return JSONResponse({
+            "error": "CMS type must be wordpress or custom. For github (Git-backed CMSs like TinaCMS), set CMS_TYPE=github and the CMS_GITHUB_* vars directly in .env instead of this endpoint.",
+        }, status_code=400)
     if not config.api_url.strip():
         return JSONResponse({"error": "CMS API URL is required."}, status_code=400)
     config_path = os.path.join(DATA_DIR, "cms_config.json")

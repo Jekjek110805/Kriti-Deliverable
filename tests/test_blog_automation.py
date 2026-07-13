@@ -2,7 +2,7 @@ import json
 import unittest
 
 from agents.blog_automation import generate_blog_draft
-from integrations.cms_client import CMSPublisher, markdown_to_html
+from integrations.cms_client import CMSPublisher, CMSPublishError, draft_to_tina_markdown, markdown_to_html
 from integrations.site_inventory import analyze_existing_blogs, inventory_existing_pages
 
 
@@ -53,6 +53,42 @@ class FakeCMSSession:
             "url": "https://example.com/blog/test-post",
             "slug": json["slug"],
         })
+
+
+class FakeGitHubSession:
+    """Simulates the three GitHub calls a github-type publish makes, in order:
+    GET ref sha -> POST create branch -> PUT commit file -> POST open PR.
+    Also handles the plain repo GET used by test_connection()'s permission check.
+    """
+
+    def __init__(self, push_allowed=True):
+        self.push_allowed = push_allowed
+        self.calls = []
+
+    def get(self, url, headers=None, **kwargs):
+        self.calls.append(("GET", url, None))
+        if url.endswith("/git/ref/heads/main"):
+            return FakeResponse(json_body={"object": {"sha": "base-sha-123"}})
+        # repo permission check (test_connection)
+        return FakeResponse(json_body={
+            "full_name": "devmaai/self-v1",
+            "permissions": {"push": self.push_allowed},
+        })
+
+    def post(self, url, json=None, headers=None, **kwargs):
+        self.calls.append(("POST", url, json))
+        if url.endswith("/git/refs"):
+            return FakeResponse(status_code=201, json_body={"ref": json["ref"]})
+        if url.endswith("/pulls"):
+            return FakeResponse(status_code=201, json_body={
+                "number": 7,
+                "html_url": "https://github.com/devmaai/self-v1/pull/7",
+            })
+        raise AssertionError(f"Unexpected POST {url}")
+
+    def put(self, url, json=None, headers=None, **kwargs):
+        self.calls.append(("PUT", url, json))
+        return FakeResponse(status_code=201, json_body={"commit": {"sha": "file-commit-sha"}})
 
 
 class BlogAutomationTests(unittest.TestCase):
@@ -137,6 +173,81 @@ class BlogAutomationTests(unittest.TestCase):
         )
         self.assertIn("<h2>Main Section</h2>", rendered)
         self.assertIn('<a href="https://example.com/audit">the audit</a>', rendered)
+
+    def test_draft_to_tina_markdown_matches_real_schema(self):
+        tina = draft_to_tina_markdown(
+            title="Best Medicine for Fever",
+            content="## Understand Fever\n\nBody copy.",
+            slug="Best Medicine for fever",
+            meta_description="A guide to fever medicine.",
+            featured_image_url="/uploads/fever.jpg",
+            published=True,
+        )
+        self.assertEqual(tina["filename"], "best-medicine-for-fever.md")
+        self.assertTrue(tina["markdown"].startswith("---\ntitle: Best Medicine for Fever\n"))
+        self.assertIn("excerpt: 'A guide to fever medicine.'", tina["markdown"])
+        self.assertIn("coverImage: /uploads/fever.jpg", tina["markdown"])
+        self.assertIn("published: true", tina["markdown"])
+        self.assertIn("## Understand Fever", tina["markdown"])
+
+    def test_draft_to_tina_markdown_requires_title_and_content(self):
+        with self.assertRaises(CMSPublishError):
+            draft_to_tina_markdown(title="", content="body", slug="x", meta_description="")
+        with self.assertRaises(CMSPublishError):
+            draft_to_tina_markdown(title="Title", content="", slug="x", meta_description="")
+
+    def test_github_publish_opens_pr_never_direct_to_main(self):
+        session = FakeGitHubSession()
+        publisher = CMSPublisher({
+            "cms_type": "github",
+            "owner": "devmaai",
+            "repo": "self-v1",
+            "base_branch": "main",
+            "content_path": "content/posts",
+            "api_key": "fake-token",
+        }, session=session)
+
+        result = publisher.publish(
+            keyword="fever medicine",
+            title="Best Medicine for Fever",
+            content="## Section\n\nBody copy.",
+            slug="best-medicine-for-fever",
+            meta_description="A guide.",
+            publish_now=True,
+            featured_image_url="",
+        )
+
+        # Even with publish_now=True, a github publish only opens a PR —
+        # it must never report as actually "published" (live).
+        self.assertEqual(result["status"], "cms_draft")
+        self.assertEqual(result["cms_post_id"], 7)
+        self.assertEqual(result["url"], "https://github.com/devmaai/self-v1/pull/7")
+
+        methods = [call[0] for call in session.calls]
+        self.assertEqual(methods, ["GET", "POST", "PUT", "POST"])
+        branch_call = session.calls[1]
+        self.assertEqual(branch_call[2]["sha"], "base-sha-123")
+        self.assertTrue(branch_call[2]["ref"].startswith("refs/heads/maai/blog/"))
+        commit_call = session.calls[2]
+        self.assertIn("content/posts/best-medicine-for-fever.md", commit_call[1])
+        pr_call = session.calls[3]
+        self.assertEqual(pr_call[2]["base"], "main")
+        self.assertFalse(pr_call[2]["draft"])  # publish_now=True -> ready for review, not a draft PR
+
+    def test_github_test_connection_requires_push_permission(self):
+        session = FakeGitHubSession(push_allowed=False)
+        publisher = CMSPublisher({
+            "cms_type": "github",
+            "owner": "devmaai",
+            "repo": "self-v1",
+            "api_key": "fake-token",
+        }, session=session)
+        with self.assertRaises(CMSPublishError):
+            publisher.test_connection()
+
+    def test_github_requires_owner_repo_and_token(self):
+        with self.assertRaises(CMSPublishError):
+            CMSPublisher({"cms_type": "github"}, session=FakeGitHubSession())
 
 
 if __name__ == "__main__":

@@ -409,9 +409,8 @@
   .source-tag-gsc { color: var(--green); background: var(--green-glow); border-color: var(--green-glow); }
   .source-tag-keyword { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent-glow-strong); }
 
-  /* Table */
+  /* Table (still used by Queue, Calendar, Users, Governance Gates, Risk Register, etc.) */
   .table-wrap { border-radius: var(--radius-lg); border: 1px solid var(--glass-border); overflow: auto; max-height: min(68vh, 620px); background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); scrollbar-gutter: stable; }
-  .opportunities-table-wrap { overflow: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; }
   thead { background: var(--surface2); }
   th { position: sticky; top: 0; z-index: 3; text-align: left; padding: 14px 14px; background: var(--surface2); color: var(--text-muted); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); white-space: nowrap; box-shadow: 0 1px 0 var(--border); }
@@ -426,29 +425,12 @@
   tr:hover td { background: var(--accent-subtle); }
   tr:last-child td { border-bottom: none; }
   td .badge, td .btn { display: inline-flex; align-items: center; }
-  .opportunities-table { min-width: 1400px; }
-  .opportunities-table th:nth-child(1), .opportunities-table td:nth-child(1) { width: 42px; text-align: center; }
-  /* numeric columns: Pos(5) Imp(6) Clicks(7) CTR(8) Score(11) */
-  .opportunities-table th:nth-child(5), .opportunities-table td:nth-child(5),
-  .opportunities-table th:nth-child(6), .opportunities-table td:nth-child(6),
-  .opportunities-table th:nth-child(7), .opportunities-table td:nth-child(7),
-  .opportunities-table th:nth-child(8), .opportunities-table td:nth-child(8),
-  .opportunities-table th:nth-child(11), .opportunities-table td:nth-child(11) { text-align: right; font-variant-numeric: tabular-nums; }
-  /* Content Type(13) */
-  .opportunities-table th:nth-child(13), .opportunities-table td:nth-child(13) { text-align: center; }
-  /* Reason (last) — truncated, click opens detail */
-  .opp-reason-cell { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; color: var(--text-secondary); }
-  .opp-reason-cell:hover { color: var(--text); text-decoration: underline; }
   .opp-filters { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; margin-bottom: 18px; }
   .opp-filters .flt { display: flex; flex-direction: column; gap: 4px; }
   .opp-filters label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
   .opp-filters select, .opp-filters input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 7px 9px; font-size: 13px; }
   .opp-filters input.flt-num { width: 78px; }
   .opp-filters .flt-count { font-size: 12px; color: var(--text-muted); margin-left: auto; align-self: center; }
-  .opp-keyword-cell { min-width: 220px; color: var(--text); font-weight: 700; }
-  .opp-page-cell { max-width: 300px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .opp-page-cell a { color: var(--text-muted); text-decoration: none; }
-  .opp-page-cell a:hover { color: var(--accent); }
   .gsc-page-link, .gsc-page-link:hover, .gsc-page-link:visited { color: var(--text); text-decoration: none; font-weight: 600; }
 
   /* Opportunity cards */
@@ -1558,6 +1540,7 @@
 <script>
 const BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : window.location.origin;
 let opportunities = [];
+let semrushTopicsFlat = []; // flat, index-addressable list of SEMrush topic cards currently on screen
 let activeJobPoll = null;
 let analysisInProgress = false;
 let oppCurrentPage = 1;
@@ -1778,6 +1761,10 @@ const GSC_PAGE_SIZE = 100;
 // Raw GSC sections shown beneath the scored opportunities (all rows, unfiltered).
 let pendingGscOverview = [];
 let rawSectionPages = {};
+// SEMrush funnel-topics filter pills (All/TOFU/MOFU/BOFU) + per-stage pagination.
+let topicFunnelFilter = 'all';
+let topicStagePages = {};
+const TOPIC_PAGE_SIZE = 12;
 
 // ── Icon helper ──────────────────────────────────────────────────────────────
 function icon(name) {
@@ -2747,72 +2734,54 @@ function renderOppsTable(rows) {
   if (cnt) cnt.textContent = `Showing ${start + 1}-${end} of ${rows.length}`;
 
   list.innerHTML = `
-    <div class="table-wrap opportunities-table-wrap">
-      <table class="opportunities-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Priority</th>
-            <th>Keyword</th>
-            <th>Landing Page</th>
-            <th>Pos</th>
-            <th>Imp</th>
-            <th>Clicks</th>
-            <th>CTR</th>
-            <th>Intent</th>
-            <th>Commercial</th>
-            <th>Score</th>
-            <th>Recommendation</th>
-            <th>Content Type</th>
-            <th>Confidence</th>
-            <th>Reason</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${pageRows.map((o, i) => {
-            const idx = opportunities.indexOf(o);
-            const landingPage = o.landing_page || o.page || '';
-            const lpType = o.landing_page_type || '';
-            const lpUrl = o.landing_page_url || (/^https?:\/\//i.test(landingPage) ? landingPage : '');
-            const lpInner = lpUrl
-              ? `<a href="${escapeHtml(lpUrl)}" target="_blank" rel="noopener">${escapeHtml(landingPage)}</a>`
-              : `<span>${escapeHtml(landingPage || '—')}</span>`;
-            const lpBadge = lpType === 'existing'
-              ? `<span style="font-size:9px;padding:2px 7px;margin-left:6px;border-radius:4px;background:var(--green-glow);color:var(--green);">existing</span>`
-              : lpType === 'suggested_new'
-                ? `<span style="font-size:9px;padding:2px 7px;margin-left:6px;border-radius:4px;background:var(--accent-glow);color:var(--accent);">suggested</span>`
-                : '';
-            const pageCell = `${lpInner}${lpBadge}`;
-            const page = landingPage;
-            const gapLabel = o.is_gap ? `<span class="badge badge-gap" style="font-size:9px;padding:2px 7px;margin-left:4px;">GAP</span>` : '';
-            const ctLabel = o.content_type ? `<span class="badge badge-${contentTypeBadge(o.content_type)}">${escapeHtml(o.content_type)}</span>` : '—';
-            const confVal = o.confidence != null ? o.confidence : '—';
-            const confColor = o.confidence >= 85 ? 'var(--green)' : o.confidence >= 70 ? 'var(--yellow)' : 'var(--text-muted)';
-            const commercial = o.commercial_potential || '—';
-            const commColor = commercial === 'High' ? 'var(--green)' : commercial === 'Medium' ? 'var(--yellow)' : 'var(--text-muted)';
-            const reasonText = o.reason || '';
-            return `
-              <tr>
-                <td>${start + i + 1}</td>
-                <td><span class="badge badge-${safeBadgeClass(o.priority)}">${escapeHtml(o.priority || 'Low')}</span></td>
-                <td class="opp-keyword-cell">${escapeHtml(o.keyword || '')}${gapLabel}${approvalBadge(o.approval_status)}</td>
-                <td class="opp-page-cell" title="${escapeHtml(page || '—')}">${pageCell}</td>
-                <td>${formatNumber(o.position)}</td>
-                <td>${formatNumber(o.impressions)}</td>
-                <td>${formatNumber(o.clicks)}</td>
-                <td>${(o.ctr != null && o.ctr !== '') ? escapeHtml(String(o.ctr)) : '—'}</td>
-                <td><span class="badge badge-${safeBadgeClass(o.intent)}">${escapeHtml(o.intent || 'MOFU')}</span></td>
-                <td style="color:${commColor};font-weight:600;">${escapeHtml(commercial)}</td>
-                <td>${scoreValue(o)}</td>
-                <td><span class="badge badge-${recommendationBadge(o.recommendation)}">${escapeHtml(recommendationLabel(o.recommendation))}</span></td>
-                <td>${ctLabel}</td>
-                <td style="color:${confColor};font-weight:700;">${confVal !== '—' ? confVal + '%' : '—'}</td>
-                <td class="opp-reason-cell" title="${escapeHtml(reasonText)}" onclick="showReasonModal(${idx})">${escapeHtml(reasonText || '—')}</td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
+    <div class="topic-grid">
+      ${pageRows.map((o, i) => {
+        const idx = opportunities.indexOf(o);
+        const landingPage = o.landing_page || o.page || '';
+        const lpType = o.landing_page_type || '';
+        const lpUrl = o.landing_page_url || (/^https?:\/\//i.test(landingPage) ? landingPage : '');
+        const lpBadge = lpType === 'existing'
+          ? `<span class="tbadge" style="color:var(--green);border-color:var(--green-glow);background:var(--green-glow);">existing page</span>`
+          : lpType === 'suggested_new'
+            ? `<span class="tbadge tbadge-ai">suggested page</span>`
+            : '';
+        const gapLabel = o.is_gap ? `<span class="tbadge" style="color:var(--crimson);">GAP</span>` : '';
+        const ctLabel = o.content_type ? `<span class="tbadge">${escapeHtml(o.content_type)}</span>` : '';
+        const confVal = o.confidence != null ? o.confidence : '—';
+        const confColor = o.confidence >= 85 ? 'var(--green)' : o.confidence >= 70 ? 'var(--yellow)' : 'var(--text-muted)';
+        const commercial = o.commercial_potential || '—';
+        const commColor = commercial === 'High' ? 'var(--green)' : commercial === 'Medium' ? 'var(--yellow)' : 'var(--text-muted)';
+        const reasonText = o.reason || 'No reason available.';
+        const pageLine = landingPage
+          ? (lpUrl
+              ? `<div class="topic-meta-line"><span class="topic-meta-key">Page</span> <a href="${escapeHtml(lpUrl)}" target="_blank" rel="noopener">${escapeHtml(landingPage)}</a></div>`
+              : `<div class="topic-meta-line"><span class="topic-meta-key">Page</span> ${escapeHtml(landingPage)}</div>`)
+          : `<div class="topic-meta-line"><span class="topic-meta-key">Page</span> No existing page — new content</div>`;
+        return `
+          <div class="topic-card">
+            <div class="topic-title">${start + i + 1}. ${escapeHtml(o.keyword || '')}${approvalBadge(o.approval_status)}</div>
+            <div class="topic-badges">
+              <span class="tbadge tbadge-${safeBadgeClass(o.priority)}">${escapeHtml(o.priority || 'Low')} priority</span>
+              <span class="tbadge tbadge-${safeBadgeClass(o.intent)}">${escapeHtml(o.intent || 'MOFU')}</span>
+              <span class="tbadge tbadge-${recommendationBadge(o.recommendation)}">${escapeHtml(recommendationLabel(o.recommendation))}</span>
+              ${ctLabel}
+              ${lpBadge}
+              ${gapLabel}
+            </div>
+            <div class="topic-metrics">
+              <div class="tmetric"><div class="tmetric-value">${formatNumber(o.position)}</div><div class="tmetric-label">Position</div></div>
+              <div class="tmetric"><div class="tmetric-value">${formatNumber(o.impressions)}</div><div class="tmetric-label">Impressions</div></div>
+              <div class="tmetric"><div class="tmetric-value">${(o.ctr != null && o.ctr !== '') ? escapeHtml(String(o.ctr)) : '—'}</div><div class="tmetric-label">CTR</div></div>
+            </div>
+            <div class="topic-rec"><span class="dot"></span>Score ${scoreValue(o)}/100 · <span style="color:${confColor};">${confVal !== '—' ? confVal + '% confidence' : 'confidence n/a'}</span> · <span style="color:${commColor};">${escapeHtml(commercial)} commercial</span></div>
+            <div class="topic-reason">${escapeHtml(reasonText.length > 160 ? reasonText.slice(0, 160) + '…' : reasonText)}</div>
+            ${pageLine}
+            <div style="margin-top:10px;">
+              <button class="btn btn-sm btn-secondary" style="width:100%;" onclick="showReasonModal(${idx})">Review</button>
+            </div>
+          </div>
+        `;
+      }).join('')}
     </div>
     <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:14px;">
       <span style="font-size:12px;color:var(--text-muted);">Page ${oppCurrentPage} of ${totalPages}</span>
@@ -2887,6 +2856,9 @@ function renderFunnelTopics(d) {
   document.getElementById('loading').classList.remove('active');
   document.getElementById('results-section').classList.remove('hidden');
   opportunities = [];
+  semrushTopicsFlat = [];
+  topicFunnelFilter = 'all';
+  topicStagePages = {};
   // Data accountability: this is SEMrush keyword data — Results & Monitor must
   // show the funnel-topics report, never leftover GSC opportunity rows.
   lastAnalysisSource = 'keyword_research';
@@ -2909,8 +2881,6 @@ function renderFunnelTopics(d) {
   const raw = document.getElementById('rawSections');
   if (raw) { raw.classList.add('hidden'); raw.innerHTML = ''; }
 
-  const funnels = Array.isArray(d.funnels) ? d.funnels : [];
-  const sections = funnels.map(f => funnelStageHtml(f)).join('');
   const ai = d.ai || {};
   const aiLine = d.strategist === 'ai'
     ? `<span style="color:var(--accent);font-weight:700;">✦ AI Content Strategy Engine</span> analyzed the top ${formatNumber(ai.enriched || 0)} topics — funnel stage, search intent, commercial potential, content decision (new vs existing vs no action), titles and reasoning. Remaining topics use the deterministic rule engine.`
@@ -2920,16 +2890,74 @@ function renderFunnelTopics(d) {
     ? `<div style="margin-top:5px;font-size:12px;opacity:.85;">${escapeHtml(inventory.note)}</div>` : '';
   document.getElementById('oppsTable').innerHTML = `
     ${d.message ? `<div class="alert alert-info">${escapeHtml(d.message)}<div style="margin-top:6px;font-size:12px;opacity:.85;">${aiLine}</div>${inventoryLine}</div>` : ''}
-    ${sections || '<div class="alert alert-warning">No topics could be built from this keyword file.</div>'}
+    <div id="funnelFilterPills"></div>
+    <div id="funnelSectionsHost"></div>
   `;
+  renderFunnelFilterPills();
+  renderFunnelSections();
+}
+
+// Pill row — All / TOFU / MOFU / BOFU. Filtering shows one funnel stage at a
+// time instead of stacking all three (shorter scroll), per the spec's
+// "Tabs or filters: All / TOFU / MOFU / BOFU" requirement.
+function renderFunnelFilterPills() {
+  const host = document.getElementById('funnelFilterPills');
+  if (!host) return;
+  const d = lastKeywordTopicsResult;
+  const funnels = Array.isArray(d && d.funnels) ? d.funnels : [];
+  const counts = { all: funnels.reduce((n, f) => n + (f.topic_count || (f.topics || []).length), 0) };
+  funnels.forEach(f => { counts[f.stage] = f.topic_count || (f.topics || []).length; });
+  const tabs = [
+    { key: 'all', label: 'All' },
+    { key: 'TOFU', label: 'TOFU' },
+    { key: 'MOFU', label: 'MOFU' },
+    { key: 'BOFU', label: 'BOFU' },
+  ];
+  host.innerHTML = `
+    <div class="upload-mode-toggle" style="margin-bottom:18px;">
+      ${tabs.map(tab => `
+        <button type="button" class="upload-mode-btn ${topicFunnelFilter === tab.key ? 'active' : ''}"
+          onclick="setTopicFunnelFilter('${tab.key}')">${tab.label} (${formatNumber(counts[tab.key] || 0)})</button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function setTopicFunnelFilter(filter) {
+  topicFunnelFilter = filter;
+  renderFunnelFilterPills();
+  renderFunnelSections();
+}
+
+function renderFunnelSections() {
+  const host = document.getElementById('funnelSectionsHost');
+  if (!host) return;
+  const d = lastKeywordTopicsResult;
+  const funnels = Array.isArray(d && d.funnels) ? d.funnels : [];
+  const visible = topicFunnelFilter === 'all' ? funnels : funnels.filter(f => f.stage === topicFunnelFilter);
+  semrushTopicsFlat = [];
+  const sections = visible.map(f => funnelStageHtml(f)).join('');
+  host.innerHTML = sections || '<div class="alert alert-warning">No topics in this view.</div>';
 }
 
 function funnelStageHtml(f) {
   const stage = String(f.stage || '').toLowerCase();
-  const topics = Array.isArray(f.topics) ? f.topics : [];
-  if (!topics.length) return '';
-  const more = (f.topic_count || topics.length) - topics.length;
-  const cards = topics.map(topicCardHtml).join('');
+  const allTopics = Array.isArray(f.topics) ? f.topics : [];
+  if (!allTopics.length) return '';
+  const totalFetched = allTopics.length;
+  const totalReal = f.topic_count || totalFetched;
+  const notFetched = totalReal - totalFetched; // exists server-side but beyond the fetched cap
+  const totalPages = Math.max(1, Math.ceil(totalFetched / TOPIC_PAGE_SIZE));
+  let page = topicStagePages[f.stage] || 1;
+  if (page > totalPages) page = totalPages;
+  topicStagePages[f.stage] = page;
+  const start = (page - 1) * TOPIC_PAGE_SIZE;
+  const pageTopics = allTopics.slice(start, start + TOPIC_PAGE_SIZE);
+  const end = start + pageTopics.length;
+  const cards = pageTopics.map(t => {
+    semrushTopicsFlat.push(t);
+    return topicCardHtml(t, semrushTopicsFlat.length - 1);
+  }).join('');
   return `
     <div class="funnel-stage funnel-${escapeHtml(stage)}">
       <div class="funnel-head">
@@ -2937,18 +2965,30 @@ function funnelStageHtml(f) {
         <div style="flex:1;">
           <div class="funnel-head-title">
             ${escapeHtml(f.label || f.stage || '')}
-            <span class="funnel-count">${formatNumber(f.topic_count || topics.length)} topics · ${formatNumber(f.keyword_count || 0)} keywords</span>
+            <span class="funnel-count">${formatNumber(totalReal)} topics · ${formatNumber(f.keyword_count || 0)} keywords</span>
           </div>
           <div class="funnel-head-desc">${escapeHtml(f.description || '')}</div>
         </div>
       </div>
       <div class="topic-grid">${cards}</div>
-      ${more > 0 ? `<div style="margin-top:12px;font-size:12px;color:var(--text-muted);">+ ${formatNumber(more)} more ${escapeHtml(f.stage || '')} topics (showing top ${topics.length} by opportunity score)</div>` : ''}
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:14px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--text-muted);">
+          Showing ${formatNumber(start + 1)}-${formatNumber(end)} of ${formatNumber(totalFetched)}${notFetched > 0 ? ` (+ ${formatNumber(notFetched)} more not fetched — refine the upload to narrow this down)` : ''} · Page ${page} of ${totalPages}
+        </span>
+        <button class="btn btn-sm btn-secondary" onclick="changeTopicStagePage('${escapeHtml(f.stage || '')}', -1)" ${page <= 1 ? 'disabled' : ''}>Prev</button>
+        <button class="btn btn-sm btn-primary" onclick="changeTopicStagePage('${escapeHtml(f.stage || '')}', 1)" ${page >= totalPages ? 'disabled' : ''}>Next</button>
+      </div>
     </div>
   `;
 }
 
-function topicCardHtml(t) {
+function changeTopicStagePage(stage, delta) {
+  const cur = topicStagePages[stage] || 1;
+  topicStagePages[stage] = Math.max(1, cur + delta);
+  renderFunnelSections();
+}
+
+function topicCardHtml(t, idx) {
   const ct = String(t.content_type || '').toLowerCase().includes('landing') ? 'landing' : 'blog';
   const pr = String(t.priority || '').toLowerCase();
   const kws = Array.isArray(t.keywords) ? t.keywords : [];
@@ -2967,7 +3007,7 @@ function topicCardHtml(t) {
   const cta = t.cta ? `<div class="topic-meta-line"><span class="topic-meta-key">${ct === 'landing' ? 'CTA' : 'Hook'}</span> ${escapeHtml(t.cta)}</div>` : '';
   return `
     <div class="topic-card">
-      <div class="topic-title">${escapeHtml(t.title || t.topic || '')}</div>
+      <div class="topic-title">${escapeHtml(t.title || t.topic || '')}${approvalBadge(t.approval_status)}</div>
       <div class="topic-badges">
         <span class="tbadge tbadge-${ct}">${escapeHtml(t.content_type || '')}</span>
         <span class="tbadge tbadge-${pr}">${escapeHtml(t.priority || '')} priority</span>
@@ -2987,12 +3027,116 @@ function topicCardHtml(t) {
       ${persona}
       ${cta}
       ${kws.length ? `<details class="topic-keywords"><summary>${kws.length} keyword${kws.length === 1 ? '' : 's'}</summary><div class="topic-kw-list">${kwChips}</div></details>` : ''}
+      <div style="margin-top:10px;">
+        <button class="btn btn-sm btn-secondary" style="width:100%;" onclick="showTopicModal(${idx})">Review</button>
+      </div>
     </div>
   `;
 }
 
-// Shared builder: one paginated card per GSC section (100 rows/page).
+// Full-detail container for one SEMrush topic — same modal pattern as showReasonModal.
+function showTopicModal(idx) {
+  const t = semrushTopicsFlat[idx];
+  if (!t) return;
+  const kws = Array.isArray(t.keywords) ? t.keywords : [];
+  const secondary = kws.map(k => escapeHtml(k.keyword || '')).filter(Boolean);
+  const metric = (label, val) => `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;"><div style="font-size:10px;color:var(--text-muted);">${label}</div><div style="font-weight:700;font-size:15px;">${val}</div></div>`;
+  const existing = document.getElementById('topic-modal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'topic-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:640px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,0.5);max-height:90vh;overflow:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+        <div>
+          <div style="font-size:17px;font-weight:700;margin-bottom:4px;">${escapeHtml(t.title || t.topic || '')}</div>
+          <div style="font-size:12px;color:var(--text-muted);">Primary keyword: ${escapeHtml(t.primary_keyword || t.topic || '—')}</div>
+        </div>
+        <button onclick="document.getElementById('topic-modal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+        ${metric('Funnel', escapeHtml(t.funnel || '—'))}
+        ${metric('Search Intent', escapeHtml(t.search_intent || '—'))}
+        ${metric('Commercial', escapeHtml(t.commercial_potential || '—'))}
+        ${metric('Search Volume', formatNumber(t.volume_total || 0))}
+        ${metric('Keyword Difficulty', t.avg_keyword_difficulty ?? '—')}
+        ${metric('Priority', escapeHtml(t.priority || '—'))}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">RECOMMENDED ACTION</div>
+          <div style="font-weight:700;">${escapeHtml(t.recommendation || '—')}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">RECOMMENDED CONTENT TYPE</div>
+          <div style="font-weight:700;">${escapeHtml(t.content_type || '—')}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">CONFIDENCE</div>
+          <div style="font-weight:700;font-size:20px;">${t.confidence != null ? t.confidence + '%' : '—'}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">SCORE</div>
+          <div style="font-weight:700;font-size:20px;color:var(--accent);">${t.score || 0}/100</div>
+        </div>
+      </div>
+      ${t.persona ? `<div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:12px;"><div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">TARGET AUDIENCE</div><div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${escapeHtml(t.persona)}</div></div>` : ''}
+      ${t.cta ? `<div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:12px;"><div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">SUGGESTED CTA</div><div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${escapeHtml(t.cta)}</div></div>` : ''}
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">REASON FOR THIS RECOMMENDATION</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${escapeHtml(t.reason || 'No reason available.')}</div>
+      </div>
+      ${secondary.length ? `<div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:18px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">SECONDARY KEYWORDS (${secondary.length})</div>
+        <div class="topic-kw-list">${secondary.map(k => `<span class="topic-kw">${k}</span>`).join('')}</div>
+      </div>` : ''}
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span style="font-size:11px;color:var(--text-muted);">APPROVAL</span>${approvalBadge(t.approval_status)}
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-sm" style="background:var(--green);color:#06281f;border:none;" onclick="setTopicApproval(${idx},'approve')">Approve</button>
+          <button class="btn btn-sm" style="background:var(--crimson);color:#fff;border:none;" onclick="setTopicApproval(${idx},'reject')">Reject</button>
+          <button class="btn btn-sm" style="background:var(--yellow);color:#3a2e05;border:none;" onclick="setTopicApproval(${idx},'block')">Block</button>
+        </div>
+        <button class="btn btn-primary" onclick="document.getElementById('topic-modal').remove()">Close</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+// Approve/reject/block a SEMrush topic — reuses the same Stage 1A approval
+// queue backend as GSC opportunities (/api/queue/{key}/{action} is generic;
+// it just persists {key: status}, no GSC-specific lookup), keyed by the
+// topic's primary keyword so it shows up in the same approval history.
+async function setTopicApproval(idx, action) {
+  const t = semrushTopicsFlat[idx];
+  if (!t) return;
+  const statusMap = { approve: 'approved', reject: 'rejected', block: 'blocked' };
+  const key = t.primary_keyword || t.topic || t.title || ('topic-' + idx);
+  try {
+    await fetch(BASE + '/api/queue/' + encodeURIComponent(key) + '/' + action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: '' }),
+    });
+    t.approval_status = statusMap[action] || t.approval_status;
+  } catch (e) {
+    showToast('Could not update approval: ' + e, 'error');
+    return;
+  }
+  if (lastKeywordTopicsResult) renderFunnelTopics(lastKeywordTopicsResult);
+  showTopicModal(idx);
+}
+
+// Shared builder: one paginated card grid per GSC section (100 rows/page).
+// Every row renders as a container card, never a <table> — click a card for
+// the full row detail in a modal (mirrors the SEMrush topic-card pattern).
 function gscSectionsHtml(sections, pageState, changeFnName) {
+  window.__lastGscSections = sections;
   return sections.map((section, idx) => {
     const columns = Array.isArray(section.columns) ? section.columns : [];
     const rows = Array.isArray(section.rows) ? section.rows : [];
@@ -3007,20 +3151,35 @@ function gscSectionsHtml(sections, pageState, changeFnName) {
     const grandTotal = section.total_rows != null ? section.total_rows : total;
     const truncNote = grandTotal > total ? ` (first ${formatNumber(total)} of ${formatNumber(grandTotal)})` : '';
 
-    const head = columns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
-    const body = pageRows.map(r => `<tr>${columns.map(c => `<td title="${escapeHtml(r[c] ?? '')}">${renderGscCell(r[c], c)}</td>`).join('')}</tr>`).join('');
+    const primaryCol = columns[0];
+    const metricCols = columns.slice(1, 4);
+    const extraCols = columns.slice(4);
+    const cards = pageRows.map((r, i) => {
+      const rowIdx = start + i;
+      const primaryVal = renderGscCell(r[primaryCol], primaryCol);
+      const metrics = metricCols.map(c => `
+        <div class="tmetric"><div class="tmetric-value">${renderGscCell(r[c], c)}</div><div class="tmetric-label">${escapeHtml(c)}</div></div>
+      `).join('');
+      const extraLines = extraCols.map(c => `<div class="topic-meta-line"><span class="topic-meta-key">${escapeHtml(c)}</span> ${renderGscCell(r[c], c)}</div>`).join('');
+      return `
+        <div class="topic-card">
+          <div class="topic-title" style="word-break:break-word;">${primaryVal}</div>
+          ${metrics ? `<div class="topic-metrics">${metrics}</div>` : ''}
+          ${extraLines}
+          <div style="margin-top:10px;">
+            <button class="btn btn-sm btn-secondary" style="width:100%;" onclick="showGscRowModal(${idx}, ${rowIdx})">Review</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
     return `
       <div class="card">
         <div class="results-card-header">
           <div class="card-title">${escapeHtml(section.label || 'GSC Data')}</div>
           <span style="font-size:12px;color:var(--text-muted);">Showing ${formatNumber(start + 1)}-${formatNumber(end)} of ${formatNumber(total)}${truncNote}</span>
         </div>
-        <div class="table-wrap opportunities-table-wrap">
-          <table>
-            <thead><tr>${head}</tr></thead>
-            <tbody>${body}</tbody>
-          </table>
-        </div>
+        <div class="topic-grid">${cards}</div>
         <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:14px;">
           <span style="font-size:12px;color:var(--text-muted);">Page ${page} of ${totalPages}</span>
           <button class="btn btn-sm btn-secondary" onclick="${changeFnName}(${idx}, -1)" ${page <= 1 ? 'disabled' : ''}>Prev</button>
@@ -3029,6 +3188,40 @@ function gscSectionsHtml(sections, pageState, changeFnName) {
       </div>
     `;
   }).join('');
+}
+
+// Full-detail container for one GSC row — same modal pattern as showReasonModal.
+function showGscRowModal(sectionIdx, rowIdx) {
+  const sections = window.__lastGscSections || [];
+  const section = sections[sectionIdx];
+  const row = section ? (section.rows || [])[rowIdx] : null;
+  if (!section || !row) return;
+  const columns = Array.isArray(section.columns) ? section.columns : [];
+  const existing = document.getElementById('gsc-row-modal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'gsc-row-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;';
+  const fields = columns.map(c => `
+    <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">${escapeHtml(c).toUpperCase()}</div>
+      <div style="font-weight:600;font-size:14px;word-break:break-word;">${renderGscCell(row[c], c)}</div>
+    </div>
+  `).join('');
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:600px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,0.5);max-height:90vh;overflow:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+        <div style="font-size:17px;font-weight:700;">${escapeHtml(section.label || 'GSC Data')}</div>
+        <button onclick="document.getElementById('gsc-row-modal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:10px;">${fields}</div>
+      <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+        <button class="btn btn-primary" onclick="document.getElementById('gsc-row-modal').remove()">Close</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
 }
 
 function renderGscSections() {

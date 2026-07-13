@@ -1,3 +1,6 @@
+# CLI/monthly-report pipeline only (invoked from app/main.py), separate from
+# the live FastAPI web app's Stage 1A pipeline (jobs.py -> app/api.py, using
+# agents/funnel_topics.py for classification). Do not wire this into the web API.
 import json
 
 from agents.topic_discovery import TopicDiscoveryAgent

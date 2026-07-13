@@ -51,10 +51,10 @@ approved_existing_page_actions:
   score: 51
   confidence: 47
   gsc_position: 88
-  impressions: 38
+  impressions: 39
   clicks: 0
   ctr: 0.0%
-  reason: 'Gap keyword: site appears at position 88 but ranks poorly. 38 impressions
+  reason: 'Gap keyword: site appears at position 88 but ranks poorly. 39 impressions
     going uncaptured. A dedicated New Landing Page would fully satisfy this demand.
     MOFU intent with medium commercial potential. Score: 51/100.'
   approval_status: needs_review
@@ -77,6 +77,26 @@ approved_existing_page_actions:
   reason: 'Gap keyword: site appears at position 91 but ranks poorly. 11 impressions
     going uncaptured. A dedicated New Landing Page would fully satisfy this demand.
     MOFU intent with medium commercial potential. Score: 51/100.'
+  approval_status: needs_review
+  next_stage: Stage 1B or Stage 2 content brief
+- keyword: self storage help
+  landing_page: https://selfstorage.help/
+  landing_page_url: https://selfstorage.help/
+  page: https://selfstorage.help/
+  recommendation: Create New Content
+  content_type: New Landing Page
+  intent: MOFU
+  commercial_potential: Medium
+  priority: Low
+  score: 50
+  confidence: 47
+  gsc_position: 75
+  impressions: 1
+  clicks: 0
+  ctr: 0.0%
+  reason: 'Gap keyword: site appears at position 75 but ranks poorly. 1 impressions
+    going uncaptured. A dedicated New Landing Page would fully satisfy this demand.
+    MOFU intent with medium commercial potential. Score: 50/100.'
   approval_status: needs_review
   next_stage: Stage 1B or Stage 2 content brief
 - keyword: self storage seo companies

@@ -17,21 +17,36 @@ the research source, generated artifact, validation rules and destination.
 
 ## Current live-site status
 
-Checked on 13 July 2026:
+Updated 13 July 2026:
 
-- `selfstorage.help` is a custom Next.js website hosted on Vercel.
-- Its public sitemap currently lists 20 URLs.
-- Two article URLs are listed under `/blog/`: `testing` and
-  `welcome-to-the-blog`.
-- The site does not expose a public WordPress REST API.
-- No authenticated custom publishing endpoint or CMS credential is configured
-  in this Kriti checkout.
+- `selfstorage.help` is a Next.js website hosted on Vercel, source at
+  `github.com/devmaai/self-v1`, using a self-hosted TinaCMS (Git-backed —
+  content is Markdown files in `content/posts`, not a REST API TinaCMS itself
+  exposes for writes; Tina Cloud's own content token is read-only).
+- Confirmed real schema (from that repo's `tina/config.ts`): collection
+  `post`, path `content/posts`, format `.md`, fields `title` (string),
+  `date` (datetime), `excerpt` (string), `coverImage` (image, optional),
+  `published` (boolean), `body` (rich-text/markdown).
+- `integrations/cms_client.py`'s `CMSPublisher` now supports `cms_type=github`:
+  it commits a Markdown file (built by `draft_to_tina_markdown()`, matching
+  the schema above) to a new branch and opens a pull request — it never
+  commits directly to the base branch. Going live still requires a human to
+  merge the PR; the adapter always reports `status: cms_draft`, never
+  `published`, regardless of the `publish_now` flag, since opening a PR is
+  never itself "live."
+- This was manually validated end-to-end against the real repo (branch → file
+  → PR → merge → Vercel deploy → live URL, then reverted) before this adapter
+  was written, so the schema and workflow are confirmed, not assumed.
+- Not yet done: no `CMS_TYPE=github` / `CMS_GITHUB_OWNER` / `CMS_GITHUB_REPO` /
+  `CMS_API_KEY` values are set in this Kriti checkout's running environment —
+  set those (see `.env.example`) to make `/api/publish` actually usable for
+  this site. Use a fine-grained GitHub PAT scoped to only that repo
+  (Contents: read/write, Pull requests: read/write, Metadata: read).
+- WordPress is not applicable here — the site does not expose a WordPress
+  REST API.
 
-This means Kriti can create, save and validate drafts now. Remote draft creation
-or live publishing becomes available as soon as the SelfStorage.help site
-provides the authenticated endpoint described below and its token is configured.
-The UI and API report this as a blocker; they never return a fake post ID or
-claim that a local JSON file is live.
+The UI and API report missing configuration as a blocker; they never return a
+fake post ID or claim that a local JSON file (or an open, unmerged PR) is live.
 
 ## End-to-end blog workflow
 
@@ -170,6 +185,15 @@ Unlike the previous placeholder, this route calls the remote adapter and only
 saves a publish record after a 2xx response.
 
 ## SelfStorage.help publishing endpoint contract
+
+**Superseded for selfstorage.help specifically** — the section below describes
+a hypothetical custom REST endpoint the site would need to build. That's no
+longer necessary: selfstorage.help runs Git-backed TinaCMS, so
+`CMS_TYPE=github` (see "Current live-site status" above and
+`integrations/cms_client.py`) publishes by opening a pull request directly
+against `github.com/devmaai/self-v1`, no new site endpoint required. This
+section is kept as the fallback contract for a future site that isn't
+Git-backed and does need a real custom API.
 
 Because SelfStorage.help is a custom Next.js/Vercel site, add a protected
 server-side route in that site's repository, for example:

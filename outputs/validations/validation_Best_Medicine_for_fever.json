@@ -1,21 +1,21 @@
 {
   "keyword": "Best Medicine for fever",
-  "title": "Best Medicine for fever",
-  "client": "jake",
-  "validated_at": "2026-07-01T01:52:06.341171",
-  "overall_status": "fail",
+  "title": "Best Medicine for Fever: What Storage Operators Need to Know",
+  "client": "default",
+  "validated_at": "2026-07-13T05:46:11.101845",
+  "overall_status": "review",
   "agents": {
     "seo_gate": {
       "agent": "SEO Gate",
-      "passed": 3,
-      "total": 9,
-      "score": 33,
-      "status": "fail",
+      "passed": 7,
+      "total": 10,
+      "score": 70,
+      "status": "review",
       "checks": [
         {
           "check": "Keyword in title",
           "pass": true,
-          "detail": "Title: Best Medicine for fever"
+          "detail": "Title: Best Medicine for Fever: What Storage Operators Need to Know"
         },
         {
           "check": "Keyword in first paragraph",
@@ -34,8 +34,8 @@
         },
         {
           "check": "Meta description provided",
-          "pass": false,
-          "detail": "Length: 3 chars"
+          "pass": true,
+          "detail": "Length: 140 chars"
         },
         {
           "check": "URL slug provided",
@@ -44,66 +44,52 @@
         },
         {
           "check": "Word count >= 1000",
-          "pass": false,
-          "detail": "Current: 549 words"
+          "pass": true,
+          "detail": "Current: 1037 words"
         },
         {
           "check": "At least 2 internal links",
-          "pass": false,
-          "detail": "Found: 0 links"
+          "pass": true,
+          "detail": "Found: 4 links"
         },
         {
           "check": "Images have alt text",
           "pass": false,
           "detail": "Images: 0, Alt texts: 0"
+        },
+        {
+          "check": "FAQ section present",
+          "pass": true,
+          "detail": "A focused FAQ is required by the MAAI blog template"
         }
       ]
     },
     "fact_check": {
       "agent": "Fact Check",
-      "status": "review",
-      "issues": [
-        {
-          "type": "many_specific_numbers",
-          "message": "Found 9 specific numbers/figures. Verify all are sourced.",
-          "count": 9
-        }
-      ],
-      "issue_count": 1,
-      "message": "1 potential issues found \u2014 human review required"
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "message": "No obvious issues detected"
     },
     "brand_review": {
       "agent": "Brand Review",
-      "status": "fail",
+      "status": "review",
       "issues": [
-        {
-          "type": "em_dash",
-          "message": "Em dashes found \u2014 MAAI house style prohibits em dashes",
-          "severity": "high"
-        },
         {
           "type": "competitor_negative",
           "message": "Potentially negative competitor language: avoid",
           "severity": "medium"
-        },
-        {
-          "type": "long_paragraphs",
-          "message": "1 paragraphs exceed 150 words \u2014 break up for readability",
-          "severity": "low",
-          "paragraph_indices": [
-            9
-          ]
         }
       ],
-      "issue_count": 3,
-      "critical_issues": 1,
-      "message": "3 style issues found"
+      "issue_count": 1,
+      "critical_issues": 0,
+      "message": "1 style issues found"
     }
   },
   "summary": {
-    "seo_score": 33,
-    "fact_issues": 1,
-    "brand_issues": 3,
-    "total_issues": 10
+    "seo_score": 70,
+    "fact_issues": 0,
+    "brand_issues": 1,
+    "total_issues": 4
   }
 }
