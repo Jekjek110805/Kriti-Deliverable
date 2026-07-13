@@ -32,9 +32,10 @@ Funnel mapping (SEMrush Intent -> stage), the industry standard:
 Multi-intent keywords ("Informational, Transactional") take the DEEPEST stage.
 
 Existing-page awareness is optional. The SEMrush file carries no information
-about the client's own site, so by default every topic is "Create New". If a
-plain list of existing page URLs is supplied, topics whose keywords clearly map
-to an existing page are upgraded to "Improve Existing" / "No Change".
+about the client's own site, so by default every topic is "New Blog" / "New
+Landing Page". If a plain list of existing page URLs is supplied, topics whose
+keywords clearly map to an existing page are upgraded to "Existing Blog" /
+"Existing Landing Page" (improve it) or "No Action Required" (already covered).
 """
 
 from __future__ import annotations
@@ -285,6 +286,31 @@ def _priority(score: int) -> str:
     return "Low"
 
 
+# Per-stage search-intent label used when SEMrush left the Intent column blank.
+_STAGE_INTENT = {"TOFU": "Informational", "MOFU": "Commercial", "BOFU": "Transactional"}
+
+
+def _commercial_potential(stage: str, avg_cpc: float, volume_total: int) -> str:
+    """Deterministic High/Medium/Low commercial-potential baseline.
+
+    Funnel depth is the strongest signal (BOFU searchers are buyers), CPC shows
+    what advertisers pay for the click, and volume scales the opportunity. The
+    AI strategist layer may override this with judgement.
+    """
+    points = {"TOFU": 0, "MOFU": 1, "BOFU": 2}.get(stage, 0)
+    if avg_cpc >= 3.0:
+        points += 2
+    elif avg_cpc >= 1.0:
+        points += 1
+    if volume_total >= 1000:
+        points += 1
+    if points >= 3:
+        return "High"
+    if points >= 2:
+        return "Medium"
+    return "Low"
+
+
 def _confidence(cluster_size: int, single_intent: bool, has_volume: bool,
                 intent_source: str) -> int:
     conf = 60
@@ -383,14 +409,16 @@ def build_topics(keyword_rows: List[Dict[str, Any]],
         volume_total = bucket["volume_total"]
         score = _score(volume_total, avg_kd, avg_cpc, cluster_size)
 
-        # Recommendation: no site data -> Create New; else match existing pages.
+        # Recommendation enum: New Blog | Existing Blog | New Landing Page |
+        # Existing Landing Page | No Action Required. Without site data every
+        # topic defaults to New; existing-page matches upgrade the call.
         match = _match_existing(key_tokens, existing_pages)
         if match:
             covered_well = match["coverage"] >= 0.9
-            recommendation = "No Change" if covered_well else "Improve Existing"
+            recommendation = "No Action Required" if covered_well else f"Existing {content_type}"
             target_page = match["page"].get("url", "")
         else:
-            recommendation = f"Create New {content_type}"
+            recommendation = f"New {content_type}"
             target_page = ""
 
         # Provenance of the DISPLAYED stage = how the head keyword was decided.
@@ -398,10 +426,17 @@ def build_topics(keyword_rows: List[Dict[str, Any]],
         single_intent = len(bucket["intents"]) <= 1
         confidence = _confidence(cluster_size, single_intent, volume_total > 0, intent_source)
 
+        # Search intent: SEMrush's own label(s) when supplied, otherwise the
+        # canonical intent of the resolved funnel stage.
+        search_intent = ", ".join(sorted(bucket["intents"])) or _STAGE_INTENT[stage]
+
         topics.append({
             "topic": head.title(),
+            "primary_keyword": head,
             "title": _title(head, stage, content_type),
             "funnel": stage,
+            "search_intent": search_intent,
+            "commercial_potential": _commercial_potential(stage, avg_cpc, volume_total),
             "intent_source": intent_source,
             "has_deeper_intent": bucket["has_deeper_intent"],
             "content_type": content_type,
@@ -452,6 +487,39 @@ def group_by_funnel(topics: List[Dict[str, Any]],
         },
         "funnels": funnels,
     }
+
+
+def topics_to_clusters(topics: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Flatten topics into the strict cluster schema of the recommendations API.
+
+    One entry per cluster: primary keyword, secondary keywords, funnel,
+    intent, commercial potential, the content decision and the reasoning.
+    """
+    clusters = []
+    for t in topics:
+        primary = t.get("primary_keyword") or t.get("topic", "")
+        secondary = [
+            k.get("keyword", "") for k in t.get("keywords", [])
+            if k.get("keyword", "").lower() != primary.lower()
+        ]
+        clusters.append({
+            "primary_keyword": primary,
+            "secondary_keywords": secondary,
+            "search_intent": t.get("search_intent", ""),
+            "funnel": t.get("funnel", ""),
+            "commercial_potential": t.get("commercial_potential", ""),
+            "recommended_content": t.get("recommendation", ""),
+            "blog_title": t.get("title", ""),
+            "target_audience": t.get("persona", ""),
+            "target_page": t.get("target_page", ""),
+            "reason": t.get("reason", ""),
+            "priority": t.get("priority", ""),
+            "confidence": t.get("confidence", 0),
+            "monthly_volume": t.get("volume_total", 0),
+            "avg_keyword_difficulty": t.get("avg_keyword_difficulty", 0),
+            "strategist": t.get("strategist", "rule-based"),
+        })
+    return clusters
 
 
 def build_funnel_topics(keyword_rows: List[Dict[str, Any]],

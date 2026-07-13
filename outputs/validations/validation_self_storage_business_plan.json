@@ -1,0 +1,90 @@
+{
+  "keyword": "self storage business plan",
+  "title": "How to Write a Self Storage Business Plan: A Practical Guide",
+  "client": "selfstorage.help",
+  "template_version": "maai-blog-sop-v1",
+  "validated_at": "2026-07-13T05:10:47.800048",
+  "overall_status": "review",
+  "agents": {
+    "seo_gate": {
+      "agent": "SEO Gate",
+      "passed": 9,
+      "total": 10,
+      "score": 90,
+      "status": "review",
+      "checks": [
+        {
+          "check": "Keyword in title",
+          "pass": true,
+          "detail": "Title: How to Write a Self Storage Business Plan: A Practical Guide"
+        },
+        {
+          "check": "Keyword in first paragraph",
+          "pass": true,
+          "detail": "First 500 characters checked"
+        },
+        {
+          "check": "Keyword in at least one H2",
+          "pass": true,
+          "detail": "H2 headings checked"
+        },
+        {
+          "check": "TLDR at top",
+          "pass": true,
+          "detail": "TLDR section should be at the very top"
+        },
+        {
+          "check": "Meta description provided",
+          "pass": true,
+          "detail": "Length: 160 chars"
+        },
+        {
+          "check": "URL slug provided",
+          "pass": true,
+          "detail": "how-to-write-a-self-storage-business-plan"
+        },
+        {
+          "check": "Word count >= 1000",
+          "pass": true,
+          "detail": "Current: 1097 words"
+        },
+        {
+          "check": "At least 2 internal links",
+          "pass": true,
+          "detail": "Found: 4 links"
+        },
+        {
+          "check": "Images have alt text",
+          "pass": false,
+          "detail": "Images: 0, Alt texts: 0"
+        },
+        {
+          "check": "FAQ section present",
+          "pass": true,
+          "detail": "A focused FAQ is required by the MAAI blog template"
+        }
+      ]
+    },
+    "fact_check": {
+      "agent": "Fact Check",
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "message": "No obvious issues detected"
+    },
+    "brand_review": {
+      "agent": "Brand Review",
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "critical_issues": 0,
+      "message": "Brand compliant"
+    }
+  },
+  "summary": {
+    "seo_score": 90,
+    "fact_issues": 0,
+    "brand_issues": 0,
+    "total_issues": 1
+  }
+}

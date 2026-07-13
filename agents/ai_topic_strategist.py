@@ -1,5 +1,5 @@
 """
-ai_topic_strategist.py -- Optional AI reasoning layer over funnel topics.
+ai_topic_strategist.py -- AI Content Strategy Engine v1 (reasoning layer).
 
 The deterministic engine (agents/funnel_topics.build_topics) does the heavy,
 repeatable work: parse, clean, dedupe, cluster, compute Volume / KD / CPC and a
@@ -7,12 +7,16 @@ tentative funnel stage + score. THIS module adds the strategist judgement on top
 -- the part that genuinely needs reasoning:
 
   * confirm / correct the funnel stage (buyer journey, not just intent keyword)
-  * Blog vs Landing Page
+  * the search intent behind the cluster
+  * commercial potential (High / Medium / Low)
+  * the content decision: New Blog | Existing Blog | New Landing Page |
+    Existing Landing Page | No Action Required -- not every keyword deserves
+    a new blog post
   * a compelling, specific suggested title
-  * a one-line reason
-  * the target persona who searches this
+  * a one-line business reason
+  * the target persona / audience who searches this
   * a suggested CTA / content hook
-  * a priority call
+  * a priority call and a confidence score
 
 WHY a thin layer (not "send everything to the LLM")
 ----------------------------------------------------
@@ -43,38 +47,59 @@ except Exception:  # pragma: no cover - import guard
 VALID_FUNNELS = {"TOFU", "MOFU", "BOFU"}
 VALID_CONTENT = {"Blog", "Landing Page"}
 VALID_PRIORITY = {"High", "Medium", "Low"}
+VALID_COMMERCIAL = {"High", "Medium", "Low"}
+VALID_RECOMMENDATION = {
+    "New Blog",
+    "Existing Blog",
+    "New Landing Page",
+    "Existing Landing Page",
+    "No Action Required",
+}
 
 
 def _build_prompt(batch: List[Dict[str, Any]]) -> str:
     lines = []
     for item in batch:
         related = ", ".join(k.get("keyword", "") for k in item.get("keywords", [])[:6])
+        existing = item.get("target_page", "")
         lines.append(
-            f'- id {item["_id"]}: primary keyword "{item.get("topic", "")}" '
+            f'- id {item["_id"]}: primary keyword "{item.get("primary_keyword") or item.get("topic", "")}" '
             f'| related: {related or "n/a"} '
             f'| monthly volume {item.get("volume_total", 0)} '
             f'| difficulty(KD) {item.get("avg_keyword_difficulty", 0)} '
             f'| avg CPC ${item.get("avg_cpc", 0)} '
             f'| tentative funnel {item.get("funnel", "TOFU")}'
+            + (f' | existing page: {existing}' if existing else ' | existing page: none known')
         )
     topics_block = "\n".join(lines)
     return (
-        "You are an expert SEO content strategist. Turn each keyword topic below "
-        "into an actionable content recommendation. Think about the buyer journey, "
-        "search intent and commercial value.\n\n"
+        "You are an experienced SEO content strategist (not a copywriter) building "
+        "a content plan from keyword clusters. For each cluster below decide what "
+        "content should exist, why, where it belongs in the funnel, and its "
+        "business value. Think about the buyer journey, search intent and "
+        "commercial value. Not every keyword deserves new content.\n\n"
         "Funnel stages: TOFU = awareness / informational (learning); "
         "MOFU = consideration / commercial (comparing, 'best', reviews, software); "
         "BOFU = decision / transactional (buy, for sale, pricing, near me).\n"
-        "Content type: Blog for informational or comparison topics; "
-        "Landing Page for transactional / buyer topics.\n\n"
-        f"Topics:\n{topics_block}\n\n"
+        "Recommendation rules:\n"
+        "- 'New Blog' for informational / comparison demand with no existing page.\n"
+        "- 'New Landing Page' for transactional / buyer demand with no existing page.\n"
+        "- 'Existing Blog' / 'Existing Landing Page' ONLY when an existing page is "
+        "listed for that cluster and improving it beats creating something new.\n"
+        "- 'No Action Required' when the cluster is too weak, off-topic or already "
+        "fully served -- say so honestly instead of inventing content.\n\n"
+        f"Keyword clusters:\n{topics_block}\n\n"
         "Return ONLY a JSON object of this exact shape:\n"
         '{"topics":[{"id":<int>,"funnel":"TOFU|MOFU|BOFU",'
-        '"content_type":"Blog|Landing Page","title":"<compelling specific title, '
-        'use the year 2026 only when natural>","reason":"<one sentence why>",'
+        '"search_intent":"<intent behind the search, 2-6 words>",'
+        '"commercial_potential":"High|Medium|Low",'
+        '"recommendation":"New Blog|Existing Blog|New Landing Page|Existing Landing Page|No Action Required",'
+        '"title":"<compelling specific title, use the year 2026 only when natural>",'
+        '"reason":"<one sentence: WHY this recommendation, in business terms>",'
         '"persona":"<who searches this, 2-4 words>",'
         '"cta":"<button label for a landing page, or content hook for a blog>",'
-        '"priority":"High|Medium|Low"}]}\n'
+        '"priority":"High|Medium|Low",'
+        '"confidence":<integer 0-100, how sure you are of this recommendation>}]}\n'
         "Include every id exactly once. No commentary outside the JSON."
     )
 
@@ -112,18 +137,46 @@ def _parse_response(text: str) -> Dict[int, Dict[str, Any]]:
 
 
 def _apply(topic: Dict[str, Any], enr: Dict[str, Any]) -> None:
-    """Merge one enrichment onto a topic, validating enumerated fields."""
+    """Merge one enrichment onto a topic, validating enumerated fields.
+
+    Every enum is validated against a whitelist; anything the model got wrong
+    is simply ignored so the deterministic value survives. The LLM never gets
+    to write free-form values into fields the frontend switches on.
+    """
     funnel = str(enr.get("funnel", "")).upper().strip()
     if funnel in VALID_FUNNELS:
         topic["funnel"] = funnel
-    content = str(enr.get("content_type", "")).strip().title().replace("Landing page", "Landing Page")
-    if content in VALID_CONTENT:
-        topic["content_type"] = content
     priority = str(enr.get("priority", "")).strip().title()
     if priority in VALID_PRIORITY:
         topic["priority"] = priority
+    commercial = str(enr.get("commercial_potential", "")).strip().title()
+    if commercial in VALID_COMMERCIAL:
+        topic["commercial_potential"] = commercial
+
+    recommendation = str(enr.get("recommendation", "")).strip().title().replace(
+        "Landing page", "Landing Page")
+    if recommendation in VALID_RECOMMENDATION:
+        # Existing-page calls are only trusted when we actually know a page --
+        # the model can't invent site knowledge the upload doesn't contain.
+        if recommendation.startswith("Existing") and not topic.get("target_page"):
+            recommendation = recommendation.replace("Existing", "New")
+        topic["recommendation"] = recommendation
+        # Keep content_type consistent with the decided recommendation.
+        if "Landing Page" in recommendation:
+            topic["content_type"] = "Landing Page"
+        elif "Blog" in recommendation:
+            topic["content_type"] = "Blog"
+
+    confidence = enr.get("confidence")
+    try:
+        confidence = int(round(float(confidence)))
+        topic["confidence"] = max(0, min(100, confidence))
+    except (TypeError, ValueError):
+        pass  # keep the deterministic confidence
+
     for src, dst in (("title", "title"), ("reason", "reason"),
-                     ("persona", "persona"), ("cta", "cta")):
+                     ("persona", "persona"), ("cta", "cta"),
+                     ("search_intent", "search_intent")):
         val = str(enr.get(src, "")).strip()
         if val:
             topic[dst] = val
@@ -179,7 +232,7 @@ def enrich_topics(topics: List[Dict[str, Any]],
         last_err = ""
         for _attempt in range(3):
             try:
-                response = hermes_generate(_build_prompt(batch), model=model, max_tokens=1600)
+                response = hermes_generate(_build_prompt(batch), model=model, max_tokens=2400)
             except Exception as exc:  # pragma: no cover
                 last_err = f"AI enrichment error: {exc}"
                 continue

@@ -1123,6 +1123,7 @@ async def analyze_csv(
     end_date: Optional[str] = Form(None),
     use_ai: bool = Form(True),
     source_type: Optional[str] = Form(None),
+    existing_site_url: Optional[str] = Form(None),
 ):
     """Run Stage 1A analysis → queue Hermes job → return job ID for polling.
 
@@ -1175,9 +1176,23 @@ async def analyze_csv(
                                  "switch to the 'Google Search Console' upload option.",
                     }, status_code=400)
 
-                from agents.funnel_topics import build_topics, group_by_funnel
+                from agents.funnel_topics import build_topics, group_by_funnel, topics_to_clusters
+                existing_pages = []
+                inventory_note = "No existing-site inventory requested."
+                if existing_site_url:
+                    try:
+                        from integrations.site_inventory import inventory_existing_pages
+                        existing_pages = inventory_existing_pages(existing_site_url)
+                        inventory_note = (
+                            f"Matched recommendations against {len(existing_pages)} "
+                            "sitemap-backed existing pages."
+                        )
+                    except Exception as exc:
+                        inventory_note = f"Existing-site inventory unavailable: {exc}"
                 # Python layer: cluster + metrics + tentative funnel (deterministic).
-                topics = build_topics(parsed["keyword_research"])
+                topics = build_topics(
+                    parsed["keyword_research"], existing_pages=existing_pages
+                )
                 # AI layer: enrich the top topics with strategist reasoning.
                 ai_meta = {"available": False, "enriched": 0, "note": "AI disabled."}
                 if use_ai:
@@ -1190,6 +1205,12 @@ async def analyze_csv(
                 result.update({
                     "source": "semrush",
                     "ai": ai_meta,
+                    "clusters": topics_to_clusters(topics),
+                    "existing_inventory": {
+                        "site_url": existing_site_url or "",
+                        "page_count": len(existing_pages),
+                        "note": inventory_note,
+                    },
                     "message": (
                         "Keyword file detected. Blog & landing-page topics grouped "
                         "by funnel stage (awareness → decision)."
@@ -2368,6 +2389,238 @@ async def should_optimize(request: Request):
 # 4. CONTENT BRIEF GENERATOR (Planning Layer)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+class BlogAutomationRequest(BaseModel):
+    keyword: str
+    title: str = ""
+    audience: str = "Independent self-storage operators in the USA"
+    tone: str = "direct, practical and evidence-led"
+    word_count: int = 1500
+    site_url: str = "https://www.selfstorage.help"
+    client: str = "selfstorage.help"
+    featured_image_url: str = ""
+    stage_to_cms: bool = False
+    publish_now: bool = False
+
+
+def _content_artifact_key(keyword: str) -> str:
+    value = re.sub(r"[^A-Za-z0-9_-]+", "_", (keyword or "").strip()).strip("_")
+    return value or "article"
+
+
+@app.get("/api/automation/blogs/status")
+async def blog_automation_status():
+    """Report the real readiness of the generation and remote publish path."""
+    from agents.blog_automation import BLOG_TEMPLATE_VERSION
+    from integrations.cms_client import configured_for_publish
+
+    cms_config = _load_cms_config()
+    model_configured = bool(os.getenv("OPENROUTER_API_KEY", "").strip())
+    return {
+        "status": "ready" if model_configured else "needs_configuration",
+        "template_version": BLOG_TEMPLATE_VERSION,
+        "model_configured": model_configured,
+        "cms_configured": configured_for_publish(cms_config),
+        "cms_type": (cms_config or {}).get("cms_type", ""),
+        "site_url": "https://www.selfstorage.help",
+        "human_approval_required": True,
+        "message": (
+            "Generation is configured. Connect the website publishing API to create remote drafts."
+            if model_configured
+            else "Set OPENROUTER_API_KEY before generating blog drafts."
+        ),
+    }
+
+
+@app.get("/api/automation/blogs/existing-suggestions")
+async def existing_blog_suggestions(site_url: str = "https://www.selfstorage.help"):
+    """Suggest improvements using sitemap-backed existing blog evidence."""
+    try:
+        from integrations.site_inventory import analyze_existing_blogs
+        return analyze_existing_blogs(site_url)
+    except Exception as exc:
+        return JSONResponse(
+            {"error": f"Could not analyze the existing blogs: {exc}"},
+            status_code=502,
+        )
+
+
+@app.post("/api/automation/blogs/run")
+async def run_blog_automation(request: BlogAutomationRequest):
+    """Inventory -> template draft -> validation -> optional CMS draft/live post."""
+    from agents.blog_automation import BlogGenerationError, generate_blog_draft
+
+    steps: List[Dict[str, Any]] = []
+    existing_pages = []
+    try:
+        from integrations.site_inventory import inventory_existing_pages
+        existing_pages = inventory_existing_pages(request.site_url)
+        steps.append({
+            "step": "existing_content_inventory",
+            "status": "complete",
+            "message": f"Loaded {len(existing_pages)} pages from the public sitemap.",
+        })
+    except Exception as exc:
+        steps.append({
+            "step": "existing_content_inventory",
+            "status": "review",
+            "message": f"Sitemap inventory was unavailable: {exc}",
+        })
+
+    try:
+        draft = generate_blog_draft(
+            keyword=request.keyword,
+            title=request.title,
+            audience=request.audience,
+            tone=request.tone,
+            word_count=request.word_count,
+            site_url=request.site_url,
+            existing_pages=existing_pages,
+            featured_image_url=request.featured_image_url,
+        )
+    except BlogGenerationError as exc:
+        return JSONResponse({
+            "error": str(exc),
+            "steps": steps + [{"step": "generate", "status": "failed"}],
+        }, status_code=502)
+
+    steps.append({
+        "step": "generate",
+        "status": "complete",
+        "message": (
+            f"Created a {draft['word_count_actual']}-word draft with "
+            f"template {draft['template_version']}."
+        ),
+    })
+
+    artifact_key = _content_artifact_key(request.keyword)
+    drafts_dir = os.path.join(OUTPUTS_DIR, "drafts")
+    os.makedirs(drafts_dir, exist_ok=True)
+    draft_file = os.path.join(drafts_dir, f"draft_{artifact_key}.json")
+    with open(draft_file, "w", encoding="utf-8") as handle:
+        json.dump(draft, handle, indent=2, ensure_ascii=False)
+
+    seo = run_seo_gate(
+        draft["full_content"],
+        draft["keyword"],
+        draft["title"],
+        draft["url_slug"],
+        draft["meta_description"],
+    )
+    fact = run_fact_check(draft["full_content"])
+    brand = run_brand_review(draft["full_content"], request.client)
+    all_pass = all(result["status"] == "pass" for result in (seo, fact, brand))
+    any_fail = any(result["status"] == "fail" for result in (seo, fact, brand))
+    validation = {
+        "keyword": request.keyword,
+        "title": draft["title"],
+        "client": request.client,
+        "template_version": draft["template_version"],
+        "validated_at": datetime.utcnow().isoformat(),
+        "overall_status": "pass" if all_pass else "fail" if any_fail else "review",
+        "agents": {"seo_gate": seo, "fact_check": fact, "brand_review": brand},
+        "summary": {
+            "seo_score": seo["score"],
+            "fact_issues": fact["issue_count"],
+            "brand_issues": brand["issue_count"],
+            "total_issues": (
+                fact["issue_count"] + brand["issue_count"]
+                + sum(1 for check in seo["checks"] if not check["pass"])
+            ),
+        },
+    }
+    validations_dir = os.path.join(OUTPUTS_DIR, "validations")
+    os.makedirs(validations_dir, exist_ok=True)
+    validation_file = os.path.join(validations_dir, f"validation_{artifact_key}.json")
+    with open(validation_file, "w", encoding="utf-8") as handle:
+        json.dump(validation, handle, indent=2, ensure_ascii=False)
+    steps.append({
+        "step": "validate",
+        "status": validation["overall_status"],
+        "message": (
+            f"SEO {seo['score']}%; {validation['summary']['total_issues']} issue(s) "
+            "need review before live publishing."
+        ),
+    })
+
+    publish_record = None
+    if request.stage_to_cms:
+        if request.publish_now and validation["overall_status"] != "pass":
+            steps.append({
+                "step": "cms",
+                "status": "blocked",
+                "message": "Live publishing is blocked until every validation gate passes.",
+            })
+        elif validation["overall_status"] == "fail":
+            steps.append({
+                "step": "cms",
+                "status": "blocked",
+                "message": "CMS staging is blocked until failed template/quality checks are fixed.",
+            })
+        elif request.publish_now and load_queue_state().get(request.keyword) != "approved":
+            steps.append({
+                "step": "cms",
+                "status": "blocked",
+                "message": "Live publishing needs human approval in the Approval Queue.",
+            })
+        else:
+            cms_config = _load_cms_config()
+            try:
+                from integrations.cms_client import CMSPublisher, configured_for_publish
+                if not configured_for_publish(cms_config):
+                    raise RuntimeError("Connect a CMS/custom publishing API first.")
+                remote = CMSPublisher(cms_config).publish(
+                    keyword=request.keyword,
+                    title=draft["title"],
+                    content=draft["full_content"],
+                    slug=draft["url_slug"],
+                    meta_description=draft["meta_description"],
+                    publish_now=request.publish_now,
+                    client=request.client,
+                    featured_image_url=request.featured_image_url,
+                )
+                publish_record = _save_publish_record(
+                    keyword=request.keyword,
+                    title=draft["title"],
+                    slug=draft["url_slug"],
+                    meta_description=draft["meta_description"],
+                    client=request.client,
+                    validation=validation,
+                    remote=remote,
+                    publish_now=request.publish_now,
+                )
+                steps.append({
+                    "step": "cms",
+                    "status": "published" if request.publish_now else "draft_created",
+                    "message": (
+                        "The approved article is live on the remote site."
+                        if request.publish_now
+                        else "A remote CMS draft was created for human review."
+                    ),
+                })
+            except Exception as exc:
+                steps.append({"step": "cms", "status": "blocked", "message": str(exc)})
+    else:
+        steps.append({
+            "step": "human_review",
+            "status": "pending",
+            "message": "Review facts, media and final copy, then approve before publishing.",
+        })
+
+    return {
+        "status": "published" if publish_record and request.publish_now else "ready_for_review",
+        "draft": draft,
+        "validation": validation,
+        "publish_record": publish_record,
+        "existing_page_count": len(existing_pages),
+        "steps": steps,
+        "next_action": (
+            "Monitor the live URL in GSC."
+            if publish_record and request.publish_now
+            else "Complete human review and media, approve the keyword, then stage/publish to the CMS."
+        ),
+    }
+
+
 class BriefRequest(BaseModel):
     keyword: str
     title: str = ""
@@ -3047,7 +3300,8 @@ def run_seo_gate(content: str, keyword: str, title: str, slug: str, meta: str) -
     })
 
     # Internal links
-    internal_links = content_lower.count("href=")
+    markdown_links = len(re.findall(r"(?<!!)\[[^\]]+\]\(https?://[^)]+\)", content, re.IGNORECASE))
+    internal_links = content_lower.count("href=") + markdown_links
     checks.append({
         "check": "At least 2 internal links",
         "pass": internal_links >= 2,
@@ -3055,12 +3309,22 @@ def run_seo_gate(content: str, keyword: str, title: str, slug: str, meta: str) -
     })
 
     # Images with alt text
-    images = content_lower.count("<img") + content_lower.count("![")
-    alt_texts = content_lower.count("alt=")
+    markdown_images = len(re.findall(r"!\[[^\]]+\]\([^)]+\)", content))
+    images = content_lower.count("<img") + markdown_images
+    alt_texts = content_lower.count("alt=") + markdown_images
     checks.append({
         "check": "Images have alt text",
         "pass": alt_texts >= 1 and alt_texts >= images,
         "detail": f"Images: {images}, Alt texts: {alt_texts}",
+    })
+
+    faq_present = "frequently asked questions" in content_lower or bool(
+        re.search(r"^##\s+.*questions", content, re.IGNORECASE | re.MULTILINE)
+    )
+    checks.append({
+        "check": "FAQ section present",
+        "pass": faq_present,
+        "detail": "A focused FAQ is required by the MAAI blog template",
     })
 
     passed = sum(1 for c in checks if c["pass"])
@@ -3241,7 +3505,7 @@ async def validate_content(request: ValidationRequest):
     # Save validation
     vals_dir = os.path.join(OUTPUTS_DIR, "validations")
     os.makedirs(vals_dir, exist_ok=True)
-    val_file = os.path.join(vals_dir, f"validation_{request.keyword.replace(' ', '_')}.json")
+    val_file = os.path.join(vals_dir, f"validation_{_content_artifact_key(request.keyword)}.json")
     with open(val_file, "w") as f:
         json.dump(validation, f, indent=2)
 
@@ -3252,6 +3516,64 @@ async def validate_content(request: ValidationRequest):
 # 7. PUBLISH WORKFLOW (Publisher + Indexing)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _load_cms_config() -> Dict[str, Any]:
+    """Load CMS settings from local runtime config, then environment fallback."""
+    config_path = os.path.join(DATA_DIR, "cms_config.json")
+    config: Dict[str, Any] = {}
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, encoding="utf-8") as handle:
+                config = json.load(handle)
+        except (OSError, json.JSONDecodeError):
+            config = {}
+    env_map = {
+        "cms_type": "CMS_TYPE",
+        "api_url": "CMS_API_URL",
+        "api_key": "CMS_API_KEY",
+        "username": "CMS_USERNAME",
+        "author_id": "CMS_AUTHOR_ID",
+    }
+    for field, env_name in env_map.items():
+        if not config.get(field) and os.getenv(env_name, "").strip():
+            config[field] = os.getenv(env_name, "").strip()
+    return config
+
+
+def _save_publish_record(
+    *,
+    keyword: str,
+    title: str,
+    slug: str,
+    meta_description: str,
+    client: str,
+    validation: Dict[str, Any],
+    remote: Dict[str, Any],
+    publish_now: bool,
+) -> Dict[str, Any]:
+    publish_record = {
+        "keyword": keyword,
+        "title": title,
+        "url_slug": slug,
+        "meta_description": meta_description,
+        "client": client,
+        "status": "published" if publish_now else "cms_draft",
+        "published_at": datetime.utcnow().isoformat() if publish_now else None,
+        "validation_score": validation.get("summary", {}).get("seo_score", 0),
+        "cms_type": remote.get("cms_type"),
+        "cms_post_id": remote.get("cms_post_id"),
+        "url": remote.get("url", ""),
+        "edit_url": remote.get("edit_url", ""),
+        "indexed": False,
+        "gsc_submitted": False,
+    }
+    pub_dir = os.path.join(OUTPUTS_DIR, "published")
+    os.makedirs(pub_dir, exist_ok=True)
+    pub_file = os.path.join(pub_dir, f"published_{_content_artifact_key(keyword)}.json")
+    with open(pub_file, "w", encoding="utf-8") as handle:
+        json.dump(publish_record, handle, indent=2, ensure_ascii=False)
+    return publish_record
+
+
 class PublishRequest(BaseModel):
     keyword: str
     title: str
@@ -3259,7 +3581,8 @@ class PublishRequest(BaseModel):
     url_slug: str
     meta_description: str
     client: str = "default"
-    publish_now: bool = False  # If False, schedule for review
+    publish_now: bool = False  # False creates a real remote CMS draft
+    featured_image_url: str = ""
 
 
 @app.post("/api/publish")
@@ -3275,9 +3598,9 @@ async def publish_content(request: PublishRequest):
     with open(val_file, "r") as f:
         validation = json.load(f)
 
-    if validation["overall_status"] == "fail":
+    if validation["overall_status"] != "pass":
         return JSONResponse({
-            "error": "Validation failed. Fix issues before publishing.",
+            "error": "All validation gates must pass before CMS publishing.",
             "validation": validation,
         }, status_code=400)
 
@@ -3290,35 +3613,52 @@ async def publish_content(request: PublishRequest):
             "error": f"Content not approved. Current status: {approval_status}. Approve via /api/queue/{request.keyword}/approve first.",
         }, status_code=400)
 
-    publish_record = {
-        "keyword": request.keyword,
-        "title": request.title,
-        "url_slug": request.url_slug,
-        "meta_description": request.meta_description,
-        "client": request.client,
-        "status": "published" if request.publish_now else "scheduled",
-        "published_at": datetime.utcnow().isoformat() if request.publish_now else None,
-        "validation_score": validation["summary"]["seo_score"],
-        "indexed": False,
-        "gsc_submitted": False,
-    }
+    cms_config = _load_cms_config()
+    try:
+        from integrations.cms_client import CMSPublisher, configured_for_publish
+        if not configured_for_publish(cms_config):
+            return JSONResponse({
+                "error": (
+                    "CMS publishing is not configured. Connect the self-storage "
+                    "site's WordPress or custom publishing API first."
+                )
+            }, status_code=400)
+        remote = CMSPublisher(cms_config).publish(
+            keyword=request.keyword,
+            title=request.title,
+            content=request.content,
+            slug=request.url_slug,
+            meta_description=request.meta_description,
+            publish_now=request.publish_now,
+            client=request.client,
+            featured_image_url=request.featured_image_url,
+        )
+    except Exception as exc:
+        return JSONResponse({"error": f"Remote CMS publish failed: {exc}"}, status_code=502)
 
-    # Save publish record
-    pub_dir = os.path.join(OUTPUTS_DIR, "published")
-    os.makedirs(pub_dir, exist_ok=True)
-    pub_file = os.path.join(pub_dir, f"published_{request.keyword.replace(' ', '_')}.json")
-    with open(pub_file, "w") as f:
-        json.dump(publish_record, f, indent=2)
+    publish_record = _save_publish_record(
+        keyword=request.keyword,
+        title=request.title,
+        slug=request.url_slug,
+        meta_description=request.meta_description,
+        client=request.client,
+        validation=validation,
+        remote=remote,
+        publish_now=request.publish_now,
+    )
 
     return {
-        "status": "published" if request.publish_now else "scheduled",
-        "message": f"Content for '{request.keyword}' is {'live' if request.publish_now else 'scheduled for publishing'}.",
-        "next_steps": [
-            "Submit URL to Google Search Console",
-            "Request indexing",
-            "Interlink from 2-3 existing pages",
-            "Add to sitemap",
-        ],
+        "status": "published" if request.publish_now else "cms_draft",
+        "message": (
+            f"Content for '{request.keyword}' is live on the remote site."
+            if request.publish_now
+            else f"A remote CMS draft for '{request.keyword}' was created."
+        ),
+        "next_steps": (
+            ["Verify the live URL", "Confirm sitemap inclusion", "Monitor the URL in GSC"]
+            if request.publish_now
+            else ["Review the remote CMS draft", "Approve media and facts", "Publish after final approval"]
+        ),
         "publish_record": publish_record,
     }
 
@@ -3327,7 +3667,7 @@ async def publish_content(request: PublishRequest):
 async def request_indexing(keyword: str):
     """Mark content as submitted to GSC for indexing."""
     pub_dir = os.path.join(OUTPUTS_DIR, "published")
-    pub_file = os.path.join(pub_dir, f"published_{keyword.replace(' ', '_')}.json")
+    pub_file = os.path.join(pub_dir, f"published_{_content_artifact_key(keyword)}.json")
 
     if not os.path.exists(pub_file):
         return JSONResponse({"error": "No publish record found"}, status_code=404)
@@ -3798,6 +4138,93 @@ async def gsc_performance(days: int = 90, row_limit: int = 500):
 
 # ── 2. SEMRUSH INTEGRATION ──────────────────────────────────────────────────
 
+@app.post("/api/semrush/recommendations")
+async def semrush_recommendations(
+    file: Optional[UploadFile] = File(None),
+    use_ai: bool = Form(True),
+    top_per_stage: int = Form(30),
+    existing_site_url: Optional[str] = Form(None),
+):
+    """AI Content Strategy Engine v1 — SEMrush keyword file → SEO content plan.
+
+    Upload a SEMrush/Ahrefs keyword export (XLSX/CSV) and get back an
+    AI-generated strategy: keyword clusters, TOFU/MOFU/BOFU grouping, and a
+    content decision per cluster (New Blog | Existing Blog | New Landing Page |
+    Existing Landing Page | No Action Required) with reasoning, priority,
+    commercial potential and confidence.
+
+    Division of labour (deliberate):
+      * Python (deterministic): file parsing, column normalization, dedupe,
+        clustering, volume/KD/CPC metrics — agents/funnel_topics.py.
+      * LLM (reasoning only): intent, funnel, commercial potential, the content
+        decision, title, audience, reasoning, confidence — via the existing
+        OpenRouter client (agents/ai_topic_strategist.py). No OpenAI dependency.
+
+    Degrades gracefully: if the LLM is unconfigured or fails, the deterministic
+    recommendations are returned and `ai.note` explains why.
+    """
+    if file is None or not (file.filename or ""):
+        return JSONResponse({
+            "error": "Upload a SEMrush/Ahrefs keyword export (XLSX or CSV) as "
+                     "multipart field 'file'.",
+        }, status_code=400)
+
+    try:
+        content = await file.read()
+        parsed = parse_gsc_workbook(content, file.filename or "")
+        keyword_rows = parsed.get("keyword_research") or []
+        if not keyword_rows:
+            return JSONResponse({
+                "error": "This doesn't look like a keyword-research file. A "
+                         "SEMrush/Ahrefs export needs a 'Keyword' column plus "
+                         "columns like Intent, Volume, Keyword Difficulty or CPC.",
+            }, status_code=400)
+
+        from agents.funnel_topics import build_topics, group_by_funnel, topics_to_clusters
+        existing_pages = []
+        inventory_note = "No existing-site inventory requested."
+        if existing_site_url:
+            try:
+                from integrations.site_inventory import inventory_existing_pages
+                existing_pages = inventory_existing_pages(existing_site_url)
+                inventory_note = (
+                    f"Matched recommendations against {len(existing_pages)} "
+                    "sitemap-backed existing pages."
+                )
+            except Exception as exc:
+                inventory_note = f"Existing-site inventory unavailable: {exc}"
+        # Deterministic Python layer: cluster + metrics + tentative funnel.
+        topics = build_topics(keyword_rows, existing_pages=existing_pages)
+        # AI reasoning layer: strategist judgement on the top topics.
+        ai_meta = {"available": False, "enriched": 0, "note": "AI disabled by caller."}
+        if use_ai:
+            from agents.ai_topic_strategist import enrich_topics
+            topics, ai_meta = enrich_topics(topics)
+
+        result = group_by_funnel(
+            topics,
+            top_per_stage=top_per_stage,
+            strategist=("ai" if ai_meta.get("available") else "rule-based"),
+        )
+        result.update({
+            "source": "semrush",
+            "ai": ai_meta,
+            "clusters": topics_to_clusters(topics),
+            "existing_inventory": {
+                "site_url": existing_site_url or "",
+                "page_count": len(existing_pages),
+                "note": inventory_note,
+            },
+            "message": "AI content strategy generated: keyword clusters grouped "
+                       "by funnel stage with a content decision per cluster.",
+        })
+        return JSONResponse(result)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"error": f"Recommendation engine failed: {e}"}, status_code=500)
+
+
 class SemrushConfig(BaseModel):
     api_key: str = ""
     database: str = "us"
@@ -3969,33 +4396,33 @@ async def crawl_site(request: CrawlRequest):
 # ── 4. CMS PUBLISHING ───────────────────────────────────────────────────────
 
 class CMSConfig(BaseModel):
-    cms_type: str = "wordpress"  # wordpress, contentful, strapi, custom
+    cms_type: str = "custom"  # wordpress or custom HTTPS publisher
     api_url: str = ""
     api_key: str = ""
+    username: str = ""  # WordPress Application Password username
     author_id: str = ""
 
 
 @app.get("/api/integrations/cms/status")
 async def cms_integration_status():
     """Check CMS integration status."""
-    config_path = os.path.join(DATA_DIR, "cms_config.json")
-    configured = os.path.exists(config_path)
+    from integrations.cms_client import configured_for_publish
 
-    if configured:
-        with open(config_path) as f:
-            config = json.load(f)
+    config = _load_cms_config()
+    if configured_for_publish(config):
         return {
             "status": "configured",
             "cms_type": config.get("cms_type", "unknown"),
             "api_url": config.get("api_url", ""),
-            "capabilities": ["Create posts", "Update posts", "Upload media", "Manage categories"],
+            "username_configured": bool(config.get("username")),
+            "capabilities": ["Create remote drafts", "Publish approved posts"],
         }
 
     return {
         "status": "not_configured",
-        "supported_cms": ["wordpress", "contentful", "strapi", "custom_api"],
+        "supported_cms": ["custom", "wordpress"],
         "setup_instructions": {
-            "step1": "Get API credentials from your CMS",
+            "step1": "Expose a secure publishing endpoint or create a WordPress Application Password",
             "step2": "POST to /api/integrations/cms/configure",
             "step3": "Test with /api/integrations/cms/test",
         },
@@ -4005,40 +4432,67 @@ async def cms_integration_status():
 @app.post("/api/integrations/cms/configure")
 async def configure_cms(config: CMSConfig):
     """Configure CMS API credentials."""
+    if config.cms_type not in ("wordpress", "custom", "custom_api"):
+        return JSONResponse({"error": "CMS type must be wordpress or custom."}, status_code=400)
+    if not config.api_url.strip():
+        return JSONResponse({"error": "CMS API URL is required."}, status_code=400)
     config_path = os.path.join(DATA_DIR, "cms_config.json")
-    with open(config_path, "w") as f:
-        json.dump(config.dict(), f, indent=2)
-    return {"status": "configured", "cms_type": config.cms_type, "message": "CMS credentials saved."}
+    os.makedirs(DATA_DIR, exist_ok=True)
+    current = _load_cms_config()
+    payload = config.dict()
+    if not payload.get("api_key") and current.get("api_key"):
+        payload["api_key"] = current["api_key"]
+    with open(config_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+    return {
+        "status": "configured",
+        "cms_type": config.cms_type,
+        "message": "CMS connection saved locally. Run the connection test before publishing.",
+    }
+
+
+@app.post("/api/integrations/cms/test")
+async def test_cms_connection():
+    """Verify credentials against the real remote CMS/publishing endpoint."""
+    try:
+        from integrations.cms_client import CMSPublisher, configured_for_publish
+        config = _load_cms_config()
+        if not configured_for_publish(config):
+            return JSONResponse({"error": "CMS is not configured."}, status_code=400)
+        return {"status": "connected", **CMSPublisher(config).test_connection()}
+    except Exception as exc:
+        return JSONResponse({"error": f"CMS connection failed: {exc}"}, status_code=502)
 
 
 @app.post("/api/integrations/cms/publish")
 async def publish_to_cms(request: Request):
-    """Publish content to configured CMS."""
+    """Low-level remote CMS adapter; the main /api/publish route owns gates."""
     body = await request.json()
-    config_path = os.path.join(DATA_DIR, "cms_config.json")
-
-    if not os.path.exists(config_path):
-        return JSONResponse({"error": "CMS not configured"}, status_code=400)
-
-    with open(config_path) as f:
-        config = json.load(f)
-
-    # In production, this would call the CMS API
     keyword = body.get("keyword", "")
-    publish_record = {
-        "keyword": keyword,
-        "cms_type": config.get("cms_type"),
-        "status": "published_to_cms",
-        "cms_post_id": "mock_id_" + keyword.replace(" ", "_"),
-        "published_at": datetime.utcnow().isoformat(),
-        "url": config.get("api_url", "") + "/" + keyword.lower().replace(" ", "-"),
-    }
-
-    return {
-        "status": "published",
-        "message": f"Content for '{keyword}' published to {config.get('cms_type', 'CMS')}.",
-        "publish_record": publish_record,
-    }
+    if not keyword or not body.get("title") or not body.get("content"):
+        return JSONResponse({"error": "keyword, title and content are required."}, status_code=400)
+    try:
+        from integrations.cms_client import CMSPublisher, configured_for_publish
+        config = _load_cms_config()
+        if not configured_for_publish(config):
+            return JSONResponse({"error": "CMS not configured."}, status_code=400)
+        remote = CMSPublisher(config).publish(
+            keyword=keyword,
+            title=body.get("title", ""),
+            content=body.get("content", ""),
+            slug=body.get("url_slug") or body.get("slug") or _content_artifact_key(keyword),
+            meta_description=body.get("meta_description", ""),
+            publish_now=bool(body.get("publish_now", False)),
+            client=body.get("client", "default"),
+            featured_image_url=body.get("featured_image_url", ""),
+        )
+        return {
+            "status": "published" if body.get("publish_now") else "cms_draft",
+            "message": f"Remote CMS accepted content for '{keyword}'.",
+            "publish_record": remote,
+        }
+    except Exception as exc:
+        return JSONResponse({"error": f"Remote CMS publish failed: {exc}"}, status_code=502)
 
 
 # ── 5. NOTIFICATIONS (Slack / Email) ────────────────────────────────────────

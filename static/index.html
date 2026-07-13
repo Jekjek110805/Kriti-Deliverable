@@ -1072,6 +1072,13 @@
             <div><label>End date</label><input type="date" id="gscEndDate"></div>
           </div>
         </div>
+        <div class="gsc-pull-controls hidden" id="keywordOnlyControls">
+          <div>
+            <label>Existing website to check</label>
+            <input type="url" id="existingSiteUrl" value="https://www.selfstorage.help" placeholder="https://www.selfstorage.help">
+            <div class="gsc-pull-note">The engine reads this site's sitemap before recommending new content, so it can suggest improvements to existing pages instead of creating duplicates.</div>
+          </div>
+        </div>
         <div class="upload-actions">
           <button class="btn btn-primary" onclick="requestFileUpload()" id="uploadActionBtn">Upload GSC Export</button>
           <button class="btn btn-secondary" onclick="runLiveGSC()" id="pullLiveGscBtn">Pull live GSC</button>
@@ -1199,6 +1206,41 @@
       </div>
     </div>
 
+    <!-- PAGE: BLOG AUTOMATION -->
+    <div id="page-automation" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Blog Automation</h1>
+      <p style="color:var(--text-muted);margin-bottom:18px;">Create template-compliant self-storage blog drafts, run every quality gate, and send approved work to the real website publishing API.</p>
+      <div id="blog-automation-status" class="alert alert-info" style="margin-bottom:18px;">Checking generation and publishing readiness...</div>
+
+      <div class="card">
+        <div class="card-title">Create a Blog from the MAAI Template</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div><label>Primary Keyword</label><input type="text" id="autoBlogKeyword" placeholder="e.g. self storage SEO"></div>
+          <div><label>Working Title (optional)</label><input type="text" id="autoBlogTitle" placeholder="The model can propose a natural title"></div>
+          <div><label>Target Audience</label><input type="text" id="autoBlogAudience" value="Independent self-storage operators in the USA"></div>
+          <div><label>Target Word Count</label><input type="number" id="autoBlogWordCount" value="1500" min="1000" max="3000"></div>
+          <div><label>Website</label><input type="url" id="autoBlogSiteUrl" value="https://www.selfstorage.help"></div>
+          <div><label>Featured Image URL (required before publish)</label><input type="url" id="autoBlogImage" placeholder="https://.../approved-image.jpg"></div>
+        </div>
+        <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
+          <label style="display:flex;align-items:center;gap:8px;margin:0;"><input type="checkbox" id="autoBlogStageCms" style="width:auto;"> Create a remote CMS draft after checks pass</label>
+          <label style="display:flex;align-items:center;gap:8px;margin:0;"><input type="checkbox" id="autoBlogPublishNow" style="width:auto;"> Publish live (still requires approval)</label>
+        </div>
+        <button class="btn btn-primary" id="autoBlogRunBtn" onclick="runBlogAutomation()">Create &amp; Validate Draft</button>
+      </div>
+      <div id="blog-automation-result"></div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-title">Suggestions from Existing Blogs</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Reads the public sitemap and article HTML, then flags template, SEO, linking, media and conversion gaps without inventing pages.</p>
+        <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
+          <div style="flex:1;min-width:260px;"><label>Website</label><input type="url" id="existingBlogSiteUrl" value="https://www.selfstorage.help"></div>
+          <button class="btn btn-secondary" id="existingBlogAnalyzeBtn" onclick="analyzeExistingBlogs()">Analyze Existing Blogs</button>
+        </div>
+        <div id="existing-blog-suggestions" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
     <!-- PAGE: BRIEF -->
     <div id="page-brief" class="page">
       <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Content Brief</h1>
@@ -1275,6 +1317,7 @@
           <div><label>Client</label><input type="text" id="pubClient" placeholder="Client name"></div>
           <div><label>URL Slug</label><input type="text" id="pubSlug" placeholder="/best-crm-software"></div>
           <div><label>Meta Description</label><input type="text" id="pubMeta" placeholder="Meta description"></div>
+          <div><label>Featured Image URL</label><input type="url" id="pubImage" placeholder="https://.../approved-image.jpg"></div>
         </div>
         <div style="margin-bottom:16px;"><label>Title</label><input type="text" id="pubTitle" placeholder="Content title"></div>
         <div style="margin-bottom:16px;"><label>Content (final)</label><textarea id="pubContent" rows="4" placeholder="Final content..."></textarea></div>
@@ -1650,6 +1693,7 @@ function setUploadMode(mode) {
   const zoneHint = document.getElementById('uploadZoneHint');
   const actionBtn = document.getElementById('uploadActionBtn');
   const gscControls = document.getElementById('gscOnlyControls');
+  const keywordControls = document.getElementById('keywordOnlyControls');
   const pullBtn = document.getElementById('pullLiveGscBtn');
   if (sub) sub.textContent = cfg.sub;
   if (desc) desc.textContent = cfg.desc;
@@ -1657,6 +1701,7 @@ function setUploadMode(mode) {
   if (zoneHint) zoneHint.textContent = cfg.zoneHint;
   if (actionBtn) actionBtn.textContent = cfg.actionLabel;
   if (gscControls) gscControls.classList.toggle('hidden', !cfg.showGscControls);
+  if (keywordControls) keywordControls.classList.toggle('hidden', cfg.showGscControls);
   if (pullBtn) pullBtn.classList.toggle('hidden', !cfg.showGscControls);
 }
 
@@ -1681,8 +1726,9 @@ const NAV_GROUPS = {
   },
   content: {
     label: 'Content',
-    defaultPage: 'brief',
+    defaultPage: 'automation',
     pages: [
+      { id: 'automation', label: 'Blog Automation', icon: 'robot' },
       { id: 'brief', label: 'Brief', icon: 'clipboard' },
       { id: 'content', label: 'Content Draft', icon: 'pencil' },
       { id: 'validate', label: 'Validate', icon: 'search' },
@@ -2318,6 +2364,10 @@ function handleFile(input) {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('source_type', uploadMode);
+  if (uploadMode === 'keyword_research') {
+    const existingSiteUrl = document.getElementById('existingSiteUrl')?.value.trim();
+    if (existingSiteUrl) formData.append('existing_site_url', existingSiteUrl);
+  }
 
   analysisInProgress = true;
   setUploadCardVisible(false);
@@ -2852,10 +2902,13 @@ function renderFunnelTopics(d) {
   const sections = funnels.map(f => funnelStageHtml(f)).join('');
   const ai = d.ai || {};
   const aiLine = d.strategist === 'ai'
-    ? `<span style="color:var(--accent);font-weight:700;">✦ AI SEO strategist</span> enriched the top ${formatNumber(ai.enriched || 0)} topics (titles, personas, CTAs, reasoning). Remaining topics use the deterministic rule engine.`
+    ? `<span style="color:var(--accent);font-weight:700;">✦ AI Content Strategy Engine</span> analyzed the top ${formatNumber(ai.enriched || 0)} topics — funnel stage, search intent, commercial potential, content decision (new vs existing vs no action), titles and reasoning. Remaining topics use the deterministic rule engine.`
     : `Showing deterministic rule-based recommendations.${ai.note ? ' ' + escapeHtml(ai.note) : ''}`;
+  const inventory = d.existing_inventory || {};
+  const inventoryLine = inventory.note
+    ? `<div style="margin-top:5px;font-size:12px;opacity:.85;">${escapeHtml(inventory.note)}</div>` : '';
   document.getElementById('oppsTable').innerHTML = `
-    ${d.message ? `<div class="alert alert-info">${escapeHtml(d.message)}<div style="margin-top:6px;font-size:12px;opacity:.85;">${aiLine}</div></div>` : ''}
+    ${d.message ? `<div class="alert alert-info">${escapeHtml(d.message)}<div style="margin-top:6px;font-size:12px;opacity:.85;">${aiLine}</div>${inventoryLine}</div>` : ''}
     ${sections || '<div class="alert alert-warning">No topics could be built from this keyword file.</div>'}
   `;
 }
@@ -2894,8 +2947,12 @@ function topicCardHtml(t) {
   const buyer = t.has_deeper_intent
     ? `<span class="tbadge" title="Some keywords in this topic show stronger buyer intent.">+ buyer sub-intent</span>` : '';
   const aiBadge = t.strategist === 'ai'
-    ? `<span class="tbadge tbadge-ai" title="Title, funnel, persona, CTA and reasoning by the AI SEO strategist.">✦ AI strategist</span>` : '';
-  const persona = t.persona ? `<div class="topic-meta-line"><span class="topic-meta-key">Persona</span> ${escapeHtml(t.persona)}</div>` : '';
+    ? `<span class="tbadge tbadge-ai" title="Funnel, intent, recommendation, commercial potential, title, persona and reasoning decided by the AI SEO strategist.">✦ AI strategist</span>` : '';
+  const cp = String(t.commercial_potential || '').toLowerCase();
+  const commercial = t.commercial_potential
+    ? `<span class="tbadge tbadge-${cp}" title="Commercial potential: how much revenue capturing this search could drive.">${escapeHtml(t.commercial_potential)} commercial</span>` : '';
+  const intent = t.search_intent ? `<div class="topic-meta-line"><span class="topic-meta-key">Intent</span> ${escapeHtml(t.search_intent)}</div>` : '';
+  const persona = t.persona ? `<div class="topic-meta-line"><span class="topic-meta-key">Audience</span> ${escapeHtml(t.persona)}</div>` : '';
   const cta = t.cta ? `<div class="topic-meta-line"><span class="topic-meta-key">${ct === 'landing' ? 'CTA' : 'Hook'}</span> ${escapeHtml(t.cta)}</div>` : '';
   return `
     <div class="topic-card">
@@ -2903,6 +2960,7 @@ function topicCardHtml(t) {
       <div class="topic-badges">
         <span class="tbadge tbadge-${ct}">${escapeHtml(t.content_type || '')}</span>
         <span class="tbadge tbadge-${pr}">${escapeHtml(t.priority || '')} priority</span>
+        ${commercial}
         ${aiBadge}
         ${buyer}
         ${inferred}
@@ -2914,6 +2972,7 @@ function topicCardHtml(t) {
       </div>
       <div class="topic-rec"><span class="dot"></span>${escapeHtml(t.recommendation || '')} · ${Number(t.confidence) || 0}% confidence · score ${Number(t.score) || 0}</div>
       <div class="topic-reason">${escapeHtml(t.reason || '')}</div>
+      ${intent}
       ${persona}
       ${cta}
       ${kws.length ? `<details class="topic-keywords"><summary>${kws.length} keyword${kws.length === 1 ? '' : 's'}</summary><div class="topic-kw-list">${kwChips}</div></details>` : ''}
@@ -3484,6 +3543,141 @@ function submitReview() {
 }
 
 // ── Content Brief ────────────────────────────────────────────────────────────
+let lastAutomationDraft = null;
+
+function loadBlogAutomationStatus() {
+  const out = document.getElementById('blog-automation-status');
+  if (!out) return;
+  fetch(BASE + '/api/automation/blogs/status')
+    .then(r => r.json())
+    .then(d => {
+      const model = d.model_configured ? 'Generator connected' : 'Generator needs configuration';
+      const cms = d.cms_configured ? `${d.cms_type || 'CMS'} publishing connected` : 'Website publishing API not connected';
+      out.className = 'alert ' + (d.model_configured && d.cms_configured ? 'alert-success' : 'alert-info');
+      out.innerHTML = `<strong>${escapeHtml(model)}</strong> · ${escapeHtml(cms)}<div style="font-size:12px;margin-top:5px;">Template: ${escapeHtml(d.template_version || '')}. Human approval remains required for live publishing.</div>`;
+    })
+    .catch(() => {
+      out.className = 'alert alert-warning';
+      out.textContent = 'Could not load automation status.';
+    });
+}
+
+function runBlogAutomation() {
+  const keyword = document.getElementById('autoBlogKeyword').value.trim();
+  if (!keyword) {
+    showToast('Enter a primary keyword before creating a blog.', 'warning');
+    return;
+  }
+  const publishNow = document.getElementById('autoBlogPublishNow').checked;
+  const body = {
+    keyword,
+    title: document.getElementById('autoBlogTitle').value.trim(),
+    audience: document.getElementById('autoBlogAudience').value.trim(),
+    word_count: Number(document.getElementById('autoBlogWordCount').value) || 1500,
+    site_url: document.getElementById('autoBlogSiteUrl').value.trim() || 'https://www.selfstorage.help',
+    client: 'selfstorage.help',
+    featured_image_url: document.getElementById('autoBlogImage').value.trim(),
+    stage_to_cms: document.getElementById('autoBlogStageCms').checked || publishNow,
+    publish_now: publishNow,
+  };
+  const btn = document.getElementById('autoBlogRunBtn');
+  const out = document.getElementById('blog-automation-result');
+  btn.disabled = true;
+  btn.textContent = 'Creating draft...';
+  out.innerHTML = '<div class="card"><div class="alert alert-info">Reading existing pages, writing to the MAAI template, and running quality checks...</div></div>';
+  fetch(BASE + '/api/automation/blogs/run', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  })
+    .then(r => r.json().then(d => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => {
+      if (!ok || d.error) throw new Error(d.error || 'Blog automation failed.');
+      lastAutomationDraft = d.draft;
+      const validation = d.validation || {};
+      const summary = validation.summary || {};
+      const stepHtml = (d.steps || []).map(step => {
+        const good = ['complete', 'pass', 'published', 'draft_created'].includes(step.status);
+        const bad = ['failed', 'blocked', 'fail'].includes(step.status);
+        const badge = good ? 'approved' : bad ? 'rejected' : 'pending';
+        return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);"><span class="badge badge-${badge}">${escapeHtml(step.status)}</span><div><strong>${escapeHtml(step.step.replaceAll('_', ' '))}</strong><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${escapeHtml(step.message || '')}</div></div></div>`;
+      }).join('');
+      const remote = d.publish_record;
+      out.innerHTML = `
+        <div class="card">
+          <div class="card-title">${escapeHtml(d.draft.title)}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <span class="badge badge-${validation.overall_status === 'pass' ? 'approved' : validation.overall_status === 'fail' ? 'rejected' : 'pending'}">${escapeHtml(validation.overall_status || 'review')}</span>
+            <span class="badge">SEO ${Number(summary.seo_score || 0)}%</span>
+            <span class="badge">${Number(d.draft.word_count_actual || 0).toLocaleString()} words</span>
+            <span class="badge">${escapeHtml(d.draft.template_version || '')}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;"><strong>Slug:</strong> /${escapeHtml(d.draft.url_slug)}<br><strong>Meta:</strong> ${escapeHtml(d.draft.meta_description || '')}</div>
+          <textarea rows="16" readonly style="font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;">${escapeHtml(d.draft.full_content)}</textarea>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+            <button class="btn btn-primary" onclick="automationToPublish()">Open in Publish</button>
+            ${remote && remote.url ? `<a class="btn btn-secondary" href="${escapeHtml(remote.url)}" target="_blank" rel="noopener">View remote post</a>` : ''}
+          </div>
+        </div>
+        <div class="card"><div class="card-title">Workflow</div>${stepHtml}</div>`;
+      showToast('Blog draft created and checked.', 'success');
+    })
+    .catch(err => {
+      out.innerHTML = `<div class="card"><div class="alert alert-error">${escapeHtml(err.message)}</div></div>`;
+      showToast(err.message, 'error');
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = 'Create & Validate Draft';
+    });
+}
+
+function automationToPublish() {
+  if (!lastAutomationDraft) return;
+  showPage('publish');
+  document.getElementById('pubKeyword').value = lastAutomationDraft.keyword || '';
+  document.getElementById('pubTitle').value = lastAutomationDraft.title || '';
+  document.getElementById('pubSlug').value = lastAutomationDraft.url_slug || '';
+  document.getElementById('pubMeta').value = lastAutomationDraft.meta_description || '';
+  document.getElementById('pubClient').value = 'selfstorage.help';
+  document.getElementById('pubContent').value = lastAutomationDraft.full_content || '';
+  document.getElementById('pubImage').value = lastAutomationDraft.image?.featured_image_url || '';
+}
+
+function analyzeExistingBlogs() {
+  const siteUrl = document.getElementById('existingBlogSiteUrl').value.trim();
+  const btn = document.getElementById('existingBlogAnalyzeBtn');
+  const out = document.getElementById('existing-blog-suggestions');
+  if (!siteUrl) {
+    showToast('Enter the website URL to analyze.', 'warning');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Analyzing...';
+  out.innerHTML = '<div class="alert alert-info">Reading the public sitemap and existing blog pages...</div>';
+  fetch(BASE + '/api/automation/blogs/existing-suggestions?site_url=' + encodeURIComponent(siteUrl))
+    .then(r => r.json().then(d => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => {
+      if (!ok || d.error) throw new Error(d.error || 'Existing-blog analysis failed.');
+      const cards = (d.blogs || []).map(blog => {
+        const priority = String(blog.priority || 'Low').toLowerCase();
+        const suggestions = (blog.suggestions || []).map(s => `<li style="margin-bottom:7px;"><strong>${escapeHtml(s.action)}</strong><br><span style="color:var(--text-muted);font-size:12px;">${escapeHtml(s.reason)}</span></li>`).join('');
+        return `<div class="topic-card">
+          <div class="topic-badges"><span class="tbadge tbadge-${priority}">${escapeHtml(blog.priority || 'Low')} priority</span><span class="tbadge">${Number(blog.word_count || 0).toLocaleString()} rendered words</span></div>
+          <a href="${escapeHtml(blog.url)}" target="_blank" rel="noopener" style="font-weight:700;color:var(--text);">${escapeHtml(blog.title || blog.slug)}</a>
+          <div style="font-size:12px;color:var(--text-muted);margin:7px 0;">${escapeHtml(blog.meta_description || 'No meta description detected')}</div>
+          <ul style="padding-left:18px;margin:10px 0 0;">${suggestions}</ul>
+        </div>`;
+      }).join('');
+      out.innerHTML = `<div class="alert alert-info">${escapeHtml(d.message)} Source: ${escapeHtml(d.source || '')}.</div><div class="topic-grid">${cards || '<div class="alert alert-info">No existing blog article URLs were found.</div>'}</div>`;
+    })
+    .catch(err => {
+      out.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = 'Analyze Existing Blogs';
+    });
+}
+
 function generateBrief() {
   const body = {
     keyword: document.getElementById('briefKeyword').value,
@@ -3659,6 +3853,7 @@ function publishContent(now) {
     meta_description: document.getElementById('pubMeta').value,
     client: document.getElementById('pubClient').value || 'default',
     publish_now: now,
+    featured_image_url: document.getElementById('pubImage').value,
   };
   fetch(BASE + '/api/publish', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -3830,7 +4025,7 @@ const INTEGRATIONS = [
   { id: "gsc", name: "Google Search Console", icon: icon('search'), desc: "Performance data, indexing status, live query insights", endpoint: "/api/integrations/gsc/status" },
   { id: "semrush", name: "SEMrush", icon: icon('chart'), desc: "Keyword metrics, competitor analysis, site audit", endpoint: "/api/integrations/semrush/status" },
   { id: "crawler", name: "Site Crawler", icon: icon('spider'), desc: "Map existing pages, analyze internal links", endpoint: "/api/integrations/crawl" },
-  { id: "cms", name: "CMS Publishing", icon: icon('edit'), desc: "Publish to WordPress, Contentful, Strapi", endpoint: "/api/integrations/cms/status" },
+  { id: "cms", name: "Website Publishing", icon: icon('edit'), desc: "Create real drafts or publish through WordPress/custom APIs", endpoint: "/api/integrations/cms/status" },
   { id: "notifications", name: "Notifications", icon: icon('bell'), desc: "Slack and email alerts for key events", endpoint: "/api/integrations/notifications/status" },
   { id: "analytics", name: "Analytics", icon: icon('graph'), desc: "Track page performance and conversions", endpoint: "/api/integrations/analytics/status" },
   { id: "sources", name: "Source Ledger", icon: icon('books'), desc: "Fact validation and source tracking", endpoint: "/api/integrations/sources" },
@@ -3849,9 +4044,10 @@ const INTEGRATION_CONFIG = {
   cms: {
     configureEndpoint: '/api/integrations/cms/configure',
     fields: [
-      { key: 'cms_type', label: 'CMS Type', type: 'select', options: ['wordpress', 'contentful', 'strapi', 'custom'], default: 'wordpress' },
-      { key: 'api_url', label: 'API URL', type: 'text', placeholder: 'https://yoursite.com/wp-json' },
-      { key: 'api_key', label: 'API Key / Token', type: 'password', placeholder: 'Paste your CMS API key or token', primary: true },
+      { key: 'cms_type', label: 'Publisher Type', type: 'select', options: ['custom', 'wordpress'], default: 'custom' },
+      { key: 'api_url', label: 'Publishing API URL', type: 'text', placeholder: 'https://yoursite.com/api/publish or the WordPress site URL' },
+      { key: 'api_key', label: 'API Token / Application Password', type: 'password', placeholder: 'Stored locally; use Secret Manager in production', primary: true },
+      { key: 'username', label: 'WordPress Username (WordPress only)', type: 'text', placeholder: 'Leave blank for custom bearer-token APIs' },
       { key: 'author_id', label: 'Author ID (optional)', type: 'text', placeholder: 'e.g. 1' },
     ],
   },
@@ -3879,6 +4075,7 @@ function showPage(pageId) {
   if (isMobileNavLayout()) closeMobileNav();
 
   if (pageId === 'results') loadReport();
+  if (pageId === 'automation') loadBlogAutomationStatus();
   if (pageId === 'users') loadUsers();
   if (pageId === 'queue') loadQueue();
   if (pageId === 'calendar') loadCalendar();
@@ -3959,10 +4156,24 @@ function showIntegrationConnect(int) {
     html += `<div id="int-connect-result" style="margin-bottom:12px;"></div>`;
     html += `<div style="display:flex;gap:10px;">`;
     html += `<button class="btn btn-primary" onclick="connectIntegration('${int.id}')">${connected ? 'Update connection' : 'Connect'}</button>`;
+    if (int.id === 'cms' && connected) html += `<button class="btn btn-secondary" onclick="testCMSConnection()">Test connection</button>`;
     html += `<button class="btn btn-secondary" onclick="loadIntegrations()">← Back</button>`;
     html += `</div></div>`;
     document.getElementById('integrations-grid').innerHTML = html;
   });
+}
+
+function testCMSConnection() {
+  const out = document.getElementById('int-connect-result');
+  if (!out) return;
+  out.innerHTML = '<div class="alert alert-info">Testing the real remote publishing connection...</div>';
+  fetch(BASE + '/api/integrations/cms/test', { method: 'POST' })
+    .then(r => r.json().then(d => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => {
+      if (!ok || d.error) throw new Error(d.error || 'Connection test failed.');
+      out.innerHTML = `<div class="alert alert-success">Connected to ${escapeHtml(d.cms_type || 'the publishing API')}.</div>`;
+    })
+    .catch(err => { out.innerHTML = `<div class="alert alert-warning">${escapeHtml(err.message)}</div>`; });
 }
 
 function connectIntegration(id) {
