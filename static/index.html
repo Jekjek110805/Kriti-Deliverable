@@ -301,6 +301,8 @@
   .lp-hero .lp-btn-primary:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 14px 32px rgba(0,0,0,0.3); }
   .lp-hero .lp-btn-ghost { color: #fff; border-color: rgba(255,255,255,0.6); }
   .lp-hero .lp-btn-ghost:hover { background: rgba(255,255,255,0.16); border-color: #fff; }
+  .lp-hero-visual { position: relative; height: 540px; display: flex; align-items: flex-end; justify-content: center; pointer-events: none; }
+  .lp-hero-character { width: min(118%, 520px); max-width: none; height: auto; display: block; transform: translate(18px, 96px); filter: drop-shadow(0 24px 28px rgba(10,14,40,0.28)); }
   /* Glassy hero panel — translucent frosted glass over the iridescence */
   .lp-hero .lp-hero-panel { background: rgba(255,255,255,0.10); backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%); border: 1px solid rgba(255,255,255,0.30); box-shadow: 0 16px 48px rgba(10,14,40,0.30), inset 0 1px 0 rgba(255,255,255,0.45); }
   .lp-hero .lp-hero-panel h4 { color: rgba(255,255,255,0.75); }
@@ -309,10 +311,17 @@
   body:not(.light) .lp-hero .lp-hero-panel { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.22); }
 
   @media (max-width: 860px) {
-    .lp-hero-grid { grid-template-columns: 1fr; }
+    .lp-hero { padding: 72px 0 0; }
+    .lp-hero-grid { grid-template-columns: 1fr; gap: 28px; }
+    .lp-hero-visual { height: 500px; }
+    .lp-hero-character { width: min(100%, 430px); transform: none; }
     .lp-grid-3, .lp-grid-4, .lp-grid-2, .lp-footer-grid { grid-template-columns: 1fr; }
     .lp-nav-links { display: none; }
     .lp-section { padding: 56px 0; }
+  }
+  @media (max-width: 520px) {
+    .lp-hero-visual { height: 420px; }
+    .lp-hero-character { width: min(108%, 360px); }
   }
 
   /* Page head (Discover & other feature pages) */
@@ -757,12 +766,8 @@
         <button class="lp-btn lp-btn-ghost lp-btn-lg" onclick="lpScroll('lp-how')">See how it works</button>
       </div>
     </div>
-    <div class="lp-hero-panel">
-      <h4>What you get</h4>
-      <div class="lp-checkline"><span class="lp-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> AI-scored SEO opportunities</div>
-      <div class="lp-checkline"><span class="lp-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> SOP-driven content briefs &amp; drafts</div>
-      <div class="lp-checkline"><span class="lp-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Human-approved publishing</div>
-      <div class="lp-checkline"><span class="lp-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Live performance monitoring</div>
+    <div class="lp-hero-visual">
+      <img class="lp-hero-character" src="/static/maai-agent-hero.png" alt="MAAI Agent seated with a laptop" width="1075" height="1463" decoding="async" fetchpriority="high">
     </div>
   </div></div></section>
 
