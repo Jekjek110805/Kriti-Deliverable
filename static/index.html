@@ -289,10 +289,10 @@
   .lp-back { display: inline-flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 700; cursor: pointer; margin-bottom: 22px; }
   .lp-back:hover { color: #fff; }
   /* Iridescence animated hero background */
-  .lp-hero { position: relative; overflow: hidden; padding: 116px 0 96px; background: linear-gradient(150deg, #3d5aa8, #6E8BFF); }
+  .lp-hero { position: relative; overflow: hidden; height: calc(100vh - 70px); height: calc(100svh - 70px); padding: clamp(32px, 5vh, 56px) 0; display: flex; align-items: center; background: linear-gradient(150deg, #3d5aa8, #6E8BFF); }
   #iridescence-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
   .lp-hero-scrim { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(100deg, rgba(10,14,32,0.42) 0%, rgba(10,14,32,0.16) 46%, rgba(10,14,32,0.02) 100%); }
-  .lp-hero > .lp-wrap { position: relative; z-index: 1; }
+  .lp-hero > .lp-wrap { position: relative; z-index: 1; width: 100%; }
   .lp-hero .lp-eyebrow { color: #fff; background: rgba(255,255,255,0.18); }
   .lp-hero .lp-h1 { color: #fff; }
   .lp-hero .lp-h1 em { color: #fff; text-decoration: underline; text-decoration-color: rgba(255,255,255,0.5); text-underline-offset: 4px; }
@@ -301,8 +301,8 @@
   .lp-hero .lp-btn-primary:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 14px 32px rgba(0,0,0,0.3); }
   .lp-hero .lp-btn-ghost { color: #fff; border-color: rgba(255,255,255,0.6); }
   .lp-hero .lp-btn-ghost:hover { background: rgba(255,255,255,0.16); border-color: #fff; }
-  .lp-hero-visual { position: relative; height: 540px; display: flex; align-items: flex-end; justify-content: center; pointer-events: none; }
-  .lp-hero-character { width: min(118%, 520px); max-width: none; height: auto; display: block; transform: translate(18px, 96px); filter: drop-shadow(0 24px 28px rgba(10,14,40,0.28)); }
+  .lp-hero-visual { position: relative; height: min(530px, calc(100svh - 140px)); display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .lp-hero-character { width: min(100%, 390px); max-height: 100%; object-fit: contain; display: block; transform: translate(12px, 18px); filter: drop-shadow(0 20px 24px rgba(10,14,40,0.24)); }
   /* Glassy hero panel — translucent frosted glass over the iridescence */
   .lp-hero .lp-hero-panel { background: rgba(255,255,255,0.10); backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%); border: 1px solid rgba(255,255,255,0.30); box-shadow: 0 16px 48px rgba(10,14,40,0.30), inset 0 1px 0 rgba(255,255,255,0.45); }
   .lp-hero .lp-hero-panel h4 { color: rgba(255,255,255,0.75); }
@@ -311,17 +311,23 @@
   body:not(.light) .lp-hero .lp-hero-panel { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.22); }
 
   @media (max-width: 860px) {
-    .lp-hero { padding: 72px 0 0; }
-    .lp-hero-grid { grid-template-columns: 1fr; gap: 28px; }
-    .lp-hero-visual { height: 500px; }
-    .lp-hero-character { width: min(100%, 430px); transform: none; }
+    .lp-hero { padding: clamp(28px, 5vh, 44px) 0; }
+    .lp-hero-grid { grid-template-columns: minmax(0, 1.15fr) minmax(220px, 0.85fr); gap: 24px; }
+    .lp-hero-visual { height: min(430px, calc(100svh - 150px)); }
+    .lp-hero-character { width: min(100%, 310px); transform: translateX(6px); }
     .lp-grid-3, .lp-grid-4, .lp-grid-2, .lp-footer-grid { grid-template-columns: 1fr; }
     .lp-nav-links { display: none; }
     .lp-section { padding: 56px 0; }
   }
-  @media (max-width: 520px) {
-    .lp-hero-visual { height: 420px; }
-    .lp-hero-character { width: min(108%, 360px); }
+  @media (max-width: 640px) {
+    .lp-hero { padding: 24px 0 0; }
+    .lp-hero-grid { grid-template-columns: 1fr; gap: 12px; }
+    .lp-hero .lp-eyebrow { margin-bottom: 14px; }
+    .lp-hero .lp-h1 { font-size: clamp(27px, 8vw, 32px); margin-bottom: 12px; }
+    .lp-hero .lp-lead { font-size: 15px; line-height: 1.45; }
+    .lp-hero .lp-cta-row { margin-top: 18px; }
+    .lp-hero-visual { height: clamp(180px, 30svh, 250px); }
+    .lp-hero-character { width: min(64vw, 220px); transform: none; }
   }
 
   /* Page head (Discover & other feature pages) */
