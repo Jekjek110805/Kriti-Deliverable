@@ -1081,7 +1081,7 @@
       </div>
 
       <div class="loading" id="loading">
-        <img class="loading-mark" src="/static/loading-mark.png" alt="">
+        <iframe class="lottie-loader-frame lottie-loader-frame-analysis" src="https://lottie.host/embed/6300f646-1b8a-4bdb-bb72-7b50b41d7c7d/tsdVmL6fO0.json" title="MAAI robot loading animation" aria-hidden="true" tabindex="-1" loading="eager"></iframe>
         <div class="loading-text" id="analysisLoadingText">Analyzing opportunities...</div>
       </div>
 
@@ -2521,7 +2521,7 @@ function showQueuedStatus(d) {
     <div class="stat-card"><div class="stat-value" style="font-size:13px">${escapeHtml(rangeLabel)}</div><div class="stat-label">Date range</div></div>
     <div class="stat-card"><div class="stat-value" style="font-size:13px">${d.job_id}</div><div class="stat-label">Job ID</div></div>
   `;
-  document.getElementById('oppsTable').innerHTML = `<div class="loading-inline"><img class="loading-mark loading-mark-analysis" src="/static/analysis-loading-mark.png" alt=""><div class="loading-text" id="queuedLoadingText">Analyzing opportunities...</div></div>`;
+  document.getElementById('oppsTable').innerHTML = `<div class="loading-inline"><iframe class="lottie-loader-frame lottie-loader-frame-analysis" src="https://lottie.host/embed/6300f646-1b8a-4bdb-bb72-7b50b41d7c7d/tsdVmL6fO0.json" title="MAAI robot loading animation" aria-hidden="true" tabindex="-1" loading="eager"></iframe><div class="loading-text" id="queuedLoadingText">Analyzing opportunities...</div></div>`;
   startLoadingTextCycle('#queuedLoadingText', 2);
 }
 
@@ -3534,7 +3534,7 @@ function openReviewModal(keyword) {
   currentReviewKeyword = keyword;
   document.getElementById('reviewModal').classList.add('open');
   document.getElementById('reviewModalTitle').textContent = 'Review: ' + keyword;
-  document.getElementById('reviewModalContent').innerHTML = '<div class="loading active"><img class="loading-mark" src="/static/loading-mark.png" alt=""><div class="loading-text">Loading review data...</div></div>';
+  document.getElementById('reviewModalContent').innerHTML = '<div class="loading active"><iframe class="lottie-loader-frame" src="https://lottie.host/embed/6300f646-1b8a-4bdb-bb72-7b50b41d7c7d/tsdVmL6fO0.json" title="MAAI robot loading animation" aria-hidden="true" tabindex="-1" loading="eager"></iframe><div class="loading-text">Loading review data...</div></div>';
   document.getElementById('reviewNotes').value = '';
 
   fetch(BASE + '/api/queue/' + encodeURIComponent(keyword) + '/review', { method: 'POST' })
@@ -4499,7 +4499,7 @@ async function saveGSCConfig() {
 
 async function validateGSC() {
   const resultEl = document.getElementById('gsc-config-result');
-  resultEl.innerHTML = '<div class="loading active"><img class="loading-mark" src="/static/loading-mark.png" alt=""><div class="loading-text">Testing connection...</div></div>';
+  resultEl.innerHTML = '<div class="loading active"><iframe class="lottie-loader-frame" src="https://lottie.host/embed/6300f646-1b8a-4bdb-bb72-7b50b41d7c7d/tsdVmL6fO0.json" title="MAAI robot loading animation" aria-hidden="true" tabindex="-1" loading="eager"></iframe><div class="loading-text">Testing connection...</div></div>';
 
   try {
     const res = await fetch(BASE + '/api/integrations/gsc/validate');

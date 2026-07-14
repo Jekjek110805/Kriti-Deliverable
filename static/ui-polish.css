@@ -194,6 +194,49 @@ textarea::placeholder {
   overflow-wrap: anywhere;
 }
 
+.lottie-loader-frame {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 112px;
+  height: 112px;
+  margin: 0 auto 18px;
+  border: 0;
+  overflow: hidden;
+  background: transparent;
+  pointer-events: none;
+}
+
+.loading.active {
+  position: relative;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(32px, 6vw, 52px);
+  overflow: hidden;
+  border: 1px solid rgba(110, 139, 255, 0.14);
+  border-radius: var(--radius-lg);
+  background: #080914;
+}
+
+.loading.active .loading-text {
+  position: relative;
+  z-index: 1;
+  color: #f4f5f7;
+}
+
+.lottie-loader-frame-analysis {
+  width: clamp(140px, 18vw, 176px);
+  height: clamp(140px, 18vw, 176px);
+}
+
+.loading-inline .lottie-loader-frame {
+  width: 148px;
+  height: 148px;
+}
+
 .table-wrap {
   overscroll-behavior: contain;
 }
@@ -662,7 +705,8 @@ body > :is(#topic-modal, #reason-modal, #gsc-row-modal) > div {
 
   #iridescence-bg,
   #workflows-waves-bg,
-  #magicRingsCanvas {
+  #magicRingsCanvas,
+  .lottie-loader-frame {
     display: none;
   }
 }
