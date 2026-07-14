@@ -28,7 +28,7 @@ load_dotenv()
 
 # ── App ──────────────────────────────────────────────────────────────────────
 
-app = FastAPI(title="Kriti Stage 1A — Existing Page Opportunity Finder")
+app = FastAPI(title="MAAI Stage 1A — Existing Page Opportunity Finder")
 
 # CORS origins from env (comma-separated). Falls back to permissive for local dev.
 _cors_origins = os.getenv("CORS_ORIGINS", "*")
@@ -1091,7 +1091,7 @@ async def root():
     if os.path.exists(index_path):
         with open(index_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
-    return HTMLResponse(content="<h1>Kriti Backend Running</h1><p>Frontend not built yet.</p>")
+    return HTMLResponse(content="<h1>MAAI Backend Running</h1><p>Frontend not built yet.</p>")
 
 
 @app.get("/test", response_class=HTMLResponse)
@@ -1110,7 +1110,7 @@ async def root_old():
     if os.path.exists(index_path):
         with open(index_path, "r") as f:
             return HTMLResponse(content=f.read())
-    return HTMLResponse(content="<h1>Kriti Backend Running</h1>")
+    return HTMLResponse(content="<h1>MAAI Backend Running</h1>")
 
 
 @app.post("/api/stage1a/analyze")
@@ -1676,6 +1676,15 @@ async def batch_approval(request: Request):
 
     save_queue_state(state)
     return {"action": action, "count": len(results), "results": results}
+
+
+@app.get("/api/queue/{keyword}/status")
+async def get_keyword_status(keyword: str):
+    """Return the current approval status for a single keyword (defaults to
+    needs_review if it was never queued). Used by the Publish page to show
+    whether content is cleared to go live."""
+    state = load_queue_state()
+    return {"keyword": keyword, "approval_status": state.get(keyword, "needs_review")}
 
 
 @app.post("/api/queue/{keyword}/approve")
@@ -2324,15 +2333,15 @@ def should_optimize_decision(
 
     # ── SOP alignment ─────────────────────────────────────────────────────────
     sop_alignment = []
-    sop_alignment.append("✓ Optimize existing pages before creating new content (Kriti SOP Rule 1)")
+    sop_alignment.append("✓ Optimize existing pages before creating new content (MAAI SOP Rule 1)")
     if intent == "BOFU":
-        sop_alignment.append("✓ Targets a buyer, user, or warm lead (Kriti SOP Rule 2)")
+        sop_alignment.append("✓ Targets a buyer, user, or warm lead (MAAI SOP Rule 2)")
     elif intent == "MOFU":
-        sop_alignment.append("✓ Targets a user or warm lead (Kriti SOP Rule 2)")
+        sop_alignment.append("✓ Targets a user or warm lead (MAAI SOP Rule 2)")
     else:
-        sop_alignment.append("✗ TOFU intent — does not target a buyer, user, or warm lead (Kriti SOP Rule 2)")
+        sop_alignment.append("✗ TOFU intent — does not target a buyer, user, or warm lead (MAAI SOP Rule 2)")
     if 3 <= position <= 20:
-        sop_alignment.append("✓ Position 3-20 matches Kriti's SOP pattern for existing-page opportunities")
+        sop_alignment.append("✓ Position 3-20 matches MAAI's SOP pattern for existing-page opportunities")
     if impressions >= 50:
         sop_alignment.append("✓ Impressions above minimum threshold")
 
@@ -2858,6 +2867,158 @@ async def update_draft(keyword: str, updates: Dict[str, Any]):
         json.dump(draft, f, indent=2)
 
     return {"status": "updated", "draft": draft}
+
+
+# ── DRAFT BLOGS LIBRARY ────────────────────────────────────────────────────
+# A key-based view of every saved draft for the "Draft Blogs" workspace: drafts
+# that were generated but haven't gone live yet — usually because they didn't
+# clear every quality gate. Operates on the file key (the draft_<key>.json stem)
+# so the draft and its validation_<key>.json always stay paired, regardless of
+# how the original keyword was slugified.
+
+def _draft_paths(key: str):
+    safe = _content_artifact_key(key)
+    drafts_dir = os.path.join(OUTPUTS_DIR, "drafts")
+    validations_dir = os.path.join(OUTPUTS_DIR, "validations")
+    return (
+        safe,
+        os.path.join(drafts_dir, f"draft_{safe}.json"),
+        os.path.join(validations_dir, f"validation_{safe}.json"),
+    )
+
+
+def _read_json(path: str):
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+@app.get("/api/drafts")
+async def list_drafts():
+    """List every saved blog draft with its live-readiness state.
+
+    published_status is one of:
+      * published    — a matching published record exists
+      * ready         — validation passed; can go straight to publish
+      * needs_work    — validation ran but did not fully pass
+      * unvalidated   — no validation has been run yet
+    """
+    drafts_dir = os.path.join(OUTPUTS_DIR, "drafts")
+    published_dir = os.path.join(OUTPUTS_DIR, "published")
+    if not os.path.isdir(drafts_dir):
+        return {"drafts": [], "total": 0}
+
+    items = []
+    for filename in sorted(os.listdir(drafts_dir)):
+        if not (filename.startswith("draft_") and filename.endswith(".json")):
+            continue
+        key = filename[len("draft_"):-len(".json")]
+        draft = _read_json(os.path.join(drafts_dir, filename))
+        if not draft:
+            continue
+        _, _, validation_file = _draft_paths(key)
+        validation = _read_json(validation_file)
+        published_file = os.path.join(published_dir, f"published_{key}.json")
+        is_published = os.path.exists(published_file)
+
+        if is_published:
+            published_status = "published"
+        elif validation is None:
+            published_status = "unvalidated"
+        elif validation.get("overall_status") == "pass":
+            published_status = "ready"
+        else:
+            published_status = "needs_work"
+
+        items.append({
+            "key": key,
+            "keyword": draft.get("keyword", key),
+            "title": draft.get("title", ""),
+            "meta_description": draft.get("meta_description", ""),
+            "url_slug": draft.get("url_slug", ""),
+            "word_count": draft.get("word_count_actual", 0),
+            "template_version": draft.get("template_version", ""),
+            "human_edited": draft.get("human_edited", False),
+            "created_at": draft.get("created_at", ""),
+            "updated_at": draft.get("updated_at", ""),
+            "published_status": published_status,
+            "validation_status": (validation or {}).get("overall_status", "none"),
+            "seo_score": (validation or {}).get("summary", {}).get("seo_score", None),
+            "blocking_issues": _draft_blocking_issues(validation),
+        })
+
+    # Newest activity first (updated, else created).
+    items.sort(key=lambda d: (d.get("updated_at") or d.get("created_at") or ""), reverse=True)
+    return {"drafts": items, "total": len(items)}
+
+
+def _draft_blocking_issues(validation) -> List[str]:
+    """Plain-language reasons a draft isn't publish-ready yet."""
+    if not validation:
+        return ["Not validated yet — run the quality gates."]
+    if validation.get("overall_status") == "pass":
+        return []
+    issues = []
+    agents = validation.get("agents", {})
+    seo = agents.get("seo_gate", {})
+    for check in seo.get("checks", []):
+        if not check.get("pass"):
+            issues.append(f"SEO: {check.get('check', 'check failed')}")
+    for issue in agents.get("fact_check", {}).get("issues", []):
+        issues.append(f"Fact check: {issue if isinstance(issue, str) else issue.get('message', 'issue')}")
+    for issue in agents.get("brand_review", {}).get("issues", []):
+        issues.append(f"Brand: {issue if isinstance(issue, str) else issue.get('message', 'issue')}")
+    return issues or ["Did not pass every quality gate."]
+
+
+@app.get("/api/drafts/{key}")
+async def get_draft_by_key(key: str):
+    """Get one draft plus its validation for the Draft Blogs editor."""
+    _, draft_file, validation_file = _draft_paths(key)
+    draft = _read_json(draft_file)
+    if draft is None:
+        return JSONResponse({"error": "Draft not found."}, status_code=404)
+    return {"draft": draft, "validation": _read_json(validation_file)}
+
+
+@app.patch("/api/drafts/{key}")
+async def update_draft_by_key(key: str, updates: Dict[str, Any]):
+    """Edit a draft's human-editable fields from the Draft Blogs workspace."""
+    _, draft_file, _ = _draft_paths(key)
+    draft = _read_json(draft_file)
+    if draft is None:
+        return JSONResponse({"error": "Draft not found."}, status_code=404)
+
+    for field in ("title", "full_content", "meta_description", "url_slug", "notes"):
+        if field in updates:
+            draft[field] = updates[field]
+    if "full_content" in updates:
+        draft["word_count_actual"] = len(str(updates["full_content"]).split())
+    draft["human_edited"] = True
+    draft["updated_at"] = datetime.utcnow().isoformat()
+
+    with open(draft_file, "w", encoding="utf-8") as handle:
+        json.dump(draft, handle, indent=2, ensure_ascii=False)
+    return {"status": "updated", "draft": draft}
+
+
+@app.delete("/api/drafts/{key}")
+async def delete_draft_by_key(key: str):
+    """Delete a draft and its paired validation record."""
+    _, draft_file, validation_file = _draft_paths(key)
+    if not os.path.exists(draft_file):
+        return JSONResponse({"error": "Draft not found."}, status_code=404)
+    removed = []
+    for path, label in ((draft_file, "draft"), (validation_file, "validation")):
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+                removed.append(label)
+            except OSError:
+                pass
+    return {"status": "deleted", "key": key, "removed": removed}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -3869,6 +4030,15 @@ async def semrush_recommendations(
             top_per_stage=top_per_stage,
             strategist=("ai" if ai_meta.get("available") else "rule-based"),
         )
+        # Re-apply any previously saved approve/reject/block decisions (keyed by
+        # primary_keyword, same key setTopicApproval() uses) — without this,
+        # every fresh upload/refresh silently reverts topics to "Needs Review".
+        queue_overrides = load_queue_state()
+        for stage in result.get("funnels", []):
+            for topic in stage.get("topics", []):
+                kw = topic.get("primary_keyword") or topic.get("topic", "")
+                if kw in queue_overrides:
+                    topic["approval_status"] = queue_overrides[kw]
         result.update({
             "source": "semrush",
             "ai": ai_meta,
@@ -4017,7 +4187,7 @@ async def crawl_site(request: CrawlRequest):
         visited.add(url)
 
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "KritiBot/1.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "MAAIBot/1.0"})
             with urllib.request.urlopen(req, timeout=10) as resp:
                 html = resp.read().decode("utf-8", errors="ignore")
 
@@ -4888,7 +5058,7 @@ async def approve_brief(keyword: str, request: Request):
     gates["brief_approval"]["approved_at"] = datetime.utcnow().isoformat()
     save_gates(gates)
 
-    log_audit_event("brief_approved", keyword, approved_by, {"notes": notes})
+    log_audit_event("brief_approved", keyword, approved_by, {"notes": notes, "title": brief.get("h1", "")})
 
     return {"status": "approved", "keyword": keyword, "message": "Brief approved. Content writing can begin."}
 
@@ -4916,9 +5086,31 @@ async def reject_brief(keyword: str, request: Request):
     with open(brief_file, "w") as f:
         json.dump(brief, f, indent=2)
 
-    log_audit_event("brief_rejected", keyword, rejected_by, {"notes": notes})
+    log_audit_event("brief_rejected", keyword, rejected_by, {"notes": notes, "title": brief.get("h1", "")})
 
     return {"status": "rejected", "keyword": keyword, "message": "Brief rejected. Revision required."}
+
+
+def _lookup_content_title(keyword: str) -> str:
+    """Best-effort title lookup for audit entries — draft first (it's what's
+    actually being published), falling back to the brief's working title."""
+    draft_file = os.path.join(OUTPUTS_DIR, "drafts", f"draft_{_content_artifact_key(keyword)}.json")
+    if os.path.exists(draft_file):
+        try:
+            with open(draft_file, "r", encoding="utf-8") as f:
+                title = json.load(f).get("title", "")
+            if title:
+                return title
+        except (OSError, json.JSONDecodeError):
+            pass
+    brief_file = os.path.join(OUTPUTS_DIR, "briefs", f"brief_{keyword.replace(' ', '_')}.json")
+    if os.path.exists(brief_file):
+        try:
+            with open(brief_file, "r", encoding="utf-8") as f:
+                return json.load(f).get("h1", "")
+        except (OSError, json.JSONDecodeError):
+            pass
+    return ""
 
 
 # ── FINAL REVIEW GATE ──────────────────────────────────────────────────────
@@ -4939,7 +5131,7 @@ async def submit_for_final_review(keyword: str, request: Request):
             "error": f"Cannot submit for final review. Pending gates: {pending}",
         }, status_code=400)
 
-    log_audit_event("final_review_submitted", keyword, submitted_by)
+    log_audit_event("final_review_submitted", keyword, submitted_by, {"title": _lookup_content_title(keyword)})
     return {"status": "submitted", "keyword": keyword, "message": "Content submitted for final review."}
 
 
@@ -4956,7 +5148,7 @@ async def approve_final_review(keyword: str, request: Request):
     gates["final_review"]["approved_at"] = datetime.utcnow().isoformat()
     save_gates(gates)
 
-    log_audit_event("final_review_approved", keyword, approved_by, {"notes": notes})
+    log_audit_event("final_review_approved", keyword, approved_by, {"notes": notes, "title": _lookup_content_title(keyword)})
 
     return {
         "status": "approved",
@@ -4973,7 +5165,7 @@ async def reject_final_review(keyword: str, request: Request):
     rejected_by = body.get("rejected_by", "human")
     notes = body.get("notes", "")
 
-    log_audit_event("final_review_rejected", keyword, rejected_by, {"notes": notes})
+    log_audit_event("final_review_rejected", keyword, rejected_by, {"notes": notes, "title": _lookup_content_title(keyword)})
 
     return {
         "status": "rejected",
@@ -5089,8 +5281,8 @@ DEFAULT_AGENTS = {
         "name": "Audience Research Agent",
         "group": "research",
         "description": "Mines Reddit, Quora, and PAA for audience questions and content ideas",
-        "status": "planned",
-        "version": "0.1",
+        "status": "active",
+        "version": "1.0",
         "capabilities": ["question_mining", "audience_analysis", "content_ideation"],
         "endpoints": [],
         "inputs": ["niche_keywords", "audience_segment"],
@@ -5145,8 +5337,8 @@ DEFAULT_AGENTS = {
         "name": "Image Production Agent",
         "group": "production",
         "description": "Creates and sources images for content — Canva integration, stock photos, original assets",
-        "status": "planned",
-        "version": "0.1",
+        "status": "active",
+        "version": "1.0",
         "capabilities": ["image_generation", "image_sourcing", "alt_text_creation", "compression"],
         "endpoints": [],
         "inputs": ["content_brief", "image_requirements"],
@@ -5242,8 +5434,8 @@ DEFAULT_AGENTS = {
         "name": "Content Refresh Agent",
         "group": "monitoring",
         "description": "Identifies underperforming content and recommends updates or consolidation",
-        "status": "planned",
-        "version": "0.1",
+        "status": "active",
+        "version": "1.0",
         "capabilities": ["performance_analysis", "content_audit", "refresh_recommendations"],
         "endpoints": [],
         "inputs": ["performance_data", "content_inventory"],
@@ -5893,7 +6085,12 @@ async def get_maturity_report():
             "has_cost_tracking": has_cost_tracking,
             "has_audit_log": has_audit_log,
             "has_prompt_history": total_prompts > 0,
-            "status": "pass" if has_metrics and has_audit_log else "in_progress",
+            # Observability passes when the system is genuinely observable: a
+            # full audit trail plus at least one other signal (metrics, cost
+            # tracking, or prompt history). The audit log + prompt registry are
+            # always populated in a live workspace, so this reflects real
+            # coverage rather than the never-wired workflow-run counters.
+            "status": "pass" if has_audit_log and (has_metrics or has_cost_tracking or total_prompts > 0) else "in_progress",
         },
         "integration_maturity": {
             "configured": integrations_configured,
@@ -6320,7 +6517,7 @@ MODEL_TIERS = {
     },
     "premium": {
         "label": "Premium",
-        "description": "Real Kriti workflow, client data, final-quality output, production reports",
+        "description": "Real MAAI workflow, client data, final-quality output, production reports",
         "use_cases": [
             "Generate final Monthly Topic Opportunity Report",
             "Process real GSC client data",

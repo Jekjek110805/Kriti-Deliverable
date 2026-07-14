@@ -1,0 +1,96 @@
+{
+  "keyword": "self storage seo services",
+  "title": "Self Storage seo Services",
+  "client": "selfstorage.help",
+  "template_version": "maai-blog-sop-v1",
+  "validated_at": "2026-07-14T02:15:38.397544",
+  "overall_status": "review",
+  "agents": {
+    "seo_gate": {
+      "agent": "SEO Gate",
+      "passed": 9,
+      "total": 10,
+      "score": 90,
+      "status": "review",
+      "checks": [
+        {
+          "check": "Keyword in title",
+          "pass": true,
+          "detail": "Title: Self Storage seo Services"
+        },
+        {
+          "check": "Keyword in first paragraph",
+          "pass": true,
+          "detail": "First 500 characters checked"
+        },
+        {
+          "check": "Keyword in at least one H2",
+          "pass": true,
+          "detail": "H2 headings checked"
+        },
+        {
+          "check": "TLDR at top",
+          "pass": true,
+          "detail": "TLDR section should be at the very top"
+        },
+        {
+          "check": "Meta description provided",
+          "pass": true,
+          "detail": "Length: 152 chars"
+        },
+        {
+          "check": "URL slug provided",
+          "pass": true,
+          "detail": "self-storage-seo-services"
+        },
+        {
+          "check": "Word count >= 1000",
+          "pass": true,
+          "detail": "Current: 1049 words"
+        },
+        {
+          "check": "At least 2 internal links",
+          "pass": true,
+          "detail": "Found: 4 links"
+        },
+        {
+          "check": "Images have alt text",
+          "pass": false,
+          "detail": "Images: 0, Alt texts: 0"
+        },
+        {
+          "check": "FAQ section present",
+          "pass": true,
+          "detail": "A focused FAQ is required by the MAAI blog template"
+        }
+      ]
+    },
+    "fact_check": {
+      "agent": "Fact Check",
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "message": "No obvious issues detected"
+    },
+    "brand_review": {
+      "agent": "Brand Review",
+      "status": "review",
+      "issues": [
+        {
+          "type": "competitor_negative",
+          "message": "Potentially negative competitor language: avoid",
+          "severity": "medium"
+        }
+      ],
+      "issue_count": 1,
+      "critical_issues": 0,
+      "message": "1 style issues found"
+    }
+  },
+  "summary": {
+    "seo_score": 90,
+    "fact_issues": 0,
+    "brand_issues": 1,
+    "total_issues": 2
+  }
+}

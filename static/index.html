@@ -288,6 +288,10 @@
   .lp-theme-toggle svg { width: 18px; height: 18px; }
   .lp-back { display: inline-flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 700; cursor: pointer; margin-bottom: 22px; }
   .lp-back:hover { color: #fff; }
+  #docPage .lp-back { color: var(--text-secondary); }
+  #docPage .lp-back:hover { color: var(--accent); }
+  .doc-body h2 { font-size: 18px; font-weight: 700; margin: 26px 0 8px; color: var(--text); }
+  .doc-body p { color: var(--text-secondary); font-size: 15px; line-height: 1.7; margin-bottom: 12px; }
   /* Iridescence animated hero background */
   .lp-hero { position: relative; overflow: hidden; height: calc(100vh - 70px); height: calc(100svh - 70px); padding: clamp(32px, 5vh, 56px) 0; display: flex; align-items: center; background: linear-gradient(150deg, #3d5aa8, #6E8BFF); }
   #iridescence-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
@@ -303,6 +307,7 @@
   .lp-hero .lp-btn-ghost:hover { background: rgba(255,255,255,0.16); border-color: #fff; }
   .lp-hero-visual { position: relative; height: min(600px, calc(100svh - 100px)); display: flex; align-items: center; justify-content: center; pointer-events: none; }
   .lp-hero-character { position: relative; z-index: 1; width: min(100%, 460px); max-height: 100%; object-fit: contain; display: block; transform: translate(12px, 22px) scale(1.18); filter: drop-shadow(0 20px 24px rgba(10,14,40,0.24)); }
+  .lp-hero-lottie { position: relative; z-index: 1; width: 100%; max-width: 560px; height: auto; aspect-ratio: 1072 / 574; display: block; filter: drop-shadow(0 20px 28px rgba(10,14,40,0.22)); }
   /* Glassy hero panel — translucent frosted glass over the iridescence */
   .lp-hero .lp-hero-panel { background: rgba(255,255,255,0.10); backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%); border: 1px solid rgba(255,255,255,0.30); box-shadow: 0 16px 48px rgba(10,14,40,0.30), inset 0 1px 0 rgba(255,255,255,0.45); }
   .lp-hero .lp-hero-panel h4 { color: rgba(255,255,255,0.75); }
@@ -381,6 +386,17 @@
   .funnel-count { font-size: 11px; font-weight: 700; color: var(--text-muted); }
   .topic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
   .topic-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 10px; transition: border-color .2s, box-shadow .2s; }
+
+  /* Approval gate cards (replaces the old gates table) */
+  .gate-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .gate-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 16px 18px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 8px; transition: border-color .2s, box-shadow .2s; }
+  .gate-card:hover { border-color: var(--border-light); box-shadow: var(--shadow-md); }
+  .gate-step { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .gate-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .gate-name { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.3; }
+  .gate-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; }
+  .gate-meta { font-size: 11.5px; color: var(--text-muted); }
+  .gate-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
   .topic-card:hover { border-color: var(--border-light); box-shadow: var(--shadow-md); }
   .topic-title { font-size: 14.5px; font-weight: 700; color: var(--text); line-height: 1.35; }
   .topic-badges { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -520,16 +536,38 @@
   label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; }
 
   /* Loading */
-  .loading { display: none; text-align: center; padding: 48px; }
+  .loading { display: none; text-align: center; padding: 48px; position: relative; overflow: hidden; border-radius: var(--radius-lg); background: #0b0b16; }
   .loading.active { display: block; }
-  .loading-mark { display: block; width: 96px; height: 96px; object-fit: contain; margin: 0 auto 18px; animation: loadingMarkPulse 1.8s ease-in-out infinite; }
+  #magicRingsCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; z-index: 0; }
+  .loading-mark { position: relative; z-index: 1; display: block; width: 96px; height: 96px; object-fit: contain; margin: 0 auto 18px; animation: loadingMarkPulse 1.8s ease-in-out infinite; }
   .loading-mark-analysis { width: min(260px, 72vw); height: auto; margin-bottom: 20px; }
   .loading-inline { text-align: center; padding: 32px; color: var(--text-muted); }
   .loading-inline .loading-mark-analysis { width: min(220px, 68vw); margin-bottom: 14px; }
   .loading-text { color: var(--text-secondary); font-size: 13.5px; font-weight: 600; }
+  .loading .loading-text { position: relative; z-index: 1; color: #f1f1f8; }
   .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes loadingMarkPulse { 0%, 100% { transform: translateY(0) scale(0.98); opacity: 0.86; } 50% { transform: translateY(-3px) scale(1.04); opacity: 1; } }
+
+  /* MAAI animated chatbot loader — self-contained SVG + CSS, no external asset.
+     Friendly bot that gently bobs, blinks, pulses its antenna and "types". */
+  .maai-bot { position: relative; z-index: 1; display: block; margin: 0 auto 18px; width: 108px; height: 108px; animation: maaiBotBob 2.4s ease-in-out infinite; }
+  .maai-bot-analysis { width: 132px; height: 132px; }
+  @keyframes maaiBotBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .maai-bot .mb-antenna-dot { transform-box: fill-box; transform-origin: center; animation: maaiBotAntenna 1.6s ease-in-out infinite; }
+  @keyframes maaiBotAntenna { 0%, 100% { opacity: .5; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.25); } }
+  .maai-bot .mb-eye { transform-box: fill-box; transform-origin: center; animation: maaiBotBlink 3.2s infinite; }
+  @keyframes maaiBotBlink { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+  .maai-bot .mb-dot { transform-box: fill-box; transform-origin: center; animation: maaiBotType 1.4s ease-in-out infinite; }
+  .maai-bot .mb-dot2 { animation-delay: .2s; }
+  .maai-bot .mb-dot3 { animation-delay: .4s; }
+  @keyframes maaiBotType { 0%, 100% { opacity: .3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-2px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .maai-bot, .maai-bot * { animation: none !important; }
+  }
+  .maai-loader { position: relative; z-index: 1; display: block; }
+  .maai-lottie-holder { display: block; margin: 0 auto 18px; }
+  .maai-lottie-holder svg { display: block; }
 
   /* Hidden */
   .hidden { display: none; }
@@ -683,6 +721,7 @@
     .page-head { margin-bottom: 16px; }
     .page-head-title { font-size: 21px; }
     .page-head-sub { font-size: 13px; line-height: 1.5; }
+    #uploadModeLogo { height: 20px; }
     .card { padding: 18px; margin-bottom: 18px; }
     .card-title { margin-bottom: 16px; }
     .toolbar { gap: 10px; margin-bottom: 18px; }
@@ -757,7 +796,7 @@
       </div>
     </div>
     <div class="lp-hero-visual">
-      <canvas class="lp-hero-lottie" id="heroLottie" aria-label="MAAI animated illustration"></canvas>
+      <div class="lp-hero-lottie" id="heroLottie" role="img" aria-label="MAAI animated illustration"></div>
     </div>
   </div></div></section>
 
@@ -911,7 +950,7 @@
       </div>
       <div><h5>Product</h5><a onclick="lpScroll('lp-how')">How it works</a><a onclick="lpScroll('lp-capabilities')">Capabilities</a><a onclick="lpScroll('lp-compare')">Why MAAI</a><a onclick="showLogin()">Sign in</a></div>
       <div><h5>Workflow</h5><li>Opportunity Discovery</li><li>Content Briefing</li><li>Quality Validation</li><li>Performance Monitoring</li></div>
-      <div><h5>Company</h5><li>About</li><li>Governance</li><li>Security</li><li>Contact</li></div>
+      <div><h5>Legal &amp; Help</h5><a onclick="showDoc('terms')">Terms of Service</a><a onclick="showDoc('privacy')">Privacy Policy</a><a onclick="showDoc('faq')">FAQ</a><a onclick="showLogin()">Sign in</a></div>
     </div>
     <div class="lp-footer-bottom">© 2026 MAAI — AI SEO Intelligence. Built on Google Search Console. Authorized access only.</div>
   </div></footer>
@@ -963,8 +1002,35 @@
         <button type="submit" class="auth-submit" id="loginSubmit">Sign in as <span id="loginRoleLabel">User</span></button>
       </form>
       <p class="auth-foot">Protected workspace · authorized accounts only.</p>
+      <p class="auth-foot" style="margin-top:8px;">
+        <a onclick="showDoc('terms')" style="cursor:pointer;text-decoration:underline;">Terms of Service</a> ·
+        <a onclick="showDoc('privacy')" style="cursor:pointer;text-decoration:underline;">Privacy Policy</a> ·
+        <a onclick="showDoc('faq')" style="cursor:pointer;text-decoration:underline;">FAQ</a>
+      </p>
     </div>
   </div>
+</div>
+
+<!-- ══════════════════════ DOC PAGES (Terms / Privacy / FAQ) ══════════════════════ -->
+<div class="lp-page hidden" id="docPage">
+  <nav class="lp-nav">
+    <div class="lp-nav-inner">
+      <div class="lp-brand" style="cursor:pointer;" onclick="showLanding()"><svg class="lp-logo" viewBox="24 24 344 100" role="img" aria-label="MAAI"><g fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><polyline points="40,108 40,40 78,82 116,40 116,108"/><polyline points="150,108 190,40 230,108"/><polyline points="242,108 282,40 322,108"/><line x1="352" y1="40" x2="352" y2="108"/></g></svg></div>
+      <div class="lp-nav-links">
+        <a onclick="showDoc('terms')">Terms</a>
+        <a onclick="showDoc('privacy')">Privacy</a>
+        <a onclick="showDoc('faq')">FAQ</a>
+        <button class="lp-btn lp-btn-primary" onclick="showLogin()">Sign in</button>
+      </div>
+    </div>
+  </nav>
+  <div class="lp-wrap" style="max-width:820px;padding:48px 24px 80px;">
+    <div class="lp-back" style="margin-bottom:20px;cursor:pointer;" onclick="showLanding()">← Back to home</div>
+    <div id="docContent"></div>
+  </div>
+  <footer class="lp-footer"><div class="lp-wrap">
+    <div class="lp-footer-bottom">© 2026 MAAI — AI SEO Intelligence. We're glad you're here.</div>
+  </div></footer>
 </div>
 
 <div class="app hidden" id="appRoot">
@@ -1035,9 +1101,12 @@
       </div>
 
       <div class="card" id="upload-card">
-        <div class="upload-mode-toggle" id="uploadModeToggle">
-          <button type="button" class="upload-mode-btn active" data-mode="gsc" onclick="setUploadMode('gsc')">Google Search Console</button>
-          <button type="button" class="upload-mode-btn" data-mode="keyword_research" onclick="setUploadMode('keyword_research')">SEMrush / Keyword Research</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div class="upload-mode-toggle" id="uploadModeToggle">
+            <button type="button" class="upload-mode-btn active" data-mode="gsc" onclick="setUploadMode('gsc')">Google Search Console</button>
+            <button type="button" class="upload-mode-btn" data-mode="keyword_research" onclick="setUploadMode('keyword_research')">SEMrush / Keyword Research</button>
+          </div>
+          <img id="uploadModeLogo" src="/static/Google_Search_Console.svg.webp" alt="Google Search Console" style="height:28px;width:auto;max-width:100%;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">
         </div>
         <div class="upload-mode-desc" id="uploadModeDesc">Analyzes your website's own performance data (query, clicks, impressions, position) to find pages worth improving.</div>
 
@@ -1081,7 +1150,22 @@
       </div>
 
       <div class="loading" id="loading">
-        <iframe class="lottie-loader-frame lottie-loader-frame-analysis" src="https://lottie.host/embed/6300f646-1b8a-4bdb-bb72-7b50b41d7c7d/tsdVmL6fO0.json" title="MAAI robot loading animation" aria-hidden="true" tabindex="-1" loading="eager"></iframe>
+        <span class="maai-loader maai-loader-analysis">
+          <svg class="maai-bot maai-bot-analysis" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <line x1="60" y1="20" x2="60" y2="34" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+            <circle class="mb-antenna-dot" cx="60" cy="15" r="5" fill="var(--accent)"/>
+            <rect x="20" y="50" width="6" height="20" rx="3" fill="var(--accent)"/>
+            <rect x="94" y="50" width="6" height="20" rx="3" fill="var(--accent)"/>
+            <rect x="26" y="34" width="68" height="56" rx="16" fill="var(--accent)"/>
+            <rect x="34" y="42" width="52" height="40" rx="10" fill="#0b1020" opacity="0.92"/>
+            <rect class="mb-eye" x="44" y="53" width="8" height="13" rx="4" fill="#fff"/>
+            <rect class="mb-eye" x="68" y="53" width="8" height="13" rx="4" fill="#fff"/>
+            <circle class="mb-dot mb-dot1" cx="50" cy="75" r="2.5" fill="#fff"/>
+            <circle class="mb-dot mb-dot2" cx="60" cy="75" r="2.5" fill="#fff"/>
+            <circle class="mb-dot mb-dot3" cx="70" cy="75" r="2.5" fill="#fff"/>
+            <rect x="46" y="90" width="28" height="8" rx="4" fill="var(--accent)" opacity="0.7"/>
+          </svg>
+        </span>
         <div class="loading-text" id="analysisLoadingText">Analyzing opportunities...</div>
       </div>
 
@@ -1096,7 +1180,7 @@
             <div class="results-actions">
               <button class="btn btn-sm btn-secondary" onclick="resetDiscoverUpload()">Cancel</button>
               <button class="btn btn-sm btn-primary" onclick="uploadAnotherFile()">Upload another file</button>
-              <button class="btn btn-sm btn-primary" onclick="runLiveGSC()">Pull live GSC</button>
+              <button class="btn btn-sm btn-primary" id="resultsPullGscBtn" onclick="runLiveGSC()">Pull live GSC</button>
             </div>
           </div>
           <div id="oppsFilters"></div>
@@ -1111,7 +1195,7 @@
     <!-- PAGE: SHOULD OPTIMIZE -->
     <div id="page-decide" class="page">
       <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Should I Optimize This Page?</h1>
-      <p style="color:var(--text-muted);margin-bottom:24px;">Enter keyword and page data to get a scored optimization decision.</p>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Not sure if a page is worth the effort? Pop in the numbers and get a clear, scored recommendation in seconds.</p>
 
       <div class="card">
         <div class="card-title">Page Data</div>
@@ -1155,24 +1239,15 @@
     <!-- PAGE: APPROVAL QUEUE -->
     <div id="page-queue" class="page">
       <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Approval Queue</h1>
-      <p style="color:var(--text-muted);margin-bottom:24px;">Review opportunities and approve, reject, or block them. Click "Review" to see full reasoning.</p>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Your call, made easy. Review each opportunity with the full reasoning in front of you, then approve, reject, or block with a single click.</p>
       <div id="queue-empty" class="card"><div class="alert alert-info">No queue yet. Upload a GSC CSV first.</div></div>
       <div id="queue-content" class="hidden">
         <div id="queue-stats" class="stats-grid"></div>
 
-        <!-- Batch actions -->
-        <div class="toolbar">
-          <div style="display:flex;gap:8px;align-items:center;">
-            <span style="font-size:13px;color:var(--text-muted);">Batch:</span>
-          </div>
-          <div class="toolbar-spacer"></div>
-          <button class="btn btn-sm btn-success" onclick="batchAction('approved')"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Approve selected</button>
-          <button class="btn btn-sm btn-danger" onclick="batchAction('rejected')"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Reject selected</button>
-        </div>
-
         <div class="card">
           <div class="card-title">Queue Items</div>
-          <div class="table-wrap"><table><thead><tr><th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th><th>Keyword</th><th>Page</th><th>Score</th><th>Recommendation</th><th>Status</th><th>Actions</th></tr></thead><tbody id="queueTable"></tbody></table></div>
+          <p style="font-size:12.5px;color:var(--text-muted);margin:-6px 0 14px;">Review each topic on its own — Blog Automation runs one approved topic at a time, so approvals are handled per row for full control.</p>
+          <div class="table-wrap"><table><thead><tr><th>Keyword</th><th>Working Title</th><th>Page</th><th>Score</th><th>Recommendation</th><th>Status</th><th>Actions</th></tr></thead><tbody id="queueTable"></tbody></table></div>
         </div>
 
         <!-- Recent activity -->
@@ -1197,6 +1272,7 @@
           <button class="btn btn-danger" onclick="submitReviewAction('rejected')"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Reject</button>
           <button class="btn btn-warning" onclick="submitReviewAction('blocked')">⊘ Block</button>
           <button class="btn btn-success" onclick="submitReviewAction('approved')"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Approve</button>
+          <button class="btn btn-primary" onclick="sendToBlogAutomation(currentReviewKeyword, deriveWorkingTitle(currentReviewKeyword))">→ Blog Automation</button>
         </div>
       </div>
     </div>
@@ -1236,10 +1312,58 @@
       </div>
     </div>
 
+    <!-- PAGE: DRAFT BLOGS -->
+    <div id="page-drafts" class="page">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Draft Blogs</h1>
+      <p style="color:var(--text-muted);margin-bottom:18px;">Every blog you've started lives here. Drafts that didn't quite clear the quality gates are saved safely so nothing is ever lost — pick one back up, polish it, and send it on to publish whenever you're ready.</p>
+      <div class="toolbar" style="margin-bottom:14px;gap:12px;flex-wrap:wrap;">
+        <div id="drafts-filter" class="upload-mode-toggle">
+          <button type="button" class="upload-mode-btn active" data-dfilter="all" onclick="setDraftFilter('all')">All</button>
+          <button type="button" class="upload-mode-btn" data-dfilter="needs_work" onclick="setDraftFilter('needs_work')">Needs Work</button>
+          <button type="button" class="upload-mode-btn" data-dfilter="ready" onclick="setDraftFilter('ready')">Ready to Publish</button>
+          <button type="button" class="upload-mode-btn" data-dfilter="published" onclick="setDraftFilter('published')">Published</button>
+        </div>
+        <div class="toolbar-spacer"></div>
+        <select id="draftSort" onchange="renderDrafts()" style="width:auto;min-width:150px;">
+          <option value="recent">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="title">Title A–Z</option>
+          <option value="seo">Highest SEO score</option>
+        </select>
+        <button class="btn btn-sm btn-secondary" onclick="loadDrafts()">Refresh</button>
+      </div>
+      <div style="margin-bottom:16px;position:relative;">
+        <input type="search" id="draftSearch" placeholder="Search drafts by title or keyword…" oninput="renderDrafts()" style="width:100%;">
+      </div>
+      <div id="drafts-container"></div>
+    </div>
+
+    <!-- DRAFT EDITOR MODAL -->
+    <div class="modal-overlay" id="draftEditModal">
+      <div class="modal" style="width:760px;max-width:94vw;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div class="modal-title" id="draftEditTitle" style="margin:0;">Edit Draft</div>
+          <button class="btn btn-sm btn-secondary" onclick="closeDraftEditor()">Close</button>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px;">Make your edits, save, then run the checks again — the moment it passes, you can send it straight to publish.</p>
+        <div id="draftEditBlockers"></div>
+        <div style="margin-bottom:12px;"><label>Title</label><input type="text" id="draftEditTitleInput"></div>
+        <div style="margin-bottom:12px;"><label>Meta Description</label><input type="text" id="draftEditMeta"></div>
+        <div style="margin-bottom:12px;"><label>URL Slug</label><input type="text" id="draftEditSlug"></div>
+        <div style="margin-bottom:12px;"><label>Full Content (Markdown)</label><textarea id="draftEditContent" rows="14" style="font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;"></textarea></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="openDraftReaderFromEditor()">⤢ Read View</button>
+          <button class="btn btn-secondary" onclick="saveDraftEdits()">Save Changes</button>
+          <button class="btn btn-primary" onclick="revalidateDraft()">Save &amp; Re-run Checks</button>
+          <button class="btn btn-success" id="draftPublishBtn" onclick="draftToPublish()">Send to Publish →</button>
+        </div>
+      </div>
+    </div>
+
     <!-- PAGE: BRIEF -->
     <div id="page-brief" class="page">
       <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Content Brief</h1>
-      <p style="color:var(--text-muted);margin-bottom:24px;">Generate a structured content brief for any keyword.</p>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Give us a keyword and we'll shape a clear, SEO-ready brief — outline, FAQs, and target intent — so your writing starts with a confident plan.</p>
       <div class="card">
         <div class="card-title">Generate Brief</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
@@ -1263,7 +1387,7 @@
     <!-- PAGE: CONTENT -->
     <div id="page-content" class="page">
       <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Content Writer</h1>
-      <p style="color:var(--text-muted);margin-bottom:24px;">Generate an AI-assisted content draft from a brief.</p>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Turn a brief into a polished first draft in moments. Your MAAI writing agent does the heavy lifting — you stay the editor-in-chief.</p>
       <div class="card">
         <div class="card-title">Write Content</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
@@ -1285,7 +1409,7 @@
     <!-- PAGE: VALIDATE -->
     <div id="page-validate" class="page">
       <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Quality Validation</h1>
-      <p style="color:var(--text-muted);margin-bottom:24px;">Run SEO Gate, Fact Check, and Brand Review agents on your content.</p>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Give every piece a confident final check — SEO, facts, and brand voice — so you publish knowing it's ready to perform.</p>
       <div class="card">
         <div class="card-title">Validate Content</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
@@ -1304,7 +1428,7 @@
     <!-- PAGE: PUBLISH -->
     <div id="page-publish" class="page">
       <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Publish</h1>
-      <p style="color:var(--text-muted);margin-bottom:24px;">Publish approved, validated content.</p>
+      <p style="color:var(--text-muted);margin-bottom:24px;">The finish line. Send approved, validated content live — cleanly formatted and ready for your audience.</p>
       <div class="card">
         <div class="card-title">Publish Content</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
@@ -1316,10 +1440,13 @@
         </div>
         <div style="margin-bottom:16px;"><label>Title</label><input type="text" id="pubTitle" placeholder="Content title"></div>
         <div style="margin-bottom:16px;"><label>Content (final)</label><textarea id="pubContent" rows="4" placeholder="Final content..."></textarea></div>
-        <div style="display:flex;gap:10px;">
+        <div id="pubApprovalStatus" style="margin-bottom:14px;"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="publishApprove()">Approve for Publishing</button>
           <button class="btn btn-primary" onclick="publishContent(false)">Schedule</button>
           <button class="btn btn-success" onclick="publishContent(true)">Publish Now</button>
         </div>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:12px;">Publishing needs a one-time human approval — your sign-off that this is good to go live. Approve here, then Schedule or Publish Now.</p>
       </div>
       <div id="publish-result"></div>
     </div>
@@ -1327,7 +1454,7 @@
     <!-- PAGE: MONITOR -->
     <div id="page-monitor" class="page">
       <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Performance Monitor</h1>
-      <p style="color:var(--text-muted);margin-bottom:24px;">Track published content performance.</p>
+      <p style="color:var(--text-muted);margin-bottom:24px;">See how your published work is performing and spot the next opportunity to grow — clear signals, no guesswork.</p>
       <div class="toolbar">
         <button class="btn btn-secondary" onclick="loadMonitor()">Refresh</button>
       </div>
@@ -1337,14 +1464,14 @@
     <!-- PAGE: INTEGRATIONS -->
     <div id="page-integrations" class="page">
       <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Integrations</h1>
-      <p style="color:var(--text-muted);margin-bottom:24px;">Connect external systems for live data, publishing, and monitoring.</p>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Bring your tools together — connect live data, publishing, and monitoring so everything works as one smooth workflow.</p>
       <div id="integrations-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;"></div>
     </div>
 
     <!-- PAGE: GOVERNANCE -->
     <div id="page-governance" class="page">
       <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Governance & Compliance</h1>
-      <p style="color:var(--text-muted);margin-bottom:24px;">Approval gates, audit log, roles, and compliance tracking.</p>
+      <p style="color:var(--text-muted);margin-bottom:24px;">Confidence built in — approval gates, a complete audit trail, roles, and compliance tracking keep your team in control every step of the way.</p>
 
       <!-- Approval Gates -->
       <div class="card">
@@ -1539,8 +1666,86 @@
 
 <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
+<!-- Lottie player, self-hosted (no CDN, no WASM) — powers the loader + hero animations -->
+<script src="/static/lottie.min.js"></script>
 <script>
 const BASE = window.location.protocol === 'file:' ? 'http://localhost:8000' : window.location.origin;
+// Magic Rings background — concentric glowing rings behind the robot loading
+// mark, recreated in plain canvas 2D (reactbits.dev/animations/magic-rings is
+// a React/OGL component; this app has no build step or React, so it's
+// reimplemented here with the same two-color ring behavior).
+(function () {
+  const RING_COLOR_1 = [0x84, 0x33, 0xf2]; // #8433f2
+  const RING_COLOR_2 = [0x00, 0xc4, 0xdf]; // #00c4df
+  const RING_COUNT = 5;
+
+  let canvas = null, ctx = null, raf = null, startedAt = 0;
+
+  function lerpColor(t) {
+    return [0, 1, 2].map(i => Math.round(RING_COLOR_1[i] + (RING_COLOR_2[i] - RING_COLOR_1[i]) * t));
+  }
+
+  function resize() {
+    if (!canvas) return;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, rect.width * dpr);
+    canvas.height = Math.max(1, rect.height * dpr);
+  }
+
+  function draw(now) {
+    if (!ctx) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.width, h = canvas.height;
+    const cx = w / 2, cy = h / 2;
+    const t = (now - startedAt) / 1000;
+    ctx.clearRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'lighter';
+    const maxRadius = Math.max(w, h) * 0.6;
+    for (let i = 0; i < RING_COUNT; i++) {
+      const phase = ((t * 0.3) + i / RING_COUNT) % 1;
+      const radius = phase * maxRadius;
+      const alpha = Math.sin(phase * Math.PI) * 0.55;
+      const [r, g, b] = lerpColor(phase);
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.lineWidth = 2.5 * dpr;
+      ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+      ctx.shadowBlur = 20 * dpr;
+      ctx.shadowColor = `rgba(${r},${g},${b},${alpha})`;
+      ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    raf = requestAnimationFrame(draw);
+  }
+
+  function start() {
+    canvas = document.getElementById('magicRingsCanvas');
+    if (!canvas) return;
+    ctx = canvas.getContext('2d');
+    startedAt = performance.now();
+    resize();
+    window.addEventListener('resize', resize);
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(draw);
+  }
+
+  function stop() {
+    cancelAnimationFrame(raf);
+    window.removeEventListener('resize', resize);
+    if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx = null;
+  }
+
+  const loadingEl = document.getElementById('loading');
+  if (loadingEl) {
+    if (loadingEl.classList.contains('active')) start();
+    new MutationObserver(() => {
+      if (loadingEl.classList.contains('active')) start(); else stop();
+    }).observe(loadingEl, { attributes: true, attributeFilter: ['class'] });
+  }
+})();
+
 let opportunities = [];
 let semrushTopicsFlat = []; // flat, index-addressable list of SEMrush topic cards currently on screen
 let activeJobPoll = null;
@@ -1611,6 +1816,8 @@ const UPLOAD_MODES = {
     zoneHint: 'Expected columns: query, clicks, impressions, position',
     actionLabel: 'Upload GSC Export',
     showGscControls: true,
+    logo: '/static/Google_Search_Console.svg.webp',
+    logoAlt: 'Google Search Console',
   },
   keyword_research: {
     sub: "Upload a SEMrush or Ahrefs keyword export to get blog & landing-page topic ideas grouped by funnel.",
@@ -1619,6 +1826,9 @@ const UPLOAD_MODES = {
     zoneHint: 'Expected columns: keyword, intent, volume, keyword difficulty, cpc',
     actionLabel: 'Upload Keyword File',
     showGscControls: false,
+    logo: '/static/Semrush_logo.svg.webp',
+    logoDark: '/static/Semrush_logo_dark.png',
+    logoAlt: 'SEMrush',
   },
 };
 
@@ -1691,6 +1901,13 @@ function setUploadMode(mode) {
   const gscControls = document.getElementById('gscOnlyControls');
   const keywordControls = document.getElementById('keywordOnlyControls');
   const pullBtn = document.getElementById('pullLiveGscBtn');
+  const logo = document.getElementById('uploadModeLogo');
+  if (logo && cfg.logo) {
+    const isDarkMode = !document.body.classList.contains('light');
+    logo.style.display = '';
+    logo.src = (isDarkMode && cfg.logoDark) ? cfg.logoDark : cfg.logo;
+    logo.alt = cfg.logoAlt || '';
+  }
   if (sub) sub.textContent = cfg.sub;
   if (desc) desc.textContent = cfg.desc;
   if (zoneText) zoneText.textContent = cfg.zoneText;
@@ -1725,6 +1942,7 @@ const NAV_GROUPS = {
     defaultPage: 'automation',
     pages: [
       { id: 'automation', label: 'Blog Automation', icon: 'robot' },
+      { id: 'drafts', label: 'Draft Blogs', icon: 'edit' },
       { id: 'brief', label: 'Brief', icon: 'clipboard' },
       { id: 'content', label: 'Content Draft', icon: 'pencil' },
       { id: 'validate', label: 'Validate', icon: 'search' },
@@ -1910,6 +2128,7 @@ function toggleTheme() {
   }
   syncThemeIcons(isLight);
   localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  if (typeof uploadMode !== 'undefined' && UPLOAD_MODES[uploadMode]) setUploadMode(uploadMode);
 }
 
 // Restore saved theme — light is the default unless the user explicitly chose dark
@@ -1964,6 +2183,8 @@ function showScreen(name) {
   document.getElementById('landingPage').classList.toggle('hidden', name !== 'landing');
   const loginEl = document.getElementById('loginPage');
   if (loginEl) loginEl.classList.toggle('hidden', name !== 'login');
+  const docEl = document.getElementById('docPage');
+  if (docEl) docEl.classList.toggle('hidden', name !== 'doc');
   document.getElementById('appRoot').classList.toggle('hidden', name !== 'app');
   if (name !== 'app') closeMobileNav();
   if (name === 'landing') { const lp = document.getElementById('landingPage'); if (lp) lp.scrollTop = 0; }
@@ -1971,6 +2192,76 @@ function showScreen(name) {
 
 function showLanding() { showScreen('landing'); }
 function showLogin() { showScreen('login'); }
+
+// ── Terms / Privacy / FAQ doc pages ──────────────────────────────────────────
+const DOC_PAGES = {
+  terms: `
+    <h1 style="font-size:30px;font-weight:800;margin-bottom:8px;">Terms of Service</h1>
+    <p style="color:var(--text-muted);margin-bottom:28px;">Last updated 14 July 2026 · Thanks for being here — here's the friendly version of the fine print.</p>
+    <div class="doc-body">
+      <h2>1. Welcome to MAAI</h2>
+      <p>MAAI is an AI-powered SEO decision workspace. By signing in and using it, you're agreeing to these terms. We've kept them clear and reasonable on purpose — no surprises.</p>
+      <h2>2. Your account</h2>
+      <p>Your workspace is for authorized users only. Please keep your sign-in details private, and let us know right away if you suspect anyone else has access. You're responsible for the activity that happens under your account.</p>
+      <h2>3. How you can use MAAI</h2>
+      <p>Use MAAI for its intended purpose: analyzing your search data, generating content, and managing your publishing workflow. Please don't attempt to reverse-engineer, resell, or misuse the platform, or upload data you don't have the right to use.</p>
+      <h2>4. Your content stays yours</h2>
+      <p>Anything you upload or create — your Search Console exports, keywords, briefs, and drafts — remains yours. We only process it to power the features you're using, and never to compete with you.</p>
+      <h2>5. AI-assisted output</h2>
+      <p>MAAI generates drafts and recommendations with AI. They're a strong, well-researched starting point — but a human should always review before anything goes live. That's exactly why our approval gates exist. You're in control of what gets published.</p>
+      <h2>6. Availability</h2>
+      <p>We work hard to keep MAAI fast and reliable, but we can't promise it will be available every second. We may update or improve features over time to make your experience better.</p>
+      <h2>7. Questions?</h2>
+      <p>We're happy to help. Reach out through your account manager or our support channel and we'll get back to you promptly.</p>
+    </div>`,
+  privacy: `
+    <h1 style="font-size:30px;font-weight:800;margin-bottom:8px;">Privacy Policy</h1>
+    <p style="color:var(--text-muted);margin-bottom:28px;">Last updated 14 July 2026 · Your trust matters to us, so here's exactly how we handle your data.</p>
+    <div class="doc-body">
+      <h2>1. What we collect</h2>
+      <p>To do its job, MAAI works with the data you provide: your Google Search Console performance data, keyword exports, the content you generate, and basic account details like your username. That's it — nothing you didn't bring to the table.</p>
+      <h2>2. How we use it</h2>
+      <p>We use your data solely to power the features you're using — scoring opportunities, generating briefs and drafts, running quality checks, and publishing approved content. We don't sell your data, and we don't use it to train third-party models.</p>
+      <h2>3. Keeping it safe</h2>
+      <p>Access is limited to authorized accounts, actions are recorded in an audit log, and credentials are stored securely. We take sensible, industry-standard steps to protect your information.</p>
+      <h2>4. Third-party connections</h2>
+      <p>When you connect services like Google Search Console or your CMS, MAAI communicates with them only to deliver the features you've asked for. Those services have their own privacy terms, which we'd encourage you to review.</p>
+      <h2>5. Your choices</h2>
+      <p>You can review, edit, or delete your drafts and data from within your workspace at any time. If you'd like a full export or deletion of your account data, just ask — we'll help.</p>
+      <h2>6. Staying in touch</h2>
+      <p>If our practices change, we'll update this page and note the date at the top. Questions about your privacy are always welcome.</p>
+    </div>`,
+  faq: `
+    <h1 style="font-size:30px;font-weight:800;margin-bottom:8px;">Frequently Asked Questions</h1>
+    <p style="color:var(--text-muted);margin-bottom:28px;">Everything you might be wondering, answered simply. Still stuck? We're just a message away.</p>
+    <div class="doc-body" id="docFaqList"></div>`,
+};
+
+const FAQ_ITEMS = [
+  ['What exactly does MAAI do?', 'MAAI turns your Google Search Console data into ranked, ready-to-act SEO decisions. It scores every keyword and page, tells you what to work on first and why, then helps you brief, write, quality-check, and publish the content — all with human approval along the way.'],
+  ['Do I need to be an SEO expert to use it?', 'Not at all. MAAI does the heavy analysis and explains every recommendation in plain language, so you can make confident calls whether you\'re a seasoned strategist or just getting started.'],
+  ['Is my data safe with MAAI?', 'Yes. Your data is used only to power the features you\'re using — never sold, never used to train outside models. Access is limited to authorized accounts and every action is logged. See our Privacy Policy for the full picture.'],
+  ['Does MAAI publish content automatically?', 'Only when you say so. Nothing goes live without passing quality checks and getting human approval. You\'re always in the driver\'s seat.'],
+  ['What happens to a draft that doesn\'t pass the checks?', 'It\'s saved safely in your Draft Blogs workspace with clear notes on what to improve. Pick it back up anytime, polish it, re-run the checks, and send it to publish when it\'s ready — nothing is ever lost.'],
+  ['Can MAAI write the content for me?', 'Absolutely. Approve an opportunity and MAAI creates an intent-aware brief and a full draft, then runs SEO, fact, and brand checks before it reaches you. Think of it as a tireless first-draft partner.'],
+  ['What data do I need to get started?', 'Just a Google Search Console connection or a CSV/XLSX export with query, impressions, clicks, and position. That\'s enough for MAAI to start finding opportunities right away.'],
+  ['How do I get help if I\'m stuck?', 'Reach out through your account manager or our support channel — we\'re friendly, responsive, and genuinely happy to help you succeed.'],
+];
+
+function showDoc(type) {
+  const content = document.getElementById('docContent');
+  content.innerHTML = DOC_PAGES[type] || DOC_PAGES.faq;
+  if (type === 'faq') {
+    const host = document.getElementById('docFaqList');
+    if (host) host.innerHTML = FAQ_ITEMS.map(([q, a]) =>
+      `<div class="lp-faq-item open" style="cursor:default;"><div class="lp-faq-q" style="cursor:pointer;" onclick="lpFaq(this)">${q}</div><div class="lp-faq-a">${a}</div></div>`
+    ).join('');
+  }
+  showScreen('doc');
+  const dp = document.getElementById('docPage');
+  if (dp) dp.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
 
 // Marketing landing helpers
 function lpScroll(id) {
@@ -2473,42 +2764,132 @@ function escapeHtml(value) {
   }[char]));
 }
 
+// GSC opportunity items carry no title field (unlike SEMrush topics, which get
+// one from the AI strategist) — derive a readable working title from the
+// keyword itself so Queue Items always has something to show and to hand off
+// to Blog Automation's Working Title field.
+function deriveWorkingTitle(keyword) {
+  return String(keyword || '').split(/\s+/).filter(Boolean)
+    .map(w => w.length > 3 ? w[0].toUpperCase() + w.slice(1) : w)
+    .join(' ');
+}
+
 function formatNumber(value) {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric.toLocaleString() : escapeHtml(value || '0');
 }
 
-let _dotLottieModule = null;
-function loadDotLottie() {
-  if (_dotLottieModule === null) {
-    _dotLottieModule = import('https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web/+esm')
-      .then(m => m.DotLottie)
-      .catch(() => false);
-  }
-  return _dotLottieModule;
+// ── MAAI Lottie animations (loader + hero) ───────────────────────────────────
+// Played with a self-hosted lottie-web player (static/lottie.min.js) — no CDN,
+// no WASM, works offline. The animations are self-hosted JSON files. A bump to
+// LOTTIE_VERSION cache-busts them so a swapped file always refetches.
+// The inline SVG bot paints instantly and stays as the fallback if the player
+// or the JSON can't load, so a loader is always visible.
+const LOTTIE_VERSION = '5';
+const MAAI_LOTTIE_SRC = '/static/chatbot-loader.json?v=' + LOTTIE_VERSION;
+const HERO_LOTTIE_SRC = '/static/landing-hero.json?v=' + LOTTIE_VERSION;
+
+function maaiBotSvg(extraClass) {
+  return `<svg class="maai-bot ${extraClass || ''}" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <line x1="60" y1="20" x2="60" y2="34" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+    <circle class="mb-antenna-dot" cx="60" cy="15" r="5" fill="var(--accent)"/>
+    <rect x="20" y="50" width="6" height="20" rx="3" fill="var(--accent)"/>
+    <rect x="94" y="50" width="6" height="20" rx="3" fill="var(--accent)"/>
+    <rect x="26" y="34" width="68" height="56" rx="16" fill="var(--accent)"/>
+    <rect x="34" y="42" width="52" height="40" rx="10" fill="#0b1020" opacity="0.92"/>
+    <rect class="mb-eye" x="44" y="53" width="8" height="13" rx="4" fill="#fff"/>
+    <rect class="mb-eye" x="68" y="53" width="8" height="13" rx="4" fill="#fff"/>
+    <circle class="mb-dot mb-dot1" cx="50" cy="75" r="2.5" fill="#fff"/>
+    <circle class="mb-dot mb-dot2" cx="60" cy="75" r="2.5" fill="#fff"/>
+    <circle class="mb-dot mb-dot3" cx="70" cy="75" r="2.5" fill="#fff"/>
+    <rect x="46" y="90" width="28" height="8" rx="4" fill="var(--accent)" opacity="0.7"/>
+  </svg>`;
+}
+
+// Returns the SVG fallback in a wrapper; the observer upgrades it to Lottie.
+function maaiBotLoader(extraClass) {
+  const analysis = String(extraClass || '').includes('analysis');
+  return `<span class="maai-loader${analysis ? ' maai-loader-analysis' : ''}">${maaiBotSvg(extraClass)}</span>`;
+}
+
+function upgradeLoaderToLottie(wrapper) {
+  if (wrapper.dataset.lottieDone) return;
+  if (typeof lottie === 'undefined') return;   // player not available → keep SVG fallback
+  wrapper.dataset.lottieDone = '1';
+  const size = wrapper.classList.contains('maai-loader-analysis') ? 150 : 108;
+  const holder = document.createElement('div');
+  holder.className = 'maai-lottie-holder';
+  holder.style.width = size + 'px';
+  holder.style.height = size + 'px';
+  try {
+    lottie.loadAnimation({ container: holder, renderer: 'svg', loop: true, autoplay: true, path: MAAI_LOTTIE_SRC });
+    wrapper.innerHTML = '';
+    wrapper.appendChild(holder);
+  } catch (e) { /* keep the SVG fallback */ }
 }
 
 // Landing-page hero animation (replaces the old static hero illustration).
 function initHeroLottie() {
-  const canvas = document.getElementById('heroLottie');
-  if (!canvas || canvas.dataset.mounted) return;
-  const p = loadDotLottie();
-  if (!p) return;
-  p.then(DotLottie => {
-    if (!DotLottie || !canvas.isConnected) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = 1072 * dpr;
-    canvas.height = 574 * dpr;
-    canvas.dataset.mounted = '1';
-    try {
-      new DotLottie({ autoplay: true, loop: true, canvas, src: '/static/landing-hero.json' });
-    } catch (e) { /* leave the hero area empty if the player can't start */ }
-  });
+  const host = document.getElementById('heroLottie');
+  if (!host || host.dataset.mounted) return;
+  if (typeof lottie === 'undefined') return;
+  host.dataset.mounted = '1';
+  try {
+    lottie.loadAnimation({ container: host, renderer: 'svg', loop: true, autoplay: true, path: HERO_LOTTIE_SRC });
+  } catch (e) { /* leave the hero area empty if the player can't start */ }
 }
 
+// ── Metric count-up animation ────────────────────────────────────────────────
+// Animates any numeric stat card from 0 up to its value with comma grouping
+// ("split" thousands) and an ease-out curve. A MutationObserver picks up every
+// stat card the moment it's rendered, so no per-render wiring is needed. Cards
+// that hold non-numeric content (spinners, dates, IDs) are skipped untouched.
+function animateStatValue(el) {
+  if (el.dataset.counted) return;
+  const raw = el.textContent.trim();
+  const m = raw.match(/^([\d,]+)(%?)$/);
+  if (!m) return;                                  // not a plain number — leave as-is
+  const target = parseInt(m[1].replace(/,/g, ''), 10);
+  if (!Number.isFinite(target)) return;
+  el.dataset.counted = '1';
+  const suffix = m[2] || '';
+  if (target === 0 || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+    el.textContent = target.toLocaleString() + suffix;
+    return;
+  }
+  const duration = 900;
+  let startTs = null;
+  function tick(ts) {
+    if (startTs === null) startTs = ts;
+    const p = Math.min(1, (ts - startTs) / duration);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(target * eased).toLocaleString() + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+    else el.textContent = target.toLocaleString() + suffix;
+  }
+  requestAnimationFrame(tick);
+}
+
+function initStatCountUp() {
+  const scan = (root) => {
+    if (root.nodeType !== 1) return;
+    // Upgrade any chatbot loader wrapper to the real Lottie animation.
+    if (root.matches && root.matches('.maai-loader')) upgradeLoaderToLottie(root);
+    if (root.querySelectorAll) root.querySelectorAll('.maai-loader').forEach(upgradeLoaderToLottie);
+    if (root.matches && root.matches('.stat-value')) { animateStatValue(root); return; }
+    if (root.querySelectorAll) root.querySelectorAll('.stat-value').forEach(animateStatValue);
+  };
+  const observer = new MutationObserver(muts => {
+    muts.forEach(mut => mut.addedNodes.forEach(scan));
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  scan(document.body); // catch anything already on the page
+}
 if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initStatCountUp);
   document.addEventListener('DOMContentLoaded', initHeroLottie);
 } else {
+  initStatCountUp();
   initHeroLottie();
 }
 
@@ -2555,7 +2936,7 @@ function showQueuedStatus(d) {
     <div class="stat-card"><div class="stat-value" style="font-size:13px">${escapeHtml(rangeLabel)}</div><div class="stat-label">Date range</div></div>
     <div class="stat-card"><div class="stat-value" style="font-size:13px">${d.job_id}</div><div class="stat-label">Job ID</div></div>
   `;
-  document.getElementById('oppsTable').innerHTML = `<div class="loading-inline"><iframe class="lottie-loader-frame lottie-loader-frame-analysis" src="https://lottie.host/embed/6300f646-1b8a-4bdb-bb72-7b50b41d7c7d/tsdVmL6fO0.json" title="MAAI robot loading animation" aria-hidden="true" tabindex="-1" loading="eager"></iframe><div class="loading-text" id="queuedLoadingText">Analyzing opportunities...</div></div>`;
+  document.getElementById('oppsTable').innerHTML = `<div class="loading-inline">${maaiBotLoader('maai-bot-analysis')}<div class="loading-text" id="queuedLoadingText">Analyzing opportunities...</div></div>`;
   startLoadingTextCycle('#queuedLoadingText', 2);
 }
 
@@ -2634,6 +3015,8 @@ function renderResults(d) {
   document.getElementById('results-section').classList.remove('hidden');
   const titleEl = document.getElementById('resultsCardTitle');
   if (titleEl) titleEl.textContent = 'Ranked Opportunities';
+  const resultsPullBtnGsc = document.getElementById('resultsPullGscBtn');
+  if (resultsPullBtnGsc) resultsPullBtnGsc.style.display = '';
   const rows = Array.isArray(d.opportunities) ? d.opportunities : [];
   opportunities = rows;
   oppCurrentPage = 1;
@@ -2861,6 +3244,8 @@ function renderGscOverview(d) {
 
   const titleEl = document.getElementById('resultsCardTitle');
   if (titleEl) titleEl.textContent = 'GSC Overview';
+  const resultsPullBtnOv = document.getElementById('resultsPullGscBtn');
+  if (resultsPullBtnOv) resultsPullBtnOv.style.display = '';
 
   gscOverviewSections = Array.isArray(d.gsc_overview) ? d.gsc_overview : [];
   gscSectionPages = {};
@@ -2899,6 +3284,11 @@ function renderFunnelTopics(d) {
   // show the funnel-topics report, never leftover GSC opportunity rows.
   lastAnalysisSource = 'keyword_research';
   lastKeywordTopicsResult = d;
+
+  // "Pull live GSC" is meaningless for a SEMrush keyword upload — hide it in
+  // the Blog & Topic Ideas by Funnel results header.
+  const resultsPullBtn = document.getElementById('resultsPullGscBtn');
+  if (resultsPullBtn) resultsPullBtn.style.display = 'none';
 
   const titleEl = document.getElementById('resultsCardTitle');
   if (titleEl) titleEl.textContent = 'Blog & Topic Ideas by Funnel';
@@ -3135,6 +3525,7 @@ function showTopicModal(idx) {
           <button class="btn btn-sm" style="background:var(--green);color:#06281f;border:none;" onclick="setTopicApproval(${idx},'approve')">Approve</button>
           <button class="btn btn-sm" style="background:var(--crimson);color:#fff;border:none;" onclick="setTopicApproval(${idx},'reject')">Reject</button>
           <button class="btn btn-sm" style="background:var(--yellow);color:#3a2e05;border:none;" onclick="setTopicApproval(${idx},'block')">Block</button>
+          ${t.approval_status === 'approved' ? `<button class="btn btn-sm btn-secondary" onclick="sendToBlogAutomation('${(t.primary_keyword || t.topic || '').replace(/'/g, "\\'")}', '${(t.title || '').replace(/'/g, "\\'")}')">Send to Blog Automation →</button>` : ''}
         </div>
         <button class="btn btn-primary" onclick="document.getElementById('topic-modal').remove()">Close</button>
       </div>
@@ -3429,6 +3820,7 @@ function showReasonModal(index) {
           <button class="btn btn-sm" style="background:var(--green);color:#06281f;border:none;" onclick="setApproval(${index},'approve')">Approve</button>
           <button class="btn btn-sm" style="background:var(--crimson);color:#fff;border:none;" onclick="setApproval(${index},'reject')">Reject</button>
           <button class="btn btn-sm" style="background:var(--yellow);color:#3a2e05;border:none;" onclick="setApproval(${index},'block')">Block</button>
+          ${o.approval_status === 'approved' ? `<button class="btn btn-sm btn-secondary" onclick="sendToBlogAutomation('${(o.keyword || '').replace(/'/g, "\\'")}')">Send to Blog Automation →</button>` : ''}
         </div>
         <button class="btn btn-primary" onclick="document.getElementById('reason-modal').remove()">Close</button>
       </div>
@@ -3436,6 +3828,21 @@ function showReasonModal(index) {
   `;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+}
+
+// Hands a keyword straight from an approved GSC/SEMrush card INTO Blog
+// Automation and runs it immediately — no retyping, no second click. Approve
+// a card, then this fires inventory -> generate -> validate on its own.
+function sendToBlogAutomation(keyword, title) {
+  if (!keyword) return;
+  document.querySelectorAll('#reason-modal, #topic-modal, #gsc-row-modal').forEach(m => m.remove());
+  if (document.getElementById('reviewModal')?.classList.contains('open')) closeReviewModal();
+  showPage('automation');
+  const kwInput = document.getElementById('autoBlogKeyword');
+  kwInput.value = keyword;
+  if (title) document.getElementById('autoBlogTitle').value = title;
+  kwInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  runBlogAutomation();
 }
 
 function quickDecision(keyword, page, position, impressions, clicks) {
@@ -3526,8 +3933,8 @@ function loadQueue() {
 
       document.getElementById('queueTable').innerHTML = items.map(i => `
         <tr>
-          <td><input type="checkbox" class="queue-checkbox" data-keyword="${i.keyword.replace(/"/g, '&quot;')}"></td>
           <td><strong>${i.keyword}</strong></td>
+          <td style="font-size:13px;">${escapeHtml(deriveWorkingTitle(i.keyword))}</td>
           <td style="font-size:12px;color:var(--text-muted)">${i.page}</td>
           <td>${i.score}</td>
           <td><span class="badge badge-${i.recommendation === 'Improve Existing' ? 'optimize' : i.recommendation === 'Expand Existing' ? 'maybe' : 'skip'}">${i.recommendation}</span></td>
@@ -3536,6 +3943,7 @@ function loadQueue() {
             <button class="btn btn-sm btn-primary" onclick="openReviewModal('${i.keyword.replace(/'/g, "\\'")}')">Review</button>
             <button class="btn btn-sm btn-success" onclick="setStatus('${i.keyword.replace(/'/g, "\\'")}', 'approved')" title="Approve"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>
             <button class="btn btn-sm btn-danger" onclick="setStatus('${i.keyword.replace(/'/g, "\\'")}', 'rejected')" title="Reject"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            ${i.approval_status === 'approved' ? `<button class="btn btn-sm btn-secondary" onclick="sendToBlogAutomation('${i.keyword.replace(/'/g, "\\'")}', '${deriveWorkingTitle(i.keyword).replace(/'/g, "\\'")}')">→ Blog Automation</button>` : ''}
           </td>
         </tr>
       `).join('');
@@ -3543,10 +3951,13 @@ function loadQueue() {
       // Recent activity
       if (d.recent_activity && d.recent_activity.length) {
         document.getElementById('queue-activity').innerHTML = d.recent_activity.map(a => `
-          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
-            <span class="badge badge-${a.action === 'approved' ? 'approved' : a.action === 'rejected' ? 'rejected' : 'blocked'}">${a.action}</span>
-            <span style="font-size:13px;"><strong>${a.keyword}</strong></span>
-            <span style="font-size:12px;color:var(--text-muted);margin-left:auto;">${new Date(a.timestamp).toLocaleString()}</span>
+          <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="badge badge-${a.action === 'approved' ? 'approved' : a.action === 'rejected' ? 'rejected' : 'blocked'}">${escapeHtml(a.action)}</span>
+              <span style="font-size:13px;"><strong>${escapeHtml(deriveWorkingTitle(a.keyword))}</strong></span>
+              <span style="font-size:12px;color:var(--text-muted);margin-left:auto;white-space:nowrap;">${new Date(a.timestamp).toLocaleString()}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">Keyword: ${escapeHtml(a.keyword)}${a.notes ? ' · Notes: ' + escapeHtml(a.notes) : ''}</div>
           </div>
         `).join('');
       }
@@ -3554,11 +3965,17 @@ function loadQueue() {
 }
 
 function setStatus(keyword, status) {
-  fetch(BASE + '/api/queue/' + encodeURIComponent(keyword) + '/' + status, {
+  // The single-item route is a verb (approve/reject/block), not the noun
+  // status ("approved"/"rejected") this was passing — that 404'd silently.
+  const actionMap = { approved: 'approve', rejected: 'reject', blocked: 'block' };
+  const action = actionMap[status] || status;
+  fetch(BASE + '/api/queue/' + encodeURIComponent(keyword) + '/' + action, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ notes: '' }),
-  }).then(() => loadQueue());
+  })
+    .then(r => { if (!r.ok) throw new Error('Request failed: ' + r.status); return loadQueue(); })
+    .catch(err => showToast('Could not update status: ' + err.message, 'error'));
 }
 
 // ── Review Modal ─────────────────────────────────────────────────────────────
@@ -3568,7 +3985,7 @@ function openReviewModal(keyword) {
   currentReviewKeyword = keyword;
   document.getElementById('reviewModal').classList.add('open');
   document.getElementById('reviewModalTitle').textContent = 'Review: ' + keyword;
-  document.getElementById('reviewModalContent').innerHTML = '<div class="loading active"><iframe class="lottie-loader-frame" src="https://lottie.host/embed/6300f646-1b8a-4bdb-bb72-7b50b41d7c7d/tsdVmL6fO0.json" title="MAAI robot loading animation" aria-hidden="true" tabindex="-1" loading="eager"></iframe><div class="loading-text">Loading review data...</div></div>';
+  document.getElementById('reviewModalContent').innerHTML = '<div class="loading active">' + maaiBotLoader() + '<div class="loading-text">Loading review data...</div></div>';
   document.getElementById('reviewNotes').value = '';
 
   fetch(BASE + '/api/queue/' + encodeURIComponent(keyword) + '/review', { method: 'POST' })
@@ -3629,42 +4046,18 @@ function closeReviewModal() {
 
 function submitReviewAction(action) {
   if (!currentReviewKeyword) return;
+  // Same verb-vs-noun mismatch as setStatus() — the route is /approve, /reject,
+  // /block, not /approved, /rejected, /blocked. This silently 404'd before.
+  const actionMap = { approved: 'approve', rejected: 'reject', blocked: 'block' };
+  const verb = actionMap[action] || action;
   const notes = document.getElementById('reviewNotes').value;
-  fetch(BASE + '/api/queue/' + encodeURIComponent(currentReviewKeyword) + '/' + action, {
+  fetch(BASE + '/api/queue/' + encodeURIComponent(currentReviewKeyword) + '/' + verb, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ notes }),
-  }).then(() => { closeReviewModal(); loadQueue(); });
-}
-
-// ── Batch Operations ─────────────────────────────────────────────────────────
-let queueItems = [];
-
-function toggleSelectAll() {
-  const checked = document.getElementById('selectAll').checked;
-  document.querySelectorAll('.queue-checkbox').forEach(cb => cb.checked = checked);
-}
-
-function getSelectedKeywords() {
-  const keywords = [];
-  document.querySelectorAll('.queue-checkbox:checked').forEach(cb => {
-    keywords.push(cb.dataset.keyword);
-  });
-  return keywords;
-}
-
-function batchAction(action) {
-  const keywords = getSelectedKeywords();
-  if (!keywords.length) {
-    showToast('Select at least one item', 'warning');
-    return;
-  }
-
-  fetch(BASE + '/api/queue/batch', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, keywords }),
-  }).then(() => loadQueue());
+  })
+    .then(r => { if (!r.ok) throw new Error('Request failed: ' + r.status); closeReviewModal(); loadQueue(); })
+    .catch(err => showToast('Could not update status: ' + err.message, 'error'));
 }
 
 // ── Content Calendar ────────────────────────────────────────────────────────
@@ -3784,6 +4177,7 @@ function submitReview() {
 
 // ── Content Brief ────────────────────────────────────────────────────────────
 let lastAutomationDraft = null;
+let blogAbortController = null; // lets the Cancel button interrupt draft creation
 
 function loadBlogAutomationStatus() {
   const out = document.getElementById('blog-automation-status');
@@ -3822,11 +4216,19 @@ function runBlogAutomation() {
   };
   const btn = document.getElementById('autoBlogRunBtn');
   const out = document.getElementById('blog-automation-result');
+  blogAbortController = new AbortController();
   btn.disabled = true;
   btn.textContent = 'Creating draft...';
-  out.innerHTML = '<div class="card"><div class="alert alert-info">Reading existing pages, writing to the MAAI template, and running quality checks...</div></div>';
+  out.innerHTML = `<div class="card"><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      ${maaiBotLoader()}
+      <div style="flex:1;min-width:200px;">
+        <div style="font-weight:600;margin-bottom:2px;">Your MAAI Agent is on it…</div>
+        <div style="font-size:12.5px;color:var(--text-muted);">Reading existing pages, writing to the MAAI template, and running quality checks. This usually takes under a minute.</div>
+      </div>
+      <button class="btn btn-danger" onclick="cancelBlogAutomation()">Cancel</button>
+    </div></div>`;
   fetch(BASE + '/api/automation/blogs/run', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: blogAbortController.signal,
   })
     .then(r => r.json().then(d => ({ ok: r.ok, d })))
     .then(({ ok, d }) => {
@@ -3834,6 +4236,7 @@ function runBlogAutomation() {
       lastAutomationDraft = d.draft;
       const validation = d.validation || {};
       const summary = validation.summary || {};
+      const featuredImg = (d.draft.image && d.draft.image.featured_image_url) || '';
       const stepHtml = (d.steps || []).map(step => {
         const good = ['complete', 'pass', 'published', 'draft_created'].includes(step.status);
         const bad = ['failed', 'blocked', 'fail'].includes(step.status);
@@ -3850,24 +4253,102 @@ function runBlogAutomation() {
             <span class="badge">${Number(d.draft.word_count_actual || 0).toLocaleString()} words</span>
             <span class="badge">${escapeHtml(d.draft.template_version || '')}</span>
           </div>
+          ${featuredImg ? `<img src="${escapeHtml(featuredImg)}" alt="${escapeHtml((d.draft.image && d.draft.image.alt_text) || d.draft.title || '')}" style="width:100%;max-height:280px;object-fit:cover;border-radius:10px;margin-bottom:12px;display:block;" onerror="this.style.display='none'">` : ''}
           <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;"><strong>Slug:</strong> /${escapeHtml(d.draft.url_slug)}<br><strong>Meta:</strong> ${escapeHtml(d.draft.meta_description || '')}</div>
           <textarea rows="16" readonly style="font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;">${escapeHtml(d.draft.full_content)}</textarea>
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+            <button class="btn btn-success" onclick="storeToDraftBlogs()">Store to Draft Blogs</button>
+            <button class="btn btn-secondary" onclick="openDraftReader()">⤢ Maximize to Read</button>
             <button class="btn btn-primary" onclick="automationToPublish()">Open in Publish</button>
             ${remote && remote.url ? `<a class="btn btn-secondary" href="${escapeHtml(remote.url)}" target="_blank" rel="noopener">View remote post</a>` : ''}
           </div>
         </div>
         <div class="card"><div class="card-title">Workflow</div>${stepHtml}</div>`;
-      showToast('Blog draft created and checked.', 'success');
+      showToast('Blog draft created and saved to Draft Blogs.', 'success');
     })
     .catch(err => {
+      if (err.name === 'AbortError') {
+        out.innerHTML = `<div class="card"><div class="alert alert-warning">Draft creation cancelled. If it had already finished generating, it's safely kept in <a onclick="showPage('drafts')" style="cursor:pointer;text-decoration:underline;font-weight:600;">Draft Blogs</a> — nothing is lost.</div></div>`;
+        loadDrafts();
+        return;
+      }
       out.innerHTML = `<div class="card"><div class="alert alert-error">${escapeHtml(err.message)}</div></div>`;
       showToast(err.message, 'error');
     })
     .finally(() => {
       btn.disabled = false;
       btn.textContent = 'Create & Validate Draft';
+      blogAbortController = null;
     });
+}
+
+// Cancel an in-flight draft creation. The generation runs server-side, so if it
+// has already finished by the time you cancel, the backend has still saved it to
+// Draft Blogs — cancelling just stops the UI from waiting.
+function cancelBlogAutomation() {
+  if (blogAbortController) blogAbortController.abort();
+}
+
+// The draft is persisted to Draft Blogs automatically by the backend the moment
+// it's generated; this jumps to that library so you can pick it back up.
+function storeToDraftBlogs() {
+  showToast('Saved to Draft Blogs.', 'success');
+  showPage('drafts');
+}
+
+// Turns the draft's lightweight markdown (## / ### headings, "- " lists,
+// [text](url) links, TLDR label, blank-line paragraphs) into plain readable
+// HTML — the same shape agents/blog_automation.py writes, rendered instead of
+// shown as raw markdown syntax.
+function renderReadableMarkdown(md) {
+  const inline = (line) => escapeHtml(line)
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:#1a56db;">$1</a>');
+  const blocks = String(md || '').split(/\n\s*\n/);
+  let html = '';
+  for (const block of blocks) {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    if (!lines.length) continue;
+    if (lines.length === 1 && lines[0].startsWith('### ')) {
+      html += `<h3 style="margin:22px 0 10px;font-size:17px;">${inline(lines[0].slice(4))}</h3>`;
+    } else if (lines.length === 1 && lines[0].startsWith('## ')) {
+      html += `<h2 style="margin:28px 0 12px;font-size:20px;border-bottom:1px solid #ddd;padding-bottom:6px;">${inline(lines[0].slice(3))}</h2>`;
+    } else if (lines.length === 1 && lines[0].toUpperCase() === 'TLDR') {
+      html += `<p style="font-weight:700;letter-spacing:0.04em;margin:0 0 4px;">TLDR</p>`;
+    } else if (lines.every(l => l.startsWith('- '))) {
+      html += `<ul style="margin:0 0 16px;padding-left:22px;">${lines.map(l => `<li style="margin-bottom:6px;">${inline(l.slice(2))}</li>`).join('')}</ul>`;
+    } else {
+      html += `<p style="margin:0 0 16px;">${lines.map(inline).join('<br>')}</p>`;
+    }
+  }
+  return html;
+}
+
+// Full-screen, print-paper reading view for a generated draft — fixed white
+// background and black text regardless of the app's theme, so a human
+// validator can read long-form copy without dark-mode strain.
+function openDraftReader() {
+  if (!lastAutomationDraft) return;
+  const d = lastAutomationDraft;
+  const existing = document.getElementById('draft-reader');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'draft-reader';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:#ffffff;color:#000000;overflow:auto;';
+  overlay.innerHTML = `
+    <div style="max-width:760px;margin:0 auto;padding:40px 32px 80px;font-family:Georgia,'Times New Roman',serif;line-height:1.7;color:#000000;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;font-family:system-ui,sans-serif;">
+        <span style="font-size:12px;color:#555;">Draft preview — ${escapeHtml(d.word_count_actual || 0)} words</span>
+        <button onclick="document.getElementById('draft-reader').remove()" style="background:#111;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;cursor:pointer;">Close ✕</button>
+      </div>
+      <h1 style="font-size:28px;font-weight:700;margin:0 0 6px;color:#000000;">${escapeHtml(d.title || '')}</h1>
+      <p style="font-size:13px;color:#555;font-family:system-ui,sans-serif;margin:0 0 24px;">/${escapeHtml(d.url_slug || '')} — ${escapeHtml(d.meta_description || '')}</p>
+      ${(d.image && d.image.featured_image_url) ? `<img src="${escapeHtml(d.image.featured_image_url)}" alt="${escapeHtml(d.image.alt_text || d.title || '')}" style="width:100%;border-radius:10px;margin:0 0 28px;display:block;" onerror="this.style.display='none'">` : ''}
+      <div style="font-size:17px;">${renderReadableMarkdown(d.full_content)}</div>
+    </div>
+  `;
+  const onEsc = (e) => { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } };
+  document.addEventListener('keydown', onEsc);
+  document.body.appendChild(overlay);
 }
 
 function automationToPublish() {
@@ -3880,6 +4361,227 @@ function automationToPublish() {
   document.getElementById('pubClient').value = 'selfstorage.help';
   document.getElementById('pubContent').value = lastAutomationDraft.full_content || '';
   document.getElementById('pubImage').value = lastAutomationDraft.image?.featured_image_url || '';
+  refreshPubApprovalStatus();
+}
+
+// ── Draft Blogs workspace ────────────────────────────────────────────────────
+let allDrafts = [];
+let draftFilter = 'all';
+let currentDraftKey = null;
+let currentDraftObj = null;
+
+const DRAFT_STATUS_META = {
+  published:   { label: 'Published',        cls: 'approved' },
+  ready:       { label: 'Ready to Publish',  cls: 'approved' },
+  needs_work:  { label: 'Needs Work',        cls: 'rejected' },
+  unvalidated: { label: 'Not Checked Yet',   cls: 'pending' },
+};
+
+function setDraftFilter(f) {
+  draftFilter = f;
+  document.querySelectorAll('#drafts-filter .upload-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.dfilter === f));
+  renderDrafts();
+}
+
+function loadDrafts() {
+  const container = document.getElementById('drafts-container');
+  container.innerHTML = '<div class="card"><div class="alert alert-info">Loading your drafts…</div></div>';
+  fetch(BASE + '/api/drafts')
+    .then(r => r.json())
+    .then(d => { allDrafts = d.drafts || []; renderDrafts(); })
+    .catch(err => { container.innerHTML = `<div class="card"><div class="alert alert-error">${escapeHtml(err.message)}</div></div>`; });
+}
+
+function renderDrafts() {
+  const container = document.getElementById('drafts-container');
+  const query = (document.getElementById('draftSearch')?.value || '').trim().toLowerCase();
+  const sort = document.getElementById('draftSort')?.value || 'recent';
+
+  let list = draftFilter === 'all' ? allDrafts.slice() : allDrafts.filter(d => d.published_status === draftFilter);
+  if (query) {
+    list = list.filter(d =>
+      String(d.title || '').toLowerCase().includes(query) ||
+      String(d.keyword || '').toLowerCase().includes(query));
+  }
+  list.sort((a, b) => {
+    if (sort === 'title') return String(a.title || a.keyword).localeCompare(String(b.title || b.keyword));
+    if (sort === 'seo') return (b.seo_score || 0) - (a.seo_score || 0);
+    const ta = a.updated_at || a.created_at || '';
+    const tb = b.updated_at || b.created_at || '';
+    return sort === 'oldest' ? ta.localeCompare(tb) : tb.localeCompare(ta);
+  });
+
+  if (!list.length) {
+    const msg = allDrafts.length
+      ? (query ? `No drafts match “${escapeHtml(query)}”. Try a different search or filter.` : 'No drafts in this view. Try another filter.')
+      : 'No drafts yet. Head to Blog Automation to create your first one — anything that needs more polish will land here automatically.';
+    container.innerHTML = `<div class="card"><div class="alert alert-info">${msg}</div></div>`;
+    return;
+  }
+  const countLine = `<div style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px;">Showing ${list.length} of ${allDrafts.length} draft${allDrafts.length === 1 ? '' : 's'}</div>`;
+  container.innerHTML = countLine + '<div class="topic-grid">' + list.map(d => {
+    const meta = DRAFT_STATUS_META[d.published_status] || DRAFT_STATUS_META.unvalidated;
+    const seo = (d.seo_score != null) ? `<div class="tmetric"><div class="tmetric-value">${d.seo_score}%</div><div class="tmetric-label">SEO</div></div>` : '';
+    const blockers = (d.blocking_issues || []).slice(0, 3);
+    const blockersHtml = blockers.length
+      ? `<details class="topic-keywords"><summary>${d.blocking_issues.length} thing${d.blocking_issues.length === 1 ? '' : 's'} to fix</summary><div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-top:6px;">${d.blocking_issues.map(b => '• ' + escapeHtml(b)).join('<br>')}</div></details>`
+      : '';
+    const publishBtn = (d.published_status === 'ready')
+      ? `<button class="btn btn-sm btn-success" onclick="draftListToPublish('${d.key.replace(/'/g, "\\'")}')">Send to Publish →</button>` : '';
+    return `
+      <div class="topic-card">
+        <div class="topic-title">${escapeHtml(d.title || d.keyword)}<span class="badge badge-${meta.cls}" style="margin-left:8px;font-size:9px;">${meta.label}</span></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Keyword: ${escapeHtml(d.keyword)}${d.human_edited ? ' · edited' : ''}</div>
+        <div class="topic-metrics">
+          <div class="tmetric"><div class="tmetric-value">${Number(d.word_count || 0).toLocaleString()}</div><div class="tmetric-label">Words</div></div>
+          ${seo}
+          <div class="tmetric"><div class="tmetric-value" style="font-size:12px;">${d.updated_at ? new Date(d.updated_at).toLocaleDateString() : (d.created_at ? new Date(d.created_at).toLocaleDateString() : '—')}</div><div class="tmetric-label">Updated</div></div>
+        </div>
+        ${blockersHtml}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+          <button class="btn btn-sm btn-primary" onclick="openDraftEditor('${d.key.replace(/'/g, "\\'")}')">Open &amp; Continue</button>
+          ${publishBtn}
+          <button class="btn btn-sm btn-danger" onclick="deleteDraft('${d.key.replace(/'/g, "\\'")}', '${(d.title || d.keyword).replace(/'/g, "\\'")}')">Delete</button>
+        </div>
+      </div>`;
+  }).join('') + '</div>';
+}
+
+function openDraftEditor(key) {
+  currentDraftKey = key;
+  fetch(BASE + '/api/drafts/' + encodeURIComponent(key))
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) throw new Error(d.error);
+      currentDraftObj = d.draft;
+      const v = d.validation;
+      document.getElementById('draftEditTitle').textContent = 'Edit: ' + (d.draft.title || d.draft.keyword || '');
+      document.getElementById('draftEditTitleInput').value = d.draft.title || '';
+      document.getElementById('draftEditMeta').value = d.draft.meta_description || '';
+      document.getElementById('draftEditSlug').value = d.draft.url_slug || '';
+      document.getElementById('draftEditContent').value = d.draft.full_content || '';
+      const passed = v && v.overall_status === 'pass';
+      document.getElementById('draftPublishBtn').style.display = passed ? '' : 'none';
+      const blk = document.getElementById('draftEditBlockers');
+      if (passed) {
+        blk.innerHTML = '<div class="alert alert-success" style="margin-bottom:14px;">All quality gates passed — this one is ready to publish whenever you are.</div>';
+      } else if (v) {
+        const issues = [];
+        const seo = (v.agents && v.agents.seo_gate) || {};
+        (seo.checks || []).forEach(c => { if (!c.pass) issues.push('SEO: ' + c.check); });
+        ((v.agents && v.agents.fact_check && v.agents.fact_check.issues) || []).forEach(i => issues.push('Fact: ' + (typeof i === 'string' ? i : (i.message || 'issue'))));
+        ((v.agents && v.agents.brand_review && v.agents.brand_review.issues) || []).forEach(i => issues.push('Brand: ' + (typeof i === 'string' ? i : (i.message || 'issue'))));
+        blk.innerHTML = '<div class="alert alert-warning" style="margin-bottom:14px;"><strong>Almost there — a few things to tidy up:</strong><br>' + (issues.length ? issues.map(escapeHtml).join('<br>') : 'Did not pass every gate.') + '</div>';
+      } else {
+        blk.innerHTML = '<div class="alert alert-info" style="margin-bottom:14px;">This draft hasn\'t been checked yet. Save &amp; run the checks to see how close it is.</div>';
+      }
+      document.getElementById('draftEditModal').classList.add('open');
+    })
+    .catch(err => showToast(err.message, 'error'));
+}
+
+function closeDraftEditor() {
+  document.getElementById('draftEditModal').classList.remove('open');
+  currentDraftKey = null;
+  currentDraftObj = null;
+}
+
+function collectDraftEdits() {
+  return {
+    title: document.getElementById('draftEditTitleInput').value,
+    meta_description: document.getElementById('draftEditMeta').value,
+    url_slug: document.getElementById('draftEditSlug').value,
+    full_content: document.getElementById('draftEditContent').value,
+  };
+}
+
+function saveDraftEdits() {
+  if (!currentDraftKey) return Promise.resolve();
+  return fetch(BASE + '/api/drafts/' + encodeURIComponent(currentDraftKey), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(collectDraftEdits()),
+  })
+    .then(r => r.json())
+    .then(d => { if (d.error) throw new Error(d.error); currentDraftObj = d.draft; showToast('Draft saved.', 'success'); loadDrafts(); return d.draft; })
+    .catch(err => { showToast(err.message, 'error'); throw err; });
+}
+
+function revalidateDraft() {
+  if (!currentDraftKey) return;
+  const edits = collectDraftEdits();
+  saveDraftEdits().then(() => {
+    showToast('Running quality checks…', 'info');
+    return fetch(BASE + '/api/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        keyword: currentDraftObj.keyword || currentDraftKey,
+        title: edits.title,
+        content: edits.full_content,
+        url_slug: edits.url_slug,
+        meta_description: edits.meta_description,
+        client: 'selfstorage.help',
+      }),
+    });
+  })
+    .then(r => r.json())
+    .then(v => {
+      if (v.overall_status === 'pass') showToast('All gates passed — ready to publish!', 'success');
+      else showToast('Still a few things to fix — see the notes at the top.', 'warning');
+      openDraftEditor(currentDraftKey); // refresh blockers + publish button
+    })
+    .catch(err => showToast('Could not re-validate: ' + err.message, 'error'));
+}
+
+function draftToPublish() {
+  const edits = collectDraftEdits();
+  const kw = (currentDraftObj && currentDraftObj.keyword) || currentDraftKey;
+  const img = (currentDraftObj && currentDraftObj.image && currentDraftObj.image.featured_image_url) || '';
+  closeDraftEditor();
+  showPage('publish');
+  document.getElementById('pubKeyword').value = kw;
+  document.getElementById('pubTitle').value = edits.title;
+  document.getElementById('pubSlug').value = edits.url_slug;
+  document.getElementById('pubMeta').value = edits.meta_description;
+  document.getElementById('pubClient').value = 'selfstorage.help';
+  document.getElementById('pubContent').value = edits.full_content;
+  document.getElementById('pubImage').value = img;
+  refreshPubApprovalStatus();
+}
+
+// From a "ready" card, jump straight to publish without opening the editor.
+function draftListToPublish(key) {
+  fetch(BASE + '/api/drafts/' + encodeURIComponent(key))
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) throw new Error(d.error);
+      const dr = d.draft;
+      showPage('publish');
+      document.getElementById('pubKeyword').value = dr.keyword || key;
+      document.getElementById('pubTitle').value = dr.title || '';
+      document.getElementById('pubSlug').value = dr.url_slug || '';
+      document.getElementById('pubMeta').value = dr.meta_description || '';
+      document.getElementById('pubClient').value = 'selfstorage.help';
+      document.getElementById('pubContent').value = dr.full_content || '';
+      document.getElementById('pubImage').value = (dr.image && dr.image.featured_image_url) || '';
+      refreshPubApprovalStatus();
+    })
+    .catch(err => showToast(err.message, 'error'));
+}
+
+function openDraftReaderFromEditor() {
+  lastAutomationDraft = Object.assign({}, currentDraftObj || {}, collectDraftEdits());
+  openDraftReader();
+}
+
+function deleteDraft(key, title) {
+  showConfirmToast(`Delete "${title}"? This can't be undone.`, () => {
+    fetch(BASE + '/api/drafts/' + encodeURIComponent(key), { method: 'DELETE' })
+      .then(r => r.json())
+      .then(d => { if (d.error) throw new Error(d.error); showToast('Draft deleted.', 'success'); loadDrafts(); })
+      .catch(err => showToast(err.message, 'error'));
+  }, { confirmText: 'Delete', title: 'Delete draft' });
 }
 
 function analyzeExistingBlogs() {
@@ -3984,7 +4686,7 @@ function writeContent() {
 
   // Show loading state
   const resultEl = document.getElementById('content-result');
-  resultEl.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:12px;padding:20px;"><div class="spinner" style="width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div><span style="color:var(--text-muted);">Generating draft with OpenRouter...</span></div></div>';
+  resultEl.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:12px;padding:20px;"><div class="spinner" style="width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div><span style="color:var(--text-muted);">MAAI Agent is writing your draft…</span></div></div>';
 
   fetch(BASE + '/api/content/write', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -4085,8 +4787,11 @@ function validateToPublish(keyword) {
 
 // ── Publish ──────────────────────────────────────────────────────────────────
 function publishContent(now) {
+  const keyword = document.getElementById('pubKeyword').value.trim();
+  const out = document.getElementById('publish-result');
+  if (!keyword) { showToast('Enter or load a keyword to publish.', 'warning'); return; }
   const body = {
-    keyword: document.getElementById('pubKeyword').value,
+    keyword,
     title: document.getElementById('pubTitle').value,
     content: document.getElementById('pubContent').value,
     url_slug: document.getElementById('pubSlug').value,
@@ -4095,16 +4800,63 @@ function publishContent(now) {
     publish_now: now,
     featured_image_url: document.getElementById('pubImage').value,
   };
+  out.innerHTML = '<div class="card"><div class="alert alert-info">Publishing…</div></div>';
   fetch(BASE + '/api/publish', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   })
-  .then(r => { if (!r.ok) return r.json().then(d => { throw new Error(d.error); }); return r.json(); })
+  .then(r => { if (!r.ok) return r.json().then(d => { throw new Error(d.error || 'Publish failed.'); }); return r.json(); })
   .then(d => {
-    document.getElementById('publish-result').innerHTML = '<div class="card"><div class="alert alert-success">' + d.message + '</div><ul style="padding-left:20px;margin-top:8px;">' + d.next_steps.map(s => '<li style="font-size:13px;margin-bottom:4px;">' + s + '</li>').join('') + '</ul></div>';
+    const steps = (d.next_steps || []).map(s => '<li style="font-size:13px;margin-bottom:4px;">' + escapeHtml(s) + '</li>').join('');
+    out.innerHTML = '<div class="card"><div class="alert alert-success">' + escapeHtml(d.message || 'Published.') + '</div>' + (steps ? '<ul style="padding-left:20px;margin-top:8px;">' + steps + '</ul>' : '') + '</div>';
+    refreshPubApprovalStatus();
   })
   .catch(err => {
-    document.getElementById('publish-result').innerHTML = '<div class="card"><div class="alert alert-error">Error: ' + err.message + '</div></div>';
+    // The publish gate blocks until a human approves the topic. Rather than a
+    // dead-end error, offer to approve and publish in one click.
+    if (/not approved/i.test(err.message)) {
+      out.innerHTML = `<div class="card"><div class="alert alert-warning">
+        <strong>One quick step before we go live.</strong> “${escapeHtml(keyword)}” needs your approval first — that's the human sign-off gate that keeps you in control.
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-sm btn-success" onclick="approveAndPublish(${now ? 'true' : 'false'})">Approve &amp; ${now ? 'Publish Now' : 'Schedule'}</button>
+        </div></div></div>`;
+      return;
+    }
+    out.innerHTML = '<div class="card"><div class="alert alert-error">Error: ' + escapeHtml(err.message) + '</div></div>';
   });
+}
+
+// Approve the current keyword for publishing (the human sign-off gate).
+function publishApprove() {
+  const keyword = document.getElementById('pubKeyword').value.trim();
+  if (!keyword) { showToast('Enter or load a keyword first.', 'warning'); return; }
+  return fetch(BASE + '/api/queue/' + encodeURIComponent(keyword) + '/approve', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ notes: 'Approved from the Publish page' }),
+  })
+    .then(r => { if (!r.ok) throw new Error('Approval failed (' + r.status + ')'); return r.json(); })
+    .then(() => { showToast('Approved for publishing.', 'success'); refreshPubApprovalStatus(); })
+    .catch(err => { showToast(err.message, 'error'); throw err; });
+}
+
+// Approve, then immediately (re)publish — the one-click path from the gate.
+function approveAndPublish(now) {
+  publishApprove().then(() => publishContent(now)).catch(() => {});
+}
+
+// Shows whether the current keyword is approved yet, on the Publish page.
+function refreshPubApprovalStatus() {
+  const keyword = document.getElementById('pubKeyword').value.trim();
+  const el = document.getElementById('pubApprovalStatus');
+  if (!el) return;
+  if (!keyword) { el.innerHTML = ''; return; }
+  fetch(BASE + '/api/queue/' + encodeURIComponent(keyword) + '/status')
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      const status = (d && d.approval_status) || 'needs_review';
+      const approved = status === 'approved';
+      el.innerHTML = `<span class="badge badge-${approved ? 'approved' : 'pending'}">${approved ? '✓ Approved for publishing' : 'Not approved yet — approve below to enable publishing'}</span>`;
+    })
+    .catch(() => { el.innerHTML = ''; });
 }
 
 // ── Monitor ──────────────────────────────────────────────────────────────────
@@ -4316,6 +5068,8 @@ function showPage(pageId) {
 
   if (pageId === 'results') loadReport();
   if (pageId === 'automation') loadBlogAutomationStatus();
+  if (pageId === 'drafts') loadDrafts();
+  if (pageId === 'publish') refreshPubApprovalStatus();
   if (pageId === 'users') loadUsers();
   if (pageId === 'queue') loadQueue();
   if (pageId === 'calendar') loadCalendar();
@@ -4471,7 +5225,7 @@ function showGSCConfig(int) {
         html += `<div class="alert alert-info">📁 CSV upload works today. Live data requires a Google Service Account.</div>`;
         html += `<div style="background:var(--surface2);border-radius:var(--radius-md);padding:16px;margin-bottom:16px;">`;
         html += `<strong style="font-size:13px;color:var(--text);">Option 1: CSV Upload (now)</strong>`;
-        html += `<p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Go to search.google.com/search-console → Performance → Export CSV → Upload to Kriti.</p>`;
+        html += `<p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Go to search.google.com/search-console → Performance → Export CSV → Upload to MAAI.</p>`;
         html += `</div>`;
         html += `<div style="background:var(--surface2);border-radius:var(--radius-md);padding:16px;margin-bottom:16px;">`;
         html += `<strong style="font-size:13px;color:var(--text);">Option 2: Live Data (requires setup)</strong>`;
@@ -4533,7 +5287,7 @@ async function saveGSCConfig() {
 
 async function validateGSC() {
   const resultEl = document.getElementById('gsc-config-result');
-  resultEl.innerHTML = '<div class="loading active"><iframe class="lottie-loader-frame" src="https://lottie.host/embed/6300f646-1b8a-4bdb-bb72-7b50b41d7c7d/tsdVmL6fO0.json" title="MAAI robot loading animation" aria-hidden="true" tabindex="-1" loading="eager"></iframe><div class="loading-text">Testing connection...</div></div>';
+  resultEl.innerHTML = '<div class="loading active">' + maaiBotLoader() + '<div class="loading-text">Testing connection...</div></div>';
 
   try {
     const res = await fetch(BASE + '/api/integrations/gsc/validate');
@@ -4561,32 +5315,42 @@ function loadGovernance() {
 }
 
 function loadGates() {
+  const container = document.getElementById('gates-list');
   fetch(BASE + '/api/governance/gates')
     .then(r => r.json())
     .then(d => {
-      const container = document.getElementById('gates-list');
-      if (!d.gates || Object.keys(d.gates).length === 0) { container.innerHTML = '<p style="color:var(--text-muted)">No gates configured.</p>'; return; }
-      let html = '<div class="table-wrap"><table><thead><tr><th>Gate</th><th>Description</th><th>Status</th><th>Approved By</th><th>Actions</th></tr></thead><tbody>';
-      for (const [id, gate] of Object.entries(d.gates)) {
-        const statusClass = gate.status === 'approved' ? 'badge-approved' : gate.status === 'rejected' ? 'badge-rejected' : 'badge-pending';
-        const statusLabel = gate.status ? gate.status.charAt(0).toUpperCase() + gate.status.slice(1) : 'Pending';
-        html += '<tr><td><strong>' + (gate.label || id) + '</strong></td>';
-        html += '<td style="font-size:12px;color:var(--text-muted);">' + (gate.description || '—') + '</td>';
-        html += '<td><span class="badge ' + statusClass + '">' + statusLabel + '</span></td>';
-        html += '<td style="font-size:12px;">' + (gate.approved_by || '—') + '</td>';
-        html += '<td>';
-        if (gate.status !== 'approved') {
-          html += '<button class="btn btn-sm btn-success" onclick="approveGate(\'' + id + '\')" title="Approve"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button> ';
+      if (!d.gates || Object.keys(d.gates).length === 0) { container.innerHTML = '<p style="color:var(--text-muted)">No gates configured yet.</p>'; return; }
+      const entries = Object.entries(d.gates);
+      container.innerHTML = '<div class="gate-grid">' + entries.map(([id, gate], i) => {
+        const status = gate.status || 'pending';
+        const statusClass = status === 'approved' ? 'badge-approved' : status === 'rejected' ? 'badge-rejected' : 'badge-pending';
+        const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+        const approvedLine = gate.approved_by
+          ? `<div class="gate-meta">${status === 'rejected' ? 'Rejected' : 'Approved'} by <strong>${escapeHtml(gate.approved_by)}</strong>${gate.approved_at ? ' · ' + new Date(gate.approved_at).toLocaleString() : ''}</div>`
+          : '';
+        const notesLine = gate.notes ? `<div class="gate-meta">Notes: ${escapeHtml(gate.notes)}</div>` : '';
+        let actions = '';
+        if (status !== 'approved') {
+          actions += `<button class="btn btn-sm btn-success" onclick="approveGate('${id}')"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Approve</button>`;
         }
-        if (gate.status !== 'rejected') {
-          html += '<button class="btn btn-sm btn-danger" onclick="rejectGate(\'' + id + '\')" title="Reject"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>';
+        if (status !== 'rejected') {
+          actions += `<button class="btn btn-sm btn-danger" onclick="rejectGate('${id}')"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Reject</button>`;
         }
-        html += '</td></tr>';
-      }
-      html += '</tbody></table></div>';
-      container.innerHTML = html;
+        return `
+          <div class="gate-card">
+            <div class="gate-step">Gate ${i + 1}</div>
+            <div class="gate-head">
+              <div class="gate-name">${escapeHtml(gate.label || id)}</div>
+              <span class="badge ${statusClass}">${statusLabel}</span>
+            </div>
+            <div class="gate-desc">${escapeHtml(gate.description || 'No description provided.')}</div>
+            ${approvedLine}
+            ${notesLine}
+            <div class="gate-actions">${actions || '<span class="gate-meta">No actions available.</span>'}</div>
+          </div>`;
+      }).join('') + '</div>';
     })
-    .catch(() => { container.innerHTML = '<p style="color:var(--text-muted)">Failed to load gates.</p>'; });
+    .catch(() => { container.innerHTML = '<p style="color:var(--text-muted)">Sorry — we couldn\'t load the approval gates just now. Please try again.</p>'; });
 }
 
 function approveGate(gateId) {
@@ -4748,10 +5512,18 @@ function loadAuditLog() {
       if (!d.entries.length) { container.innerHTML = '<p style="color:var(--text-muted)">No audit entries yet.</p>'; return; }
       let html = '<div style="max-height:400px;overflow-y:auto;">';
       d.entries.forEach(e => {
-        html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(46,51,72,0.5);font-size:12px;">';
-        html += '<span class="badge badge-' + (e.action.includes('approved') || e.action.includes('submit') ? 'approved' : e.action.includes('reject') ? 'rejected' : 'pending') + '">' + e.action + '</span>';
-        html += '<strong>' + e.resource + '</strong>';
-        html += '<span style="color:var(--text-muted);margin-left:auto;">' + e.actor + ' · ' + new Date(e.timestamp).toLocaleString() + '</span></div>';
+        const details = e.details || {};
+        // details.title is the actual blog/draft title (fell back to the
+        // keyword itself before) — this was captured server-side all along
+        // but never rendered, so approve/reject entries looked identical.
+        const title = details.title || deriveWorkingTitle(e.resource);
+        html += '<div style="padding:8px 0;border-bottom:1px solid rgba(46,51,72,0.5);font-size:12px;">';
+        html += '<div style="display:flex;align-items:center;gap:8px;">';
+        html += '<span class="badge badge-' + (e.action.includes('approved') || e.action.includes('submit') ? 'approved' : e.action.includes('reject') ? 'rejected' : 'pending') + '">' + escapeHtml(e.action) + '</span>';
+        html += '<strong>' + escapeHtml(title) + '</strong>';
+        html += '<span style="color:var(--text-muted);margin-left:auto;white-space:nowrap;">' + escapeHtml(e.actor) + ' · ' + new Date(e.timestamp).toLocaleString() + '</span></div>';
+        html += '<div style="color:var(--text-muted);margin-top:3px;">Keyword: ' + escapeHtml(e.resource) + (details.notes ? ' · Notes: ' + escapeHtml(details.notes) : '') + '</div>';
+        html += '</div>';
       });
       html += '</div>';
       container.innerHTML = html;

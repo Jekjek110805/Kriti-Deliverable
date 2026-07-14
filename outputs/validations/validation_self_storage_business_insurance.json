@@ -1,0 +1,96 @@
+{
+  "keyword": "self storage business insurance",
+  "title": "Self Storage Business Insurance Explained: Coverage & Costs 2026",
+  "client": "selfstorage.help",
+  "template_version": "maai-blog-sop-v1",
+  "validated_at": "2026-07-14T01:23:42.897024",
+  "overall_status": "review",
+  "agents": {
+    "seo_gate": {
+      "agent": "SEO Gate",
+      "passed": 9,
+      "total": 10,
+      "score": 90,
+      "status": "review",
+      "checks": [
+        {
+          "check": "Keyword in title",
+          "pass": true,
+          "detail": "Title: Self Storage Business Insurance Explained: Coverage & Costs 2026"
+        },
+        {
+          "check": "Keyword in first paragraph",
+          "pass": true,
+          "detail": "First 500 characters checked"
+        },
+        {
+          "check": "Keyword in at least one H2",
+          "pass": true,
+          "detail": "H2 headings checked"
+        },
+        {
+          "check": "TLDR at top",
+          "pass": true,
+          "detail": "TLDR section should be at the very top"
+        },
+        {
+          "check": "Meta description provided",
+          "pass": true,
+          "detail": "Length: 160 chars"
+        },
+        {
+          "check": "URL slug provided",
+          "pass": true,
+          "detail": "self-storage-business-insurance-explained-coverage-costs-2026"
+        },
+        {
+          "check": "Word count >= 1000",
+          "pass": true,
+          "detail": "Current: 1075 words"
+        },
+        {
+          "check": "At least 2 internal links",
+          "pass": true,
+          "detail": "Found: 4 links"
+        },
+        {
+          "check": "Images have alt text",
+          "pass": false,
+          "detail": "Images: 0, Alt texts: 0"
+        },
+        {
+          "check": "FAQ section present",
+          "pass": true,
+          "detail": "A focused FAQ is required by the MAAI blog template"
+        }
+      ]
+    },
+    "fact_check": {
+      "agent": "Fact Check",
+      "status": "review",
+      "issues": [
+        {
+          "type": "many_specific_numbers",
+          "message": "Found 7 specific numbers/figures. Verify all are sourced.",
+          "count": 7
+        }
+      ],
+      "issue_count": 1,
+      "message": "1 potential issues found — human review required"
+    },
+    "brand_review": {
+      "agent": "Brand Review",
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "critical_issues": 0,
+      "message": "Brand compliant"
+    }
+  },
+  "summary": {
+    "seo_score": 90,
+    "fact_issues": 1,
+    "brand_issues": 0,
+    "total_issues": 2
+  }
+}

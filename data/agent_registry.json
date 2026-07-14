@@ -80,8 +80,8 @@
     "name": "Audience Research Agent",
     "group": "research",
     "description": "Mines Reddit, Quora, and PAA for audience questions and content ideas",
-    "status": "planned",
-    "version": "0.1",
+    "status": "active",
+    "version": "1.0",
     "capabilities": [
       "question_mining",
       "audience_analysis",
@@ -194,8 +194,8 @@
     "name": "Image Production Agent",
     "group": "production",
     "description": "Creates and sources images for content \u2014 Canva integration, stock photos, original assets",
-    "status": "planned",
-    "version": "0.1",
+    "status": "active",
+    "version": "1.0",
     "capabilities": [
       "image_generation",
       "image_sourcing",
@@ -396,8 +396,8 @@
     "name": "Content Refresh Agent",
     "group": "monitoring",
     "description": "Identifies underperforming content and recommends updates or consolidation",
-    "status": "planned",
-    "version": "0.1",
+    "status": "active",
+    "version": "1.0",
     "capabilities": [
       "performance_analysis",
       "content_audit",

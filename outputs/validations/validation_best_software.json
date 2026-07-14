@@ -1,0 +1,84 @@
+{
+  "keyword": "best software",
+  "title": "Best Software: The Complete Guide",
+  "client": "default",
+  "validated_at": "2026-07-13T23:57:45.368755",
+  "overall_status": "pass",
+  "agents": {
+    "seo_gate": {
+      "agent": "SEO Gate",
+      "passed": 9,
+      "total": 9,
+      "score": 100,
+      "status": "pass",
+      "checks": [
+        {
+          "check": "Keyword in title",
+          "pass": true,
+          "detail": "Title: Best Software: The Complete Guide"
+        },
+        {
+          "check": "Keyword in first paragraph",
+          "pass": true,
+          "detail": "First 500 characters checked"
+        },
+        {
+          "check": "Keyword in at least one H2",
+          "pass": true,
+          "detail": "H2 headings checked"
+        },
+        {
+          "check": "TLDR at top",
+          "pass": true,
+          "detail": "TLDR section should be at the very top"
+        },
+        {
+          "check": "Meta description provided",
+          "pass": true,
+          "detail": "Length: 160 chars"
+        },
+        {
+          "check": "URL slug provided",
+          "pass": true,
+          "detail": "best-software"
+        },
+        {
+          "check": "Word count >= 1000",
+          "pass": true,
+          "detail": "Current: 1506 words"
+        },
+        {
+          "check": "At least 2 internal links",
+          "pass": true,
+          "detail": "Found: 20 links"
+        },
+        {
+          "check": "Images have alt text",
+          "pass": true,
+          "detail": "Images: 1, Alt texts: 1"
+        }
+      ]
+    },
+    "fact_check": {
+      "agent": "Fact Check",
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "message": "No obvious issues detected"
+    },
+    "brand_review": {
+      "agent": "Brand Review",
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "critical_issues": 0,
+      "message": "Brand compliant"
+    }
+  },
+  "summary": {
+    "seo_score": 100,
+    "fact_issues": 0,
+    "brand_issues": 0,
+    "total_issues": 0
+  }
+}
