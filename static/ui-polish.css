@@ -305,6 +305,24 @@ body > :is(#topic-modal, #reason-modal, #gsc-row-modal) > div {
   width: 100%;
 }
 
+.lp-hero-visual {
+  overflow: visible;
+}
+
+.lp-hero-lottie {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  display: block;
+  width: clamp(520px, 46vw, 680px);
+  height: auto;
+  max-width: none;
+  aspect-ratio: 1072 / 574;
+  transform: translateX(clamp(0px, 1.2vw, 18px));
+  transform-origin: center;
+  filter: drop-shadow(0 20px 28px rgba(10, 14, 40, 0.22));
+}
+
 .lp-card,
 .lp-step-row,
 .lp-faq-item,
@@ -355,6 +373,11 @@ body > :is(#topic-modal, #reason-modal, #gsc-row-modal) > div {
   .opp-badges,
   .opp-right {
     flex-wrap: wrap;
+  }
+
+  .lp-hero-lottie {
+    width: clamp(360px, 50vw, 500px);
+    transform: translateX(clamp(0px, 1vw, 8px));
   }
 }
 
@@ -601,6 +624,11 @@ body > :is(#topic-modal, #reason-modal, #gsc-row-modal) > div {
 
   .lp-hero-visual {
     height: clamp(230px, 38svh, 330px);
+  }
+
+  .lp-hero-lottie {
+    width: min(92vw, 520px);
+    transform: none;
   }
 
   .lp-section {
