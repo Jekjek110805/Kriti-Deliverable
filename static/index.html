@@ -399,10 +399,15 @@
   .gate-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 
   /* Integration card logos/icons */
-  .int-logo { display: inline-flex; align-items: center; justify-content: center; height: 40px; min-width: 56px; padding: 6px 10px; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(10,14,40,0.12); flex-shrink: 0; }
-  .int-logo img { height: 24px; width: auto; max-width: 120px; object-fit: contain; display: block; }
-  .int-icon { display: inline-flex; align-items: center; justify-content: center; height: 40px; width: 40px; flex-shrink: 0; }
+  .int-logo { display: inline-flex; align-items: center; justify-content: center; height: 44px; min-width: 64px; padding: 7px 11px; background: #fff; border: 1px solid rgba(18,20,26,0.08); border-radius: 10px; box-shadow: 0 3px 10px rgba(10,14,40,0.10); flex-shrink: 0; }
+  .int-logo img { height: 26px; width: auto; max-width: 126px; object-fit: contain; display: block; }
+  .int-logo-fallback { display: none; align-items: center; justify-content: center; color: var(--accent); }
+  .int-logo-fallback .icon { width: 25px; height: 25px; }
+  .int-icon { display: inline-flex; align-items: center; justify-content: center; height: 44px; width: 44px; flex-shrink: 0; color: var(--accent); background: var(--accent-subtle); border: 1px solid var(--accent-glow-strong); border-radius: 10px; }
+  .int-icon-channels { width: 64px; background: #fff; border-color: rgba(18,20,26,0.08); box-shadow: 0 3px 10px rgba(10,14,40,0.10); }
   .int-icon svg { width: 26px; height: 26px; }
+  .integration-detail-title { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .integration-detail-title .int-logo, .integration-detail-title .int-icon { transform: scale(0.92); transform-origin: left center; }
   .topic-card:hover { border-color: var(--border-light); box-shadow: var(--shadow-md); }
   .topic-title { font-size: 14.5px; font-weight: 700; color: var(--text); line-height: 1.35; }
   .topic-badges { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -5029,15 +5034,27 @@ const NOTIF_ICON = `<span style="display:inline-flex;align-items:center;gap:8px;
 
 // ── Integrations ─────────────────────────────────────────────────────────────
 const INTEGRATIONS = [
-  { id: "gsc", name: "Google Search Console", logo: "/static/Google_Search_Console.svg.webp", desc: "Performance data, indexing status, live query insights", endpoint: "/api/integrations/gsc/status" },
-  { id: "semrush", name: "SEMrush", logo: "/static/Semrush_logo.svg.webp", desc: "Keyword metrics, competitor analysis, site audit", endpoint: "/api/integrations/semrush/status" },
+  { id: "gsc", name: "Google Search Console", logo: "/static/Google_Search_Console.svg.webp", icon: icon('search'), desc: "Performance data, indexing status, live query insights", endpoint: "/api/integrations/gsc/status" },
+  { id: "semrush", name: "SEMrush", logo: "/static/Semrush_logo.svg.webp", icon: icon('chart'), desc: "Keyword metrics, competitor analysis, site audit", endpoint: "/api/integrations/semrush/status" },
   { id: "crawler", name: "Site Crawler", icon: SITE_CRAWLER_ICON, desc: "Map existing pages, analyze internal links", endpoint: "/api/integrations/crawl" },
   { id: "cms", name: "Website Publishing", icon: icon('edit'), desc: "Create real drafts or publish through WordPress/custom APIs", endpoint: "/api/integrations/cms/status" },
-  { id: "notifications", name: "Notifications", icon: NOTIF_ICON, desc: "Slack & email alerts for key events", endpoint: "/api/integrations/notifications/status" },
+  { id: "notifications", name: "Slack & Email Notifications", icon: NOTIF_ICON, wideIcon: true, desc: "Alerts for approvals, publishing, failures, and key events", endpoint: "/api/integrations/notifications/status" },
   { id: "analytics", name: "Analytics", icon: icon('graph'), desc: "Track page performance and conversions", endpoint: "/api/integrations/analytics/status" },
   { id: "sources", name: "Source Ledger", icon: icon('books'), desc: "Fact validation and source tracking", endpoint: "/api/integrations/sources" },
   { id: "outreach", name: "Outreach Tracker", icon: icon('mail'), desc: "Link building and PR outreach management", endpoint: "/api/integrations/outreach" },
 ];
+
+function integrationBrandMark(int) {
+  if (int.logo) {
+    const fallback = int.icon || icon('plug');
+    return `<span class="int-logo"><img src="${int.logo}" alt="${escapeHtml(int.name)} logo" onerror="this.hidden=true;this.nextElementSibling.style.display='inline-flex'"><span class="int-logo-fallback" aria-hidden="true">${fallback}</span></span>`;
+  }
+  return `<span class="int-icon${int.wideIcon ? ' int-icon-channels' : ''}" aria-hidden="true">${int.icon || icon('plug')}</span>`;
+}
+
+function integrationDetailTitle(int) {
+  return `<div class="card-title integration-detail-title">${integrationBrandMark(int)}<span>${escapeHtml(int.name)}</span></div>`;
+}
 
 // Simple "paste key → Connect" config for API-based integrations.
 const INTEGRATION_CONFIG = {
@@ -5102,9 +5119,7 @@ function loadIntegrations() {
   grid.innerHTML = INTEGRATIONS.map(int => `
     <div class="card" style="cursor:pointer;" onclick="showIntegrationDetail('${int.id}')">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-        ${int.logo
-          ? `<span class="int-logo"><img src="${int.logo}" alt="${int.name} logo" onerror="this.style.display='none'"></span>`
-          : `<span class="int-icon">${int.icon}</span>`}
+        ${integrationBrandMark(int)}
         <div>
           <div style="font-weight:600;">${int.name}</div>
           <div style="font-size:12px;color:var(--text-muted);">${int.desc}</div>
@@ -5156,7 +5171,7 @@ function showIntegrationConnect(int) {
   fetch(BASE + int.endpoint).then(r => r.json()).then(d => {
     const connected = (d.status === 'configured' || d.status === 'connected');
     let html = `<div class="card" style="max-width:560px;">`;
-    html += `<div class="card-title">${int.icon} ${int.name}</div>`;
+    html += integrationDetailTitle(int);
     html += `<p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">${int.desc}</p>`;
     html += connected
       ? `<div class="alert alert-success">✓ Connected — ${int.name} is configured. Paste new details to update.</div>`
@@ -5212,7 +5227,7 @@ function connectIntegration(id) {
 // Built-in integrations (no API key needed) — show a friendly status view.
 function showIntegrationInfo(int) {
   fetch(BASE + int.endpoint).then(r => r.json()).then(d => {
-    let html = `<div class="card" style="max-width:560px;"><div class="card-title">${int.icon} ${int.name}</div>`;
+    let html = `<div class="card" style="max-width:560px;">${integrationDetailTitle(int)}`;
     html += `<p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">${int.desc}</p>`;
     html += `<div class="alert alert-info">Built-in — no API key required. This works out of the box.</div>`;
     html += `<pre style="font-size:12px;background:var(--surface2);padding:12px;border-radius:8px;overflow:auto;max-height:320px;">${escapeHtml(JSON.stringify(d, null, 2))}</pre>`;
@@ -5227,7 +5242,7 @@ function showGSCConfig(int) {
     .then(d => {
       const isConnected = d.status === 'connected';
       let html = `<div class="card" style="max-width:560px;">`;
-      html += `<div class="card-title">${int.icon} Google Search Console</div>`;
+      html += integrationDetailTitle(int);
       html += `<p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">${int.desc}</p>`;
 
       if (isConnected) {
