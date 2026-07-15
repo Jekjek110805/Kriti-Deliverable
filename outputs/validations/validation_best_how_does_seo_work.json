@@ -1,22 +1,22 @@
 {
-  "keyword": "self storage SEO",
-  "title": "Self Storage SEO: Practical Steps to Rank Higher and Get More Local Customers",
+  "keyword": "best how does seo work",
+  "title": "Best how does seo work",
   "client": "selfstorage.help",
   "template_version": "maai-blog-sop-v1",
-  "validated_at": "2026-07-14T00:49:18.780611",
+  "validated_at": "2026-07-14T08:35:41.703253",
   "overall_status": "review",
   "agents": {
     "seo_gate": {
       "agent": "SEO Gate",
-      "passed": 9,
+      "passed": 7,
       "total": 10,
-      "score": 90,
+      "score": 70,
       "status": "review",
       "checks": [
         {
           "check": "Keyword in title",
           "pass": true,
-          "detail": "Title: Self Storage SEO: Practical Steps to Rank Higher and Get More Local Customers"
+          "detail": "Title: Best how does seo work"
         },
         {
           "check": "Keyword in first paragraph",
@@ -25,7 +25,7 @@
         },
         {
           "check": "Keyword in at least one H2",
-          "pass": true,
+          "pass": false,
           "detail": "H2 headings checked"
         },
         {
@@ -41,12 +41,12 @@
         {
           "check": "URL slug provided",
           "pass": true,
-          "detail": "self-storage-seo-practical-steps"
+          "detail": "best-how-does-seo-work"
         },
         {
           "check": "Word count >= 1000",
           "pass": true,
-          "detail": "Current: 1071 words"
+          "detail": "Current: 1084 words"
         },
         {
           "check": "At least 2 internal links",
@@ -55,8 +55,8 @@
         },
         {
           "check": "Images have alt text",
-          "pass": true,
-          "detail": "Images: 1, Alt texts: 1"
+          "pass": false,
+          "detail": "Images: 0, Alt texts: 0"
         },
         {
           "check": "FAQ section present",
@@ -74,17 +74,23 @@
     },
     "brand_review": {
       "agent": "Brand Review",
-      "status": "pass",
-      "issues": [],
-      "issue_count": 0,
+      "status": "review",
+      "issues": [
+        {
+          "type": "competitor_negative",
+          "message": "Potentially negative competitor language: avoid",
+          "severity": "medium"
+        }
+      ],
+      "issue_count": 1,
       "critical_issues": 0,
-      "message": "Brand compliant"
+      "message": "1 style issues found"
     }
   },
   "summary": {
-    "seo_score": 90,
+    "seo_score": 70,
     "fact_issues": 0,
-    "brand_issues": 0,
-    "total_issues": 1
+    "brand_issues": 1,
+    "total_issues": 4
   }
 }

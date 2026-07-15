@@ -1,0 +1,90 @@
+{
+  "keyword": "about us",
+  "title": "About Us: Best contact us",
+  "client": "selfstorage.help",
+  "template_version": "maai-blog-sop-v1",
+  "validated_at": "2026-07-14T08:44:28.012266",
+  "overall_status": "review",
+  "agents": {
+    "seo_gate": {
+      "agent": "SEO Gate",
+      "passed": 7,
+      "total": 10,
+      "score": 70,
+      "status": "review",
+      "checks": [
+        {
+          "check": "Keyword in title",
+          "pass": true,
+          "detail": "Title: About Us: Best contact us"
+        },
+        {
+          "check": "Keyword in first paragraph",
+          "pass": false,
+          "detail": "First 500 characters checked"
+        },
+        {
+          "check": "Keyword in at least one H2",
+          "pass": false,
+          "detail": "H2 headings checked"
+        },
+        {
+          "check": "TLDR at top",
+          "pass": true,
+          "detail": "TLDR section should be at the very top"
+        },
+        {
+          "check": "Meta description provided",
+          "pass": true,
+          "detail": "Length: 119 chars"
+        },
+        {
+          "check": "URL slug provided",
+          "pass": true,
+          "detail": "about-us"
+        },
+        {
+          "check": "Word count >= 1000",
+          "pass": true,
+          "detail": "Current: 1152 words"
+        },
+        {
+          "check": "At least 2 internal links",
+          "pass": true,
+          "detail": "Found: 4 links"
+        },
+        {
+          "check": "Images have alt text",
+          "pass": false,
+          "detail": "Images: 0, Alt texts: 0"
+        },
+        {
+          "check": "FAQ section present",
+          "pass": true,
+          "detail": "A focused FAQ is required by the MAAI blog template"
+        }
+      ]
+    },
+    "fact_check": {
+      "agent": "Fact Check",
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "message": "No obvious issues detected"
+    },
+    "brand_review": {
+      "agent": "Brand Review",
+      "status": "pass",
+      "issues": [],
+      "issue_count": 0,
+      "critical_issues": 0,
+      "message": "Brand compliant"
+    }
+  },
+  "summary": {
+    "seo_score": 70,
+    "fact_issues": 0,
+    "brand_issues": 0,
+    "total_issues": 3
+  }
+}

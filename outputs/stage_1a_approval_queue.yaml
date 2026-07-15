@@ -1,4 +1,24 @@
 approved_existing_page_actions:
+- keyword: aeo for self-storage
+  landing_page: https://selfstorage.help/
+  landing_page_url: https://selfstorage.help/
+  page: https://selfstorage.help/
+  recommendation: No Change
+  content_type: Existing Landing Page
+  intent: MOFU
+  commercial_potential: Medium
+  priority: High
+  score: 70
+  confidence: 85
+  gsc_position: 1
+  impressions: 1
+  clicks: 0
+  ctr: 0.0%
+  reason: 'Existing page ranks at position 1 and is already performing well. 1 monthly
+    impressions with strong CTR. No optimization required at this time. MOFU intent
+    with medium commercial potential. Score: 70/100.'
+  approval_status: needs_review
+  next_stage: Stage 1B or Stage 2 content brief
 - keyword: local self storage seo best practices
   landing_page: https://selfstorage.help/
   landing_page_url: https://selfstorage.help/
@@ -50,11 +70,11 @@ approved_existing_page_actions:
   priority: Low
   score: 51
   confidence: 47
-  gsc_position: 88
-  impressions: 39
+  gsc_position: 87
+  impressions: 40
   clicks: 0
   ctr: 0.0%
-  reason: 'Gap keyword: site appears at position 88 but ranks poorly. 39 impressions
+  reason: 'Gap keyword: site appears at position 87 but ranks poorly. 40 impressions
     going uncaptured. A dedicated New Landing Page would fully satisfy this demand.
     MOFU intent with medium commercial potential. Score: 51/100.'
   approval_status: needs_review

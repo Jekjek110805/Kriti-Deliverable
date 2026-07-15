@@ -22,6 +22,14 @@ DEFAULT_BRAND_CONTEXT = (
     "claims or invent facility, customer, ranking, revenue or research data."
 )
 
+# Used when no audience is specified (auto-detect) so the model writes for
+# whoever the keyword actually serves instead of defaulting to self-storage.
+NEUTRAL_BRAND_CONTEXT = (
+    "Write for the audience that naturally searches this keyword. Use a clear, "
+    "practical, evidence-led voice. Do not invent statistics, customer, ranking "
+    "or revenue data, or make unverifiable claims."
+)
+
 
 class BlogGenerationError(RuntimeError):
     pass
@@ -144,12 +152,17 @@ def _prompt(
     link_lines = "\n".join(
         f'- "{link["title"]}": {link["url"]}' for link in allowed_links[:20]
     ) or "- No verified internal pages were supplied. Return an empty internal_links array."
-    requested_title = title or "Create a natural keyword-focused title"
-    return f"""You are producing a publish-ready blog draft for SelfStorage.help.
+    requested_title = title or "Create a natural title that CONTAINS the exact primary keyword"
+    audience_line = (
+        audience
+        if audience.strip()
+        else "Infer the most relevant audience for the primary keyword and write for them."
+    )
+    return f"""You are producing a publish-ready blog draft.
 
 Brand and audience:
 {brand_context}
-Target audience: {audience}
+Target audience: {audience_line}
 Tone: {tone}
 
 Topic contract:
@@ -158,22 +171,24 @@ Topic contract:
 - Target length: {word_count} words (minimum 1,000 reader-facing words)
 
 Follow the MAAI Blog Production SOP exactly:
-1. Natural keyword-focused H1/title, direct meta description and clean URL slug.
+1. The H1/title MUST contain the exact primary keyword "{keyword}" verbatim; write a direct meta description and clean URL slug.
 2. A two-to-three sentence TLDR at the very top.
 3. A specific introduction followed by at least five useful H2 sections.
 4. Short paragraphs (maximum about 145 words), direct second-person language.
 5. No em/en dashes, AI filler, competitor put-downs or invented claims/data.
-6. A practical FAQ based on how storage operators actually ask questions.
-7. A clear conversion CTA relevant to SelfStorage.help.
+6. A practical FAQ based on how the target audience actually asks questions.
+7. A clear, relevant conversion CTA.
 8. Suggest one useful image brief and descriptive alt text.
 9. Choose two or three internal links only from the verified list below. Never invent a URL.
+10. Report who this content is written for in "target_audience" (2-6 words) — match it to the primary keyword, not a generic default.
 
 Verified internal links:
 {link_lines}
 
 Return ONLY one valid JSON object using this schema:
 {{
-  "title": "...",
+  "title": "H1 containing the exact primary keyword",
+  "target_audience": "who this is for, matched to the keyword",
   "meta_description": "140-160 characters",
   "url_slug": "lowercase-hyphen-slug",
   "tldr": "2-3 sentences",
@@ -282,6 +297,12 @@ def generate_blog_draft(
         from integrations.hermes_llm import hermes_generate
         generator = hermes_generate
 
+    # Auto-detect mode: no audience given → let the model infer the audience for
+    # the keyword, and drop the self-storage brand voice so it doesn't bleed onto
+    # an unrelated topic. An explicit audience keeps the caller's brand context.
+    audience = (audience or "").strip()
+    effective_brand_context = brand_context if audience else NEUTRAL_BRAND_CONTEXT
+
     parsed: Optional[Dict[str, Any]] = None
     last_error = ""
     retry_note = ""
@@ -290,11 +311,11 @@ def generate_blog_draft(
             _prompt(
                 keyword=keyword,
                 title=title,
-                audience=audience or DEFAULT_AUDIENCE,
+                audience=audience,
                 tone=tone,
                 word_count=word_count,
                 allowed_links=allowed,
-                brand_context=brand_context,
+                brand_context=effective_brand_context,
                 retry_note=retry_note,
             ),
             max_tokens=6500,
@@ -345,6 +366,9 @@ def generate_blog_draft(
     image_raw = parsed.get("image") if isinstance(parsed.get("image"), dict) else {}
     model_title = _plain(parsed.get("title"))
     final_title = title.strip() or model_title or f"{keyword.title()}: A Practical Guide"
+    # Guarantee the primary keyword is present in the H1 (SEO gate + requirement).
+    if keyword and keyword.lower() not in final_title.lower():
+        final_title = f"{keyword.title()}: {final_title}"
     meta_description = _plain(parsed.get("meta_description"))
     if len(meta_description) > 160:
         clipped = meta_description[:157].rsplit(" ", 1)[0].rstrip(" ,.;")
@@ -355,7 +379,9 @@ def generate_blog_draft(
         "meta_description": meta_description,
         "url_slug": _slugify(_plain(parsed.get("url_slug")) or final_title),
         "intent": "informational",
-        "target_audience": audience or DEFAULT_AUDIENCE,
+        # Prefer an explicitly requested audience; otherwise use the audience the
+        # model inferred for THIS keyword, so the label never mismatches the topic.
+        "target_audience": (audience.strip() or _plain(parsed.get("target_audience")) or DEFAULT_AUDIENCE),
         "tone": tone,
         "word_count_target": word_count,
         "tldr": _split_long_paragraphs(_clean_house_style(_plain(parsed.get("tldr")))),

@@ -157,6 +157,8 @@
   .auth-role.active { background: #fff; color: #4a63e8; border-color: #fff; box-shadow: 0 8px 20px rgba(0,0,0,0.18); }
   .auth-or { display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,0.78); font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; margin: 18px 0; }
   .auth-or::before, .auth-or::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.34); }
+  .auth-google-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.45); background: #fff; color: #3c4043; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s; }
+  .auth-google-btn:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.18); transform: translateY(-1px); }
   .auth-field { margin-bottom: 18px; }
   .auth-field label { display: block; font-size: 11px; color: rgba(255,255,255,0.82); margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
   .auth-field input { width: 100%; background: transparent; border: none; border-bottom: 2px solid rgba(255,255,255,0.5); border-radius: 0; padding: 8px 2px; color: #fff; font-size: 15px; transition: border-color .2s; backdrop-filter: none; }
@@ -406,6 +408,30 @@
   .int-icon { display: inline-flex; align-items: center; justify-content: center; height: 44px; width: 44px; flex-shrink: 0; color: var(--accent); background: var(--accent-subtle); border: 1px solid var(--accent-glow-strong); border-radius: 10px; }
   .int-icon-channels { width: 64px; background: #fff; border-color: rgba(18,20,26,0.08); box-shadow: 0 3px 10px rgba(10,14,40,0.10); }
   .int-icon svg { width: 26px; height: 26px; }
+  /* Freemium teaser — locked opportunity cards (score visible, rest blurred) */
+  .opp-locked { position: relative; overflow: hidden; }
+  .opp-score-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .opp-lock-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--glass-border); border-radius: 999px; padding: 4px 10px; }
+  .opp-blur-wrap { filter: blur(5px); opacity: .6; user-select: none; pointer-events: none; }
+  .opp-unlock-cta { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--glass-border); }
+  .opp-unlock-cta span { font-size: 12px; color: var(--text-muted); }
+
+  /* Keyword Explorer (AnswerThePublic-style) chips + intent badges */
+  .kex-chip { display: inline-flex; align-items: center; font-size: 12.5px; padding: 6px 11px; border-radius: 999px; cursor: pointer; border: 1px solid var(--glass-border); background: var(--surface2); color: var(--text-secondary); transition: border-color .15s, color .15s; }
+  .kex-chip:hover { border-color: var(--accent); color: var(--text); }
+  .kex-tofu { border-left: 3px solid var(--accent); }
+  .kex-mofu { border-left: 3px solid var(--yellow); }
+  .kex-bofu { border-left: 3px solid var(--green); }
+  .kex-bar { height: 8px; border-radius: 999px; background: var(--surface2); overflow: hidden; }
+  .kex-bar-fill { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #6E8BFF, #b06ef5); transition: width 2.6s ease; }
+  .kex-step { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-secondary); background: var(--surface2); border-radius: 8px; padding: 10px 12px; }
+  .kex-step-ico { font-weight: 800; color: var(--text-muted); width: 16px; text-align: center; }
+  .tbadge-tofu { color: var(--accent); border-color: var(--accent-glow-strong, var(--accent)); background: var(--accent-subtle, rgba(110,139,255,0.12)); }
+  .tbadge-mofu { color: var(--yellow); border-color: var(--yellow-glow, var(--yellow)); background: var(--yellow-glow, rgba(234,179,8,0.14)); }
+  .tbadge-bofu { color: var(--green); border-color: var(--green-glow, var(--green)); background: var(--green-glow, rgba(16,185,129,0.14)); }
+  .usage-meter { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-secondary); background: var(--surface2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; }
+  .upgrade-note { display: flex; flex-direction: column; gap: 10px; }
+  .upgrade-note .lock-msg { font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
   .integration-detail-title { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
   .integration-detail-title .int-logo, .integration-detail-title .int-icon { transform: scale(0.92); transform-origin: left center; }
   .topic-card:hover { border-color: var(--border-light); box-shadow: var(--shadow-md); }
@@ -998,6 +1024,11 @@
         <button type="button" class="auth-role login-role" data-role="admin" onclick="selectRole('admin')">Admin</button>
       </div>
 
+      <button type="button" class="auth-google-btn hidden" id="googleLoginBtn" onclick="loginWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.56 2.7-3.86 2.7-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.98v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.95 10.7A5.4 5.4 0 0 1 3.66 9c0-.59.1-1.17.29-1.7V4.97H.98A9 9 0 0 0 0 9c0 1.45.35 2.83.98 4.03l2.97-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.97l2.97 2.33C4.66 5.17 6.65 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </button>
+
       <div class="auth-or"><span>or</span></div>
 
       <form id="loginForm" onsubmit="return doLogin(event)">
@@ -1203,34 +1234,26 @@
       </div>
     </div>
 
-    <!-- PAGE: SHOULD OPTIMIZE -->
+    <!-- PAGE: KEYWORD EXPLORER (AnswerThePublic-style) -->
     <div id="page-decide" class="page">
-      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Should I Optimize This Page?</h1>
-      <p style="color:var(--text-muted);margin-bottom:24px;">Not sure if a page is worth the effort? Pop in the numbers and get a clear, scored recommendation in seconds.</p>
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Keyword Explorer</h1>
+      <p style="color:var(--text-muted);margin-bottom:20px;">Analyze your website or search a keyword to see what people are searching for — then turn the best ideas into content in a click.</p>
 
       <div class="card">
-        <div class="card-title">Page Data</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div><label>Keyword</label><input type="text" id="decKeyword" placeholder="e.g. best clinic software"></div>
-          <div><label>Page URL</label><input type="text" id="decPage" placeholder="e.g. /best-clinic-management-software"></div>
-          <div><label>Position</label><input type="number" id="decPosition" placeholder="e.g. 8"></div>
-          <div><label>Impressions</label><input type="number" id="decImpressions" placeholder="e.g. 1200"></div>
-          <div><label>Clicks</label><input type="number" id="decClicks" placeholder="e.g. 45"></div>
-          <div><label>Intent (auto-detected if blank)</label>
-            <select id="decIntent">
-              <option value="">Auto-detect</option>
-              <option value="BOFU">BOFU</option>
-              <option value="MOFU">MOFU</option>
-              <option value="TOFU">TOFU</option>
-            </select>
-          </div>
+        <div class="upload-mode-toggle" id="kexModes" style="margin-bottom:0;">
+          <button type="button" class="upload-mode-btn active" data-kmode="website" onclick="setKexMode('website')">Analyze My Website</button>
+          <button type="button" class="upload-mode-btn" data-kmode="keywords" onclick="setKexMode('keywords')">Search Keywords</button>
         </div>
-        <div style="margin-top:16px;">
-          <button class="btn btn-primary" onclick="runDecision()">Analyze</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-top:14px;">
+          <div style="flex:1;min-width:240px;"><label id="kexLabel">Website URL</label><input type="text" id="kexKeyword" placeholder="e.g. yourbusiness.com" onkeydown="if(event.key==='Enter')runKeywordExplorer()"></div>
+          <div><label>Language</label><select id="kexLang" style="min-width:120px;"><option>English</option></select></div>
+          <div><label>Country</label><select id="kexCountry" style="min-width:90px;"><option value="PH">Philippines</option><option value="US">United States</option><option value="GB">United Kingdom</option><option value="AU">Australia</option></select></div>
+          <button class="btn btn-primary" id="kexBtn" onclick="runKeywordExplorer()">Search</button>
         </div>
+        <div id="kexHint" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--accent);font-weight:700;margin-top:10px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 10l-5 5 5 5"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg> ENTER YOUR WEBSITE URL <span class="badge badge-approved" style="font-size:9px;">NEW</span></div>
       </div>
 
-      <div id="decision-result"></div>
+      <div id="kex-result"></div>
     </div>
 
     <!-- PAGE: RESULTS -->
@@ -1299,7 +1322,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
           <div><label>Primary Keyword</label><input type="text" id="autoBlogKeyword" placeholder="e.g. self storage SEO"></div>
           <div><label>Working Title (optional)</label><input type="text" id="autoBlogTitle" placeholder="The model can propose a natural title"></div>
-          <div><label>Target Audience</label><input type="text" id="autoBlogAudience" value="Independent self-storage operators in the USA"></div>
+          <div><label>Target Audience</label><input type="text" id="autoBlogAudience" placeholder="Auto-detect from the keyword (or type your own)"></div>
           <div><label>Target Word Count</label><input type="number" id="autoBlogWordCount" value="1500" min="1000" max="3000"></div>
           <div><label>Website</label><input type="url" id="autoBlogSiteUrl" value="https://www.selfstorage.help"></div>
           <div><label>Featured Image URL (required before publish)</label><input type="url" id="autoBlogImage" placeholder="https://.../approved-image.jpg"></div>
@@ -1363,7 +1386,7 @@
         <div style="margin-bottom:12px;"><label>URL Slug</label><input type="text" id="draftEditSlug"></div>
         <div style="margin-bottom:12px;"><label>Full Content (Markdown)</label><textarea id="draftEditContent" rows="14" style="font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;"></textarea></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
-          <button class="btn btn-secondary" onclick="openDraftReaderFromEditor()">⤢ Read View</button>
+          <button class="btn btn-secondary" onclick="openDraftReaderFromEditor()"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg> Read View</button>
           <button class="btn btn-secondary" onclick="saveDraftEdits()">Save Changes</button>
           <button class="btn btn-primary" onclick="revalidateDraft()">Save &amp; Re-run Checks</button>
           <button class="btn btn-success" id="draftPublishBtn" onclick="draftToPublish()">Send to Publish →</button>
@@ -1763,6 +1786,28 @@ let activeJobPoll = null;
 let analysisInProgress = false;
 let oppCurrentPage = 1;
 const OPP_PAGE_SIZE = 100;
+// Freemium: how many full opportunity cards this render may reveal — set from the
+// user's remaining monthly landing-page allowance. The rest show as locked previews.
+let oppRevealCount = 3;
+// Fetch the monthly allowance, consume what this analysis reveals, then re-render.
+function gateOpportunities() {
+  return fetch(BASE + '/api/usage', { headers: userHeaders() })
+    .then(r => r.json())
+    .then(u => {
+      lastUsage = u;
+      const remaining = (u.remaining && u.remaining.landing_page) || 0;
+      oppRevealCount = Math.max(0, Math.min(remaining, opportunities.length));
+      if (oppRevealCount > 0) {
+        // Consume the reveals granted by this analysis (once per upload).
+        fetch(BASE + '/api/usage/consume', {
+          method: 'POST', headers: userHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ kind: 'landing_page', count: oppRevealCount }),
+        }).then(r => r.json()).then(snap => { lastUsage = snap; }).catch(() => {});
+      }
+    })
+    .catch(() => { oppRevealCount = 3; })   // if usage is unavailable, fall back to a 3-card teaser
+    .finally(() => applyOppFilters());
+}
 const ANALYSIS_LOADING_LINES = [
   'Analyzing opportunities...',
   'Reading your search data...',
@@ -1943,7 +1988,7 @@ const NAV_GROUPS = {
     label: 'Optimize',
     defaultPage: 'decide',
     pages: [
-      { id: 'decide', label: 'Should Optimize?', icon: 'scale' },
+      { id: 'decide', label: 'Keyword Explorer', icon: 'search' },
       { id: 'queue', label: 'Approval Queue', icon: 'check' },
       { id: 'approvals', label: 'Approvals', icon: 'clipboard' },
     ],
@@ -2156,6 +2201,53 @@ if (localStorage.getItem('theme') !== 'dark') {
 /* ── Auth gate ── */
 const AUTH_KEY = 'maai_auth';
 let selectedRole = 'user';
+
+/* ── "Continue with Google" via Supabase Auth ──────────────────────────────
+   Supabase does the actual OAuth dance with Google. This app only redirects
+   the browser there and, on the way back, hands the access token to the
+   backend to verify (see /api/auth/google) before trusting the email. */
+let SUPABASE_CFG = null;
+
+function loginWithGoogle() {
+  if (!SUPABASE_CFG || !SUPABASE_CFG.supabase_url) return;
+  const redirectTo = window.location.origin + window.location.pathname;
+  window.location.href = SUPABASE_CFG.supabase_url + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(redirectTo);
+}
+
+function loadPublicConfig() {
+  return fetch(BASE + '/api/config/public').then(r => r.json()).then(cfg => {
+    SUPABASE_CFG = cfg;
+    const btn = document.getElementById('googleLoginBtn');
+    if (btn) btn.classList.toggle('hidden', !cfg.supabase_url);
+    return cfg;
+  }).catch(() => { SUPABASE_CFG = {}; });
+}
+
+// After Supabase redirects back, the tokens arrive in the URL hash, e.g.
+// #access_token=...&refresh_token=...&provider_token=...&expires_in=...
+function completeGoogleLogin() {
+  const hash = window.location.hash;
+  if (!hash || hash.indexOf('access_token=') === -1) return Promise.resolve(false);
+  const params = new URLSearchParams(hash.slice(1));
+  const accessToken = params.get('access_token');
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+  if (!accessToken) return Promise.resolve(false);
+
+  return fetch(BASE + '/api/auth/google', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ access_token: accessToken }),
+  })
+    .then(r => r.json().then(d => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => {
+      if (!ok) { showLogin(); showToast(d.error || 'Google sign-in failed.', 'error'); return true; }
+      const auth = { username: d.username, role: d.role };
+      localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+      selectRole(auth.role === 'admin' ? 'admin' : 'user');
+      enterApp(auth);
+      return true;
+    })
+    .catch(err => { showLogin(); showToast('Google sign-in failed: ' + err, 'error'); return true; });
+}
 
 function selectRole(role) {
   selectedRole = role;
@@ -2484,6 +2576,68 @@ function currentAuth() {
   try { return JSON.parse(localStorage.getItem(AUTH_KEY)) || {}; } catch (_) { return {}; }
 }
 
+// Identify the caller to the backend for monthly usage tracking.
+function userHeaders(extra) {
+  const a = currentAuth();
+  const h = Object.assign({}, extra || {});
+  if (a && a.username) h['X-User'] = a.username;
+  if (a && a.role) h['X-Role'] = a.role;   // admins get full, uncapped access
+  return h;
+}
+
+// Cached snapshot of the current user's plan/usage (refreshed after gated actions).
+let lastUsage = null;
+function refreshUsage() {
+  return fetch(BASE + '/api/usage', { headers: userHeaders() })
+    .then(r => r.json()).then(u => { lastUsage = u; return u; }).catch(() => null);
+}
+// Upgrade / pricing modal — shows the plan matrix from /api/plans.
+function showPlans() {
+  const existing = document.getElementById('plans-modal');
+  if (existing) existing.remove();
+  const rows = [
+    ['Landing-page suggestions', '3 / month', '30 / month', '150 / month'],
+    ['Blog automation results', '3 / month', '10 / month', '50 / month'],
+    ['Existing-blog analyses', 'Locked preview', '10 / month', '50 / month'],
+    ['Websites', '1', '1', '5'],
+    ['Full details', 'First 3 only', 'Yes', 'Yes'],
+    ['Export', 'No', 'Yes', 'Yes'],
+    ['TinaCMS publishing', 'No', 'Draft creation', 'Advanced workflow'],
+    ['Team members', '1', '2', '5'],
+    ['API access', 'No', 'No', 'Yes'],
+  ];
+  const modal = document.createElement('div');
+  modal.id = 'plans-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:720px;width:100%;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,0.5);max-height:90vh;overflow:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:18px;font-weight:800;">Choose your plan</div>
+        <button onclick="document.getElementById('plans-modal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;">Get three complete landing-page suggestions and three AI-generated blog results every month for free. Upgrade to Premium to unlock more recommendations, complete existing-blog analysis, exports, and TinaCMS draft publishing.</p>
+      <div class="table-wrap"><table><thead><tr><th>Feature</th><th>Free</th><th>Premium</th><th>Pro</th></tr></thead><tbody>
+        ${rows.map(r => `<tr><td style="font-weight:600;">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:14px;">To change a plan, contact your account manager — plans are set per user by an admin.</p>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+function usageMeterHtml(u) {
+  if (!u) return '';
+  const cap = (used, limit) => limit >= 1e8 ? 'Unlimited' : (used + '/' + limit);
+  const reset = new Date(u.next_reset + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+  const unlimited = (u.limits.blog_generation || 0) >= 1e8;
+  return `<div class="usage-meter">
+    <span class="badge badge-${u.plan === 'free' ? 'pending' : 'approved'}" style="text-transform:capitalize;">${escapeHtml(u.plan)} plan</span>
+    <span>Landing-page suggestions: <strong>${cap(u.used.landing_page, u.limits.landing_page)}</strong></span>
+    <span>Blog generations: <strong>${cap(u.used.blog_generation, u.limits.blog_generation)}</strong></span>
+    ${unlimited ? '' : `<span style="color:var(--text-muted);">Resets ${reset}</span>`}
+  </div>`;
+}
+
 function loadUsers() {
   const isAdmin = currentAuth().role === 'admin';
   const addCard = document.getElementById('users-admin-only');
@@ -2560,7 +2714,8 @@ window.addEventListener('resize', syncSidebarControls);
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeMobileNav();
 });
-initAuth();
+loadPublicConfig();
+completeGoogleLogin().then(handled => { if (!handled) initAuth(); });
 const uploadZone = document.getElementById('uploadZone');
 uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
@@ -3066,7 +3221,7 @@ function renderResults(d) {
   }
 
   renderOppFilters();
-  applyOppFilters();
+  gateOpportunities();   // fetch monthly allowance, reveal what's left, lock the rest
 }
 
 // Filter bar — Recommendation, Intent, Priority, Landing Page, Position, Score.
@@ -3164,9 +3319,37 @@ function renderOppsTable(rows) {
   if (cnt) cnt.textContent = `Showing ${start + 1}-${end} of ${rows.length}`;
 
   list.innerHTML = `
+    ${usageMeterHtml(lastUsage)}
     <div class="topic-grid">
       ${pageRows.map((o, i) => {
         const idx = opportunities.indexOf(o);
+        const globalRank = start + i;                       // 0-based rank across ALL results
+        // Freemium: opportunities beyond the monthly allowance show a locked
+        // preview — score, confidence, funnel stage and priority stay visible;
+        // the title, keyword, URL, page sections, CTA and explanation are hidden.
+        if (globalRank >= oppRevealCount) {
+          const cf = o.confidence != null ? o.confidence + '%' : '—';
+          return `
+          <div class="topic-card opp-locked">
+            <div class="opp-score-head">
+              <div><div class="tmetric-value" style="font-size:24px;color:var(--accent);">${scoreValue(o)}</div><div class="tmetric-label">Score / 100</div></div>
+              <span class="opp-lock-badge"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Locked</span>
+            </div>
+            <div class="topic-metrics" style="margin-bottom:6px;">
+              <div class="tmetric"><div class="tmetric-value">${cf}</div><div class="tmetric-label">Confidence</div></div>
+              <div class="tmetric"><div class="tmetric-value">${escapeHtml(o.intent || 'MOFU')}</div><div class="tmetric-label">Funnel</div></div>
+              <div class="tmetric"><div class="tmetric-value">${escapeHtml(o.priority || 'Low')}</div><div class="tmetric-label">Priority</div></div>
+            </div>
+            <div class="opp-blur-wrap" aria-hidden="true">
+              <div class="topic-title">Suggested landing page hidden</div>
+              <div class="topic-reason">Primary + secondary keywords, the recommended URL, H1, page sections, CTA and the full explanation are part of the complete recommendation.</div>
+            </div>
+            <div class="opp-unlock-cta">
+              <span>You have used your ${(lastUsage && lastUsage.limits && lastUsage.limits.landing_page) || 3} free landing-page suggestions for this month. Upgrade to Premium to unlock the complete recommendations, or wait until your monthly allowance resets.</span>
+              <button class="btn btn-sm btn-primary" onclick="showPlans()">Upgrade to Premium</button>
+            </div>
+          </div>`;
+        }
         const landingPage = o.landing_page || o.page || '';
         const lpType = o.landing_page_type || '';
         const lpUrl = o.landing_page_url || (/^https?:\/\//i.test(landingPage) ? landingPage : '');
@@ -3536,7 +3719,7 @@ function showTopicModal(idx) {
           <button class="btn btn-sm" style="background:var(--green);color:#06281f;border:none;" onclick="setTopicApproval(${idx},'approve')">Approve</button>
           <button class="btn btn-sm" style="background:var(--crimson);color:#fff;border:none;" onclick="setTopicApproval(${idx},'reject')">Reject</button>
           <button class="btn btn-sm" style="background:var(--yellow);color:#3a2e05;border:none;" onclick="setTopicApproval(${idx},'block')">Block</button>
-          ${t.approval_status === 'approved' ? `<button class="btn btn-sm btn-secondary" onclick="sendToBlogAutomation('${(t.primary_keyword || t.topic || '').replace(/'/g, "\\'")}', '${(t.title || '').replace(/'/g, "\\'")}')">Send to Blog Automation →</button>` : ''}
+          ${t.approval_status === 'approved' ? `<button class="btn btn-sm btn-secondary" onclick="sendToBlogAutomation('${(t.primary_keyword || t.topic || '').replace(/'/g, "\\'")}', '${(t.title || '').replace(/'/g, "\\'")}', '${(t.persona || '').replace(/'/g, "\\'")}')">Send to Blog Automation →</button>` : ''}
         </div>
         <button class="btn btn-primary" onclick="document.getElementById('topic-modal').remove()">Close</button>
       </div>
@@ -3844,7 +4027,7 @@ function showReasonModal(index) {
 // Hands a keyword straight from an approved GSC/SEMrush card INTO Blog
 // Automation and runs it immediately — no retyping, no second click. Approve
 // a card, then this fires inventory -> generate -> validate on its own.
-function sendToBlogAutomation(keyword, title) {
+function sendToBlogAutomation(keyword, title, audience) {
   if (!keyword) return;
   document.querySelectorAll('#reason-modal, #topic-modal, #gsc-row-modal').forEach(m => m.remove());
   if (document.getElementById('reviewModal')?.classList.contains('open')) closeReviewModal();
@@ -3852,18 +4035,262 @@ function sendToBlogAutomation(keyword, title) {
   const kwInput = document.getElementById('autoBlogKeyword');
   kwInput.value = keyword;
   if (title) document.getElementById('autoBlogTitle').value = title;
+  // Carry the topic's audience through so the draft matches it (no self-storage
+  // default bleeding onto an unrelated keyword). Blank = model auto-detects.
+  const audInput = document.getElementById('autoBlogAudience');
+  if (audInput) audInput.value = audience || '';
   kwInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
   runBlogAutomation();
 }
 
-function quickDecision(keyword, page, position, impressions, clicks) {
+// ── Keyword Explorer (AnswerThePublic-style discovery dashboard) ──────────────
+let lastKeywordInsights = null;
+let kexMode = 'website';
+let kexWheelView = 'wheel';
+let kexTimers = [];
+
+function setKexMode(mode) {
+  kexMode = mode;
+  document.querySelectorAll('#kexModes .upload-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.kmode === mode));
+  const input = document.getElementById('kexKeyword');
+  const label = document.getElementById('kexLabel');
+  const hint = document.getElementById('kexHint');
+  const arrow = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 10l-5 5 5 5"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>';
+  if (mode === 'website') {
+    label.textContent = 'Website URL';
+    input.placeholder = 'e.g. yourbusiness.com';
+    hint.innerHTML = arrow + ' ENTER YOUR WEBSITE URL <span class="badge badge-approved" style="font-size:9px;">NEW</span>';
+  } else {
+    label.textContent = 'Keyword or topic';
+    input.placeholder = 'e.g. self storage seo';
+    hint.innerHTML = arrow + ' SEARCH ANY KEYWORD TO SEE WHAT PEOPLE ASK';
+  }
+  input.value = '';
+}
+
+function intentClass(intent) { return intent === 'BOFU' ? 'bofu' : intent === 'MOFU' ? 'mofu' : 'tofu'; }
+function oppColor(op) { return op === 'High' ? 'var(--green)' : op === 'Medium' ? 'var(--yellow)' : 'var(--text-muted)'; }
+const LOCK_ICON = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+function oppDot(color) { return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};vertical-align:middle;margin-right:5px;"></span>`; }
+
+const KEX_STEPS_WEBSITE = [
+  'Crawling your website architecture…',
+  'Mapping your core topics and content themes…',
+  'Mining Google for high-intent keyword signals…',
+  'Consulting AI models for emerging search patterns…',
+  'Pulling live search volumes and competition scores…',
+];
+const KEX_STEPS_KEYWORD = [
+  'Expanding your seed keyword…',
+  'Mapping questions, comparisons and related searches…',
+  'Mining Google for high-intent keyword signals…',
+  'Consulting AI models for emerging search patterns…',
+  'Estimating search volumes and competition…',
+];
+
+function runKeywordExplorer() {
+  const val = document.getElementById('kexKeyword').value.trim();
+  const out = document.getElementById('kex-result');
+  if (!val) { showToast(kexMode === 'website' ? 'Enter a website URL to analyze.' : 'Enter a keyword to search.', 'warning'); return; }
+  const btn = document.getElementById('kexBtn');
+  btn.disabled = true;
+  const started = Date.now();
+  const steps = kexMode === 'website' ? KEX_STEPS_WEBSITE : KEX_STEPS_KEYWORD;
+
+  out.innerHTML = `
+    <div style="text-align:center;margin:24px 0 10px;"><h2 style="font-size:26px;font-weight:800;">Analyzing …</h2></div>
+    <div class="card" style="max-width:640px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:8px;"><span>Analyzing …</span><span id="kexPct" style="color:var(--accent);">0%</span></div>
+      <div class="kex-bar"><div class="kex-bar-fill" id="kexBar"></div></div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">
+        ${steps.map((s, i) => `<div class="kex-step" id="kexStep${i}"><span class="kex-step-ico" id="kexStepIco${i}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg></span><span>${escapeHtml(s)}</span></div>`).join('')}
+      </div>
+    </div>`;
+
+  kexTimers.forEach(clearTimeout); kexTimers = [];
+  const bar = document.getElementById('kexBar'); const pct = document.getElementById('kexPct');
+  requestAnimationFrame(() => { if (bar) bar.style.width = '92%'; });
+  [92 * 0.2, 92 * 0.4, 92 * 0.6, 92 * 0.8].forEach((v, i) => {
+    kexTimers.push(setTimeout(() => { if (pct) pct.textContent = Math.round(v) + '%'; }, 500 + i * 550));
+  });
+  steps.forEach((_, i) => {
+    kexTimers.push(setTimeout(() => {
+      const ico = document.getElementById('kexStepIco' + i);
+      if (ico) { ico.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'; ico.style.color = 'var(--green)'; }
+    }, 450 + i * 520));
+  });
+
+  const body = kexMode === 'website' ? { mode: 'website', url: val } : { mode: 'keywords', keyword: val };
+  Promise.all([
+    refreshUsage(),
+    fetch(BASE + '/api/insights/keyword', { method: 'POST', headers: userHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(body) })
+      .then(r => r.json().then(d => ({ ok: r.ok, d }))),
+  ]).then(([, res]) => {
+    if (!res.ok || res.d.error) throw new Error(res.d.error || 'Could not analyze that.');
+    lastKeywordInsights = res.d;
+    const wait = Math.max(0, 2700 - (Date.now() - started));
+    setTimeout(() => { if (bar) bar.style.width = '100%'; if (pct) pct.textContent = '100%'; renderKeywordInsights(res.d); }, wait);
+  }).catch(err => {
+    kexTimers.forEach(clearTimeout);
+    out.innerHTML = '<div class="card"><div class="alert alert-error">' + escapeHtml(err.message) + '</div></div>';
+  }).finally(() => { btn.disabled = false; });
+}
+
+function planUnlocked() { return !!(lastUsage && lastUsage.plan && lastUsage.plan !== 'free'); }
+
+function renderKeywordInsights(d) {
+  const unlocked = planUnlocked();
+  const ideas = d.content_ideas || [];
+  const freeIdeas = unlocked ? ideas.length : 3;
+
+  const ideaCards = ideas.map((idea, i) => {
+    const locked = i >= freeIdeas;
+    if (locked) {
+      return `<div class="topic-card opp-locked">
+        <div class="opp-score-head"><span class="tbadge">${escapeHtml(idea.tag || 'Opportunity')}</span><span class="opp-lock-badge">${LOCK_ICON} Locked</span></div>
+        <div class="opp-blur-wrap" aria-hidden="true"><div class="topic-title">${escapeHtml(idea.title)}</div><div class="topic-reason">${escapeHtml(idea.content_idea)}</div></div>
+        <div class="opp-unlock-cta"><span>Unlock this content idea and its full brief.</span><button class="btn btn-sm btn-primary" onclick="showPlans()">Create account to unlock</button></div>
+      </div>`;
+    }
+    return `<div class="topic-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">
+        <span class="tbadge tbadge-${intentClass(idea.intent)}">${escapeHtml(idea.tag || '')}</span>
+        <span style="font-size:11px;color:${oppColor(idea.opportunity)};font-weight:700;">${oppDot(oppColor(idea.opportunity))}${escapeHtml(idea.opportunity)} opportunity</span>
+      </div>
+      <div class="topic-title">${escapeHtml(idea.keyword)}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin:8px 0 4px;font-weight:600;">Why relevant</div>
+      <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.55;">${escapeHtml(idea.why_relevant)}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin:10px 0 4px;font-weight:600;">Content idea</div>
+      <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.55;">${escapeHtml(idea.content_idea)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+        <button class="btn btn-sm btn-primary" onclick="sendToBlogAutomation('${idea.keyword.replace(/'/g, "\\'")}', '${idea.title.replace(/'/g, "\\'")}')">Generate Content</button>
+        <button class="btn btn-sm btn-secondary" onclick="exploreChip('${idea.keyword.replace(/'/g, "\\'")}')">Related Keywords</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('kex-result').innerHTML = `
+    ${usageMeterHtml(lastUsage)}
+    <div style="text-align:center;margin:8px 0 18px;">
+      <h2 style="font-size:24px;font-weight:800;color:var(--accent);">AI-Suggested Content Ideas</h2>
+      <div style="color:var(--text-muted);">for ${escapeHtml(d.brand || d.keyword)} · ${ideas.length} content ideas</div>
+    </div>
+    <div class="topic-grid" style="margin-bottom:22px;">${ideaCards || '<div class="alert alert-info">No content ideas generated.</div>'}</div>
+
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div class="card-title" style="margin:0;">Your Best Keywords</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm ${kexWheelView === 'wheel' ? 'btn-primary' : 'btn-secondary'}" onclick="setWheelView('wheel')">Wheel</button>
+        <button class="btn btn-sm ${kexWheelView === 'table' ? 'btn-primary' : 'btn-secondary'}" onclick="setWheelView('table')">Table View</button>
+        ${unlocked ? '<button class="btn btn-sm btn-secondary" onclick="exportInsights(\'csv\')">Export CSV</button>' : ''}
+      </div>
+    </div>
+    <div id="kexWheelHost">${kexWheelView === 'wheel' ? keywordWheelSvg(d) : keywordGroupsTable(d, unlocked)}</div>`;
+}
+
+function setWheelView(v) { kexWheelView = v; if (lastKeywordInsights) renderKeywordInsights(lastKeywordInsights); }
+
+function keywordWheelSvg(d) {
+  const items = (d.wheel || []).slice(0, 12);
+  if (!items.length) return '<div class="card"><div class="alert alert-info">No keyword clusters.</div></div>';
+  const cx = 300, cy = 300, r = 200;
+  const spokes = items.map((it, i) => {
+    const ang = (i / items.length) * 2 * Math.PI - Math.PI / 2;
+    const x = cx + r * Math.cos(ang), y = cy + r * Math.sin(ang);
+    const anchor = Math.cos(ang) > 0.2 ? 'start' : Math.cos(ang) < -0.2 ? 'end' : 'middle';
+    const color = it.intent === 'BOFU' ? 'var(--green)' : it.intent === 'MOFU' ? 'var(--yellow)' : 'var(--accent)';
+    const label = it.keyword.length > 26 ? it.keyword.slice(0, 24) + '…' : it.keyword;
+    return `<g style="cursor:pointer;" onclick="exploreChip('${it.keyword.replace(/'/g, "\\'")}')">
+      <line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--glass-border)" stroke-width="1.5"/>
+      <circle cx="${x}" cy="${y}" r="5" fill="${color}"/>
+      <text x="${x + (anchor === 'start' ? 8 : anchor === 'end' ? -8 : 0)}" y="${y + 4}" text-anchor="${anchor}" font-size="12" fill="var(--text-secondary)">${escapeHtml(label)}</text>
+    </g>`;
+  }).join('');
+  return `<div class="card" style="overflow-x:auto;"><svg viewBox="0 0 600 600" style="width:100%;max-width:600px;height:auto;display:block;margin:0 auto;">
+    <circle cx="${cx}" cy="${cy}" r="46" fill="var(--accent)" opacity="0.12"/>
+    <text x="${cx}" y="${cy + 5}" text-anchor="middle" font-size="15" font-weight="800" fill="var(--accent)">${escapeHtml((d.keyword || '').split(' ').slice(0, 2).join(' ') || 'topic')}</text>
+    ${spokes}
+  </svg></div>`;
+}
+
+function keywordGroupsTable(d, unlocked) {
+  const groups = d.keyword_groups || [];
+  if (!groups.length) return '<div class="card"><div class="alert alert-info">No keyword clusters.</div></div>';
+  const intentDot = (it) => `<span class="dot" style="background:${it === 'BOFU' ? 'var(--green)' : it === 'MOFU' ? 'var(--yellow)' : 'var(--accent)'};"></span>`;
+  return '<div class="card">' + groups.map((g, gi) => {
+    const rows = g.keywords || [];
+    const freeRows = unlocked ? rows.length : 1;   // free: 1 row visible per group, rest locked
+    const visible = rows.slice(0, freeRows).map(k => `
+      <tr>
+        <td><strong>${escapeHtml(k.keyword)}</strong></td>
+        <td><button class="btn btn-sm btn-secondary" onclick="sendToBlogAutomation('${k.keyword.replace(/'/g, "\\'")}')">Generate Content</button></td>
+        <td><span style="color:${oppColor(k.opportunity)};font-weight:700;">${oppDot(oppColor(k.opportunity))}${escapeHtml(k.opportunity)}</span></td>
+        <td>${escapeHtml(k.volume)}</td>
+        <td>${intentDot(k.intent)} ${escapeHtml(k.intent)}</td>
+      </tr>`).join('');
+    const lockedRows = rows.slice(freeRows);
+    const lockedHtml = lockedRows.length ? `
+      <tr><td colspan="5" style="padding:0;">
+        <div style="position:relative;">
+          <div class="opp-blur-wrap" aria-hidden="true" style="padding:8px 0;">
+            ${lockedRows.map(k => `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>${escapeHtml(k.keyword)}</span><span>${escapeHtml(k.volume)}</span></div>`).join('')}
+          </div>
+          <div style="text-align:center;margin-top:6px;">
+            <button class="btn btn-sm btn-primary" onclick="showPlans()">Create a free account to see more content suggestions</button>
+          </div>
+        </div>
+      </td></tr>` : '';
+    return `
+      <div style="font-weight:800;color:var(--accent);margin:${gi ? '18px' : '0'} 0 6px;">${escapeHtml(g.name)}</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Keyword</th><th></th><th>Opportunity</th><th>Volume</th><th>Intent</th></tr></thead>
+        <tbody>${visible}${lockedHtml}</tbody>
+      </table></div>`;
+  }).join('') + '</div>';
+}
+
+function exploreChip(phrase) {
+  setKexMode('keywords');
+  document.getElementById('kexKeyword').value = phrase;
+  runKeywordExplorer();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function ideaToBrief(keyword) {
+  showPage('brief');
+  const el = document.getElementById('briefKeyword');
+  if (el) el.value = keyword;
+  showToast('Keyword loaded into the brief generator.', 'success');
+}
+
+function exportInsights(format) {
+  if (!lastKeywordInsights) return;
+  if (!planUnlocked()) { showPlans(); return; }
+  const d = lastKeywordInsights;
+  const rows = [['group', 'keyword', 'opportunity', 'volume', 'intent']];
+  (d.keyword_groups || []).forEach(g => (g.keywords || []).forEach(k => rows.push([g.name, k.keyword, k.opportunity, k.volume, k.intent])));
+  let blob, filename;
+  if (format === 'json') {
+    blob = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' });
+    filename = 'keyword-insights-' + (d.keyword || 'export').replace(/\s+/g, '-') + '.json';
+  } else {
+    const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+    blob = new Blob([csv], { type: 'text/csv' });
+    filename = 'keyword-insights-' + (d.keyword || 'export').replace(/\s+/g, '-') + '.csv';
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// "Decide" actions from GSC rows now open the keyword in the Explorer.
+function quickDecision(keyword) {
   showPage('decide');
-  document.getElementById('decKeyword').value = keyword;
-  document.getElementById('decPage').value = page;
-  document.getElementById('decPosition').value = position;
-  document.getElementById('decImpressions').value = impressions;
-  document.getElementById('decClicks').value = clicks;
-  runDecision();
+  setKexMode('keywords');
+  const el = document.getElementById('kexKeyword');
+  if (el) el.value = keyword || '';
+  runKeywordExplorer();
 }
 
 function runDecision() {
@@ -4239,11 +4666,14 @@ function runBlogAutomation() {
       <button class="btn btn-danger" onclick="cancelBlogAutomation()">Cancel</button>
     </div></div>`;
   fetch(BASE + '/api/automation/blogs/run', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: blogAbortController.signal,
+    method: 'POST', headers: userHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(body), signal: blogAbortController.signal,
   })
     .then(r => r.json().then(d => ({ ok: r.ok, d })))
     .then(({ ok, d }) => {
       if (!ok || d.error) throw new Error(d.error || 'Blog automation failed.');
+      // Monthly allowance exhausted → score-only locked preview (no AI ran).
+      if (d.locked) { lastUsage = d.usage || lastUsage; renderBlogLocked(d); return; }
+      lastUsage = d.usage || lastUsage;
       lastAutomationDraft = d.draft;
       const validation = d.validation || {};
       const summary = validation.summary || {};
@@ -4256,6 +4686,7 @@ function runBlogAutomation() {
       }).join('');
       const remote = d.publish_record;
       out.innerHTML = `
+        ${usageMeterHtml(d.usage)}
         <div class="card">
           <div class="card-title">${escapeHtml(d.draft.title)}</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
@@ -4269,7 +4700,7 @@ function runBlogAutomation() {
           <textarea rows="16" readonly style="font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;">${escapeHtml(d.draft.full_content)}</textarea>
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
             <button class="btn btn-success" onclick="storeToDraftBlogs()">Store to Draft Blogs</button>
-            <button class="btn btn-secondary" onclick="openDraftReader()">⤢ Maximize to Read</button>
+            <button class="btn btn-secondary" onclick="openDraftReader()"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg> Maximize to Read</button>
             <button class="btn btn-primary" onclick="automationToPublish()">Open in Publish</button>
             ${remote && remote.url ? `<a class="btn btn-secondary" href="${escapeHtml(remote.url)}" target="_blank" rel="noopener">View remote post</a>` : ''}
           </div>
@@ -4298,6 +4729,32 @@ function runBlogAutomation() {
 // Draft Blogs — cancelling just stops the UI from waiting.
 function cancelBlogAutomation() {
   if (blogAbortController) blogAbortController.abort();
+}
+
+// Monthly blog allowance used up — show a score-only teaser (no AI was run).
+function renderBlogLocked(d) {
+  const p = d.preview || {};
+  document.getElementById('blog-automation-result').innerHTML = `
+    ${usageMeterHtml(d.usage)}
+    <div class="card opp-locked">
+      <div class="opp-score-head">
+        <div><div class="tmetric-value" style="font-size:24px;color:var(--accent);">${p.score || 0}</div><div class="tmetric-label">Opportunity score</div></div>
+        <span class="opp-lock-badge"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Locked</span>
+      </div>
+      <div class="topic-metrics" style="margin-bottom:12px;">
+        <div class="tmetric"><div class="tmetric-value">${escapeHtml(p.funnel_stage || '—')}</div><div class="tmetric-label">Funnel stage</div></div>
+        <div class="tmetric"><div class="tmetric-value">${escapeHtml(p.estimated_potential || '—')}</div><div class="tmetric-label">Est. potential</div></div>
+        <div class="tmetric"><div class="tmetric-value">${escapeHtml(p.content_type || '—')}</div><div class="tmetric-label">Content type</div></div>
+      </div>
+      <div class="opp-blur-wrap" aria-hidden="true">
+        <div class="topic-title">Blog title, outline and full article hidden</div>
+        <div class="topic-reason">Target keywords, suggested headings, the full draft and SEO recommendations are part of the complete generation.</div>
+      </div>
+      <div class="upgrade-note" style="margin-top:12px;">
+        <div class="lock-msg">${escapeHtml(d.message || '')}</div>
+        <button class="btn btn-sm btn-primary" onclick="showPlans()">Upgrade to Premium</button>
+      </div>
+    </div>`;
 }
 
 // The draft is persisted to Draft Blogs automatically by the backend the moment
@@ -5079,7 +5536,11 @@ const INTEGRATION_CONFIG = {
     configureEndpoint: '/api/integrations/notifications/configure',
     fields: [
       { key: 'slack_webhook_url', label: 'Slack Webhook URL', type: 'password', placeholder: 'https://hooks.slack.com/services/...', primary: true },
-      { key: 'notify_email', label: 'Notify Email (optional)', type: 'text', placeholder: 'you@company.com' },
+      { key: 'email_smtp_host', label: 'SMTP Host (for email alerts)', type: 'text', placeholder: 'smtp.gmail.com' },
+      { key: 'email_smtp_port', label: 'SMTP Port', type: 'text', placeholder: '587', default: '587' },
+      { key: 'email_username', label: 'SMTP Username', type: 'text', placeholder: 'you@company.com' },
+      { key: 'email_password', label: 'SMTP Password / App Password', type: 'password', placeholder: 'Stored locally; use Secret Manager in production' },
+      { key: 'notify_email', label: 'Send Alerts To', type: 'text', placeholder: 'you@company.com' },
     ],
   },
   analytics: {
@@ -5183,6 +5644,11 @@ function showIntegrationConnect(int) {
     html += `<div style="display:flex;gap:10px;">`;
     html += `<button class="btn btn-primary" onclick="connectIntegration('${int.id}')">${connected ? 'Update connection' : 'Connect'}</button>`;
     if (int.id === 'cms' && connected) html += `<button class="btn btn-secondary" onclick="testCMSConnection()">Test connection</button>`;
+    if (int.id === 'semrush' && connected) html += `<button class="btn btn-secondary" onclick="testSemrushConnection()">Test connection</button>`;
+    if (int.id === 'notifications' && connected) {
+      html += `<button class="btn btn-secondary" onclick="testNotification('slack')">Send test Slack message</button>`;
+      html += `<button class="btn btn-secondary" onclick="testNotification('email')">Send test email</button>`;
+    }
     html += `<button class="btn btn-secondary" onclick="loadIntegrations()">← Back</button>`;
     html += `</div></div>`;
     document.getElementById('integrations-grid').innerHTML = html;
@@ -5200,6 +5666,36 @@ function testCMSConnection() {
       out.innerHTML = `<div class="alert alert-success">Connected to ${escapeHtml(d.cms_type || 'the publishing API')}.</div>`;
     })
     .catch(err => { out.innerHTML = `<div class="alert alert-warning">${escapeHtml(err.message)}</div>`; });
+}
+
+function testSemrushConnection() {
+  const out = document.getElementById('int-connect-result');
+  if (!out) return;
+  out.innerHTML = '<div class="alert alert-info">Calling the live SEMrush API...</div>';
+  fetch(BASE + '/api/integrations/semrush/test', { method: 'POST' })
+    .then(r => r.json().then(d => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => {
+      if (!ok || d.error) throw new Error(d.error || 'Connection test failed.');
+      out.innerHTML = `<div class="alert alert-success">✓ ${escapeHtml(d.message)} Sample lookup for "seo": ${d.sample.volume} searches/mo, KD ${d.sample.keyword_difficulty}.</div>`;
+    })
+    .catch(err => { out.innerHTML = `<div class="alert alert-warning">${escapeHtml(err.message)}</div>`; });
+}
+
+function testNotification(channel) {
+  const out = document.getElementById('int-connect-result');
+  if (!out) return;
+  out.innerHTML = `<div class="alert alert-info">Sending a real test ${channel} message...</div>`;
+  fetch(BASE + '/api/integrations/notifications/send', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: 'This is a test alert from MAAI Integrations.', subject: 'MAAI test notification', channel }),
+  })
+    .then(r => r.json())
+    .then(d => {
+      const r = (d.results || [])[0] || {};
+      if (r.status === 'sent') out.innerHTML = `<div class="alert alert-success">✓ Test ${channel} message sent — check ${channel === 'slack' ? 'the Slack channel' : 'the inbox'}.</div>`;
+      else out.innerHTML = `<div class="alert alert-warning">${escapeHtml(r.error || r.message || ('Could not send the test ' + channel + ' message.'))}</div>`;
+    })
+    .catch(err => { out.innerHTML = `<div class="alert alert-warning">${escapeHtml(String(err))}</div>`; });
 }
 
 function connectIntegration(id) {

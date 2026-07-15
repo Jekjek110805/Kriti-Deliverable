@@ -1,0 +1,91 @@
+{
+  "keyword": "about us",
+  "title": "About Us: Best contact us",
+  "meta_description": "Learn about our company, mission, and how we support self storage operators with proven SEO and operational strategies.",
+  "url_slug": "about-us",
+  "intent": "informational",
+  "target_audience": "Self storage facility owners",
+  "tone": "direct, practical and evidence-led",
+  "word_count_target": 1500,
+  "tldr": "We help self storage facility owners improve online visibility and attract more customers through tailored SEO services. Our team combines industry knowledge with technical expertise to deliver measurable results. This page explains who we are, what we do, and how we support your facility’s growth.",
+  "introduction": "If you own or manage a self storage facility, you know that standing out in local search is critical to filling units and growing revenue. Many operators struggle to connect with customers online despite having a strong physical presence. Our company exists to bridge that gap. We focus exclusively on helping self storage businesses improve their digital footprint through ethical, data-driven SEO strategies. We don’t offer generic marketing advice-we specialize in the unique challenges and opportunities within the self storage industry. Every recommendation we make is based on what works for facilities like yours, from improving Google Business Profile visibility to fixing technical site issues that hinder rankings. This page explains our background, approach, and the specific ways we support independent owners, multi-location operators, and new facility launches.",
+  "sections": [
+    {
+      "heading": "Our Mission and Focus",
+      "content": "Our mission is simple: to help self storage facilities get found by more qualified customers online. We concentrate our efforts entirely on the self storage sector because we believe specialized knowledge leads to better outcomes. Unlike general marketing agencies, we understand the seasonal demand patterns, local competition dynamics, and customer search behaviors specific to storage facilities. This focus allows us to identify opportunities others miss and prevent strategies that waste time or budget. We measure success by tangible outcomes like increased phone calls, form submissions, and unit rentals-not just rankings or traffic. Every client engagement starts with understanding your facility’s unique goals, market position, and challenges. We then build a customized plan that aligns with your business objectives and resources."
+    },
+    {
+      "heading": "How We Got Started",
+      "content": "Our team began working with self storage operators after noticing a recurring gap in the market. Many facility owners had invested in websites and basic SEO but saw little return because the strategies weren’t tailored to their industry. Common issues included poorly optimized Google Business Profiles, inconsistent NAP citations, and website content that didn’t match how customers actually search for storage. We started by helping a handful of local facilities fix these foundational issues. As those clients began seeing more calls and online reservations, word spread through industry networks. Today, we work with facilities across the country, from single-location independents to growing multi-site operators. Our growth has been driven by referrals and repeat business, not aggressive sales tactics. We remain committed to serving only the self storage industry so we can continue to deepen our expertise and deliver relevant, effective solutions."
+    },
+    {
+      "heading": "What We Do for Clients",
+      "content": "We provide a range of SEO services designed specifically for self storage facilities. This includes optimizing Google Business Profiles to improve local pack visibility and ensure accurate hours, categories, and photos. We conduct technical SEO audits to identify and fix site speed, mobile usability, and crawlability issues that can hurt rankings. Our content keyword strategy focuses on the phrases storage customers actually use, such as \"climate controlled storage near me\" or \"RV storage [city]\" rather than generic terms. We also build local citations and backlinks from relevant, authoritative sources in the storage and real estate niches. For multi-location operators, we implement scalable solutions that maintain consistency across sites while allowing for local market customization. All services are transparent, with clear reporting on what we do and how it impacts your online performance."
+    },
+    {
+      "heading": "Who We Serve Best",
+      "content": "We work most effectively with three types of self storage businesses. Independent facility owners who manage one or two sites benefit from our hands-on approach to local SEO and reputation management. Multi-location operators need scalable systems for managing hundreds of listings and pages-we provide the structure and oversight to keep everything consistent and optimized. New facility openings rely on us to build a strong digital foundation from day one, including pre-launch SEO setup and early customer acquisition strategies. We also serve niche segments like vehicle/RV/boat storage facilities and storage warehouses, where specific search behaviors require tailored keyword and content approaches. Regardless of size or specialty, we adapt our methods to fit your facility’s specific market, competition, and goals."
+    },
+    {
+      "heading": "Our Approach to Results",
+      "content": "We prevent one-size-fits-all packages or guaranteed ranking promises because SEO success depends on too many variables we don’t control, like algorithm updates or competitor activity. Instead, we focus on controllable actions: fixing technical errors, improving content relevance, strengthening local signals, and enhancing user experience. We use proven methodologies and tools, but we interpret the data through the lens of self storage customer behavior. For example, we know that mobile searches for \"storage units open now\" peak at certain times of day, so we ensure sites load quickly and display key info prominently. We track metrics that matter to your business-like direction requests, phone clicks, and form completions-not just vanity metrics. Regular reporting shows progress, highlights what’s working, and identifies where to adjust tactics for better outcomes."
+    }
+  ],
+  "faq": [
+    {
+      "question": "Do you work with facilities outside the United States?",
+      "answer": "Our primary focus is on self storage facilities operating in the United States, where we have the most experience with local search patterns, Google Business Profile requirements, and industry-specific directories. While some principles may apply elsewhere, we do not currently offer services for international facilities due to differences in search engines, local citation sources, and consumer behavior."
+    },
+    {
+      "question": "How long does it take to see results from your SEO work?",
+      "answer": "SEO is a gradual process, and timelines vary based on your facility’s current online presence, competition in your market, and the specific improvements needed. Technical fixes like site speed or mobile usability can show impact within weeks. Building local authority through citations, content, and backlinks typically takes several months to influence rankings and customer actions. We focus on sustainable growth rather than quick fixes, and we provide regular updates so you can see how each step contributes to your goals."
+    },
+    {
+      "question": "Can I see examples of your work with other storage facilities?",
+      "answer": "We respect client confidentiality and do not share specific campaign details or results without permission. However, during our initial consultation, we can discuss the types of facilities we’ve helped, the common challenges we address, and the general strategies we apply. We encourage you to ask about our process, reporting methods, and how we measure success so you can determine if our approach aligns with your needs."
+    }
+  ],
+  "cta": {
+    "heading": "Get a Free SEO Audit for Your Facility",
+    "content": "See how your self storage website and online presence are performing today. Our free audit checks your Google Business Profile, technical SEO, local citations, and content relevance-all tailored to the storage industry. You’ll receive a clear report with actionable insights, no obligation.",
+    "label": "Get My Free Audit",
+    "target_url": "https://selfstorage.help/audit"
+  },
+  "internal_links": [
+    {
+      "url": "https://selfstorage.help/audit",
+      "anchor": "free SEO audit"
+    },
+    {
+      "url": "https://selfstorage.help/services/local-seo-gbp-optimization",
+      "anchor": "Google Business Profile optimization"
+    },
+    {
+      "url": "https://selfstorage.help/who-we-serve/independent-facility-owners",
+      "anchor": "independent facility owners"
+    }
+  ],
+  "image": {
+    "brief": "A diverse team of professionals in a modern office setting, reviewing laptops and discussing strategies, with subtle self storage icons or facility photos in the background to indicate industry focus.",
+    "alt_text": "Team collaborating on SEO strategy for self storage facility clients",
+    "featured_image_url": "",
+    "status": "required_before_publish"
+  },
+  "template_version": "maai-blog-sop-v1",
+  "status": "draft",
+  "ai_generated": true,
+  "human_edited": false,
+  "created_at": "2026-07-14T08:44:27.992147+00:00",
+  "full_content": "TLDR\n\nWe help self storage facility owners improve online visibility and attract more customers through tailored SEO services. Our team combines industry knowledge with technical expertise to deliver measurable results. This page explains who we are, what we do, and how we support your facility’s growth.\n\n## Introduction\n\nIf you own or manage a self storage facility, you know that standing out in local search is critical to filling units and growing revenue. Many operators struggle to connect with customers online despite having a strong physical presence. Our company exists to bridge that gap. We focus exclusively on helping self storage businesses improve their digital footprint through ethical, data-driven SEO strategies. We don’t offer generic marketing advice-we specialize in the unique challenges and opportunities within the self storage industry. Every recommendation we make is based on what works for facilities like yours, from improving Google Business Profile visibility to fixing technical site issues that hinder rankings. This page explains our background, approach, and the specific ways we support independent owners, multi-location operators, and new facility launches.\n\n## Our Mission and Focus\n\nOur mission is simple: to help self storage facilities get found by more qualified customers online. We concentrate our efforts entirely on the self storage sector because we believe specialized knowledge leads to better outcomes. Unlike general marketing agencies, we understand the seasonal demand patterns, local competition dynamics, and customer search behaviors specific to storage facilities. This focus allows us to identify opportunities others miss and prevent strategies that waste time or budget. We measure success by tangible outcomes like increased phone calls, form submissions, and unit rentals-not just rankings or traffic. Every client engagement starts with understanding your facility’s unique goals, market position, and challenges. We then build a customized plan that aligns with your business objectives and resources.\n\n## How We Got Started\n\nOur team began working with self storage operators after noticing a recurring gap in the market. Many facility owners had invested in websites and basic SEO but saw little return because the strategies weren’t tailored to their industry. Common issues included poorly optimized Google Business Profiles, inconsistent NAP citations, and website content that didn’t match how customers actually search for storage. We started by helping a handful of local facilities fix these foundational issues. As those clients began seeing more calls and online reservations, word spread through industry networks. Today, we work with facilities across the country, from single-location independents to growing multi-site operators. Our growth has been driven by referrals and repeat business, not aggressive sales tactics. We remain committed to serving only the self storage industry so we can continue to deepen our expertise and deliver relevant, effective solutions.\n\n## What We Do for Clients\n\nWe provide a range of SEO services designed specifically for self storage facilities. This includes optimizing Google Business Profiles to improve local pack visibility and ensure accurate hours, categories, and photos. We conduct technical SEO audits to identify and fix site speed, mobile usability, and crawlability issues that can hurt rankings. Our content keyword strategy focuses on the phrases storage customers actually use, such as \"climate controlled storage near me\" or \"RV storage [city]\" rather than generic terms. We also build local citations and backlinks from relevant, authoritative sources in the storage and real estate niches. For multi-location operators, we implement scalable solutions that maintain consistency across sites while allowing for local market customization. All services are transparent, with clear reporting on what we do and how it impacts your online performance.\n\n## Who We Serve Best\n\nWe work most effectively with three types of self storage businesses. Independent facility owners who manage one or two sites benefit from our hands-on approach to local SEO and reputation management. Multi-location operators need scalable systems for managing hundreds of listings and pages-we provide the structure and oversight to keep everything consistent and optimized. New facility openings rely on us to build a strong digital foundation from day one, including pre-launch SEO setup and early customer acquisition strategies. We also serve niche segments like vehicle/RV/boat storage facilities and storage warehouses, where specific search behaviors require tailored keyword and content approaches. Regardless of size or specialty, we adapt our methods to fit your facility’s specific market, competition, and goals.\n\n## Our Approach to Results\n\nWe prevent one-size-fits-all packages or guaranteed ranking promises because SEO success depends on too many variables we don’t control, like algorithm updates or competitor activity. Instead, we focus on controllable actions: fixing technical errors, improving content relevance, strengthening local signals, and enhancing user experience. We use proven methodologies and tools, but we interpret the data through the lens of self storage customer behavior. For example, we know that mobile searches for \"storage units open now\" peak at certain times of day, so we ensure sites load quickly and display key info prominently. We track metrics that matter to your business-like direction requests, phone clicks, and form completions-not just vanity metrics. Regular reporting shows progress, highlights what’s working, and identifies where to adjust tactics for better outcomes.\n\n## Frequently Asked Questions\n\n### Do you work with facilities outside the United States?\n\nOur primary focus is on self storage facilities operating in the United States, where we have the most experience with local search patterns, Google Business Profile requirements, and industry-specific directories. While some principles may apply elsewhere, we do not currently offer services for international facilities due to differences in search engines, local citation sources, and consumer behavior.\n\n### How long does it take to see results from your SEO work?\n\nSEO is a gradual process, and timelines vary based on your facility’s current online presence, competition in your market, and the specific improvements needed. Technical fixes like site speed or mobile usability can show impact within weeks. Building local authority through citations, content, and backlinks typically takes several months to influence rankings and customer actions. We focus on sustainable growth rather than quick fixes, and we provide regular updates so you can see how each step contributes to your goals.\n\n### Can I see examples of your work with other storage facilities?\n\nWe respect client confidentiality and do not share specific campaign details or results without permission. However, during our initial consultation, we can discuss the types of facilities we’ve helped, the common challenges we address, and the general strategies we apply. We encourage you to ask about our process, reporting methods, and how we measure success so you can determine if our approach aligns with your needs.\n\n## Get a Free SEO Audit for Your Facility\n\nSee how your self storage website and online presence are performing today. Our free audit checks your Google Business Profile, technical SEO, local citations, and content relevance-all tailored to the storage industry. You’ll receive a clear report with actionable insights, no obligation.\n\n[Get My Free Audit](https://selfstorage.help/audit)\n\n## Related Reading\n\n- [free SEO audit](https://selfstorage.help/audit)\n- [Google Business Profile optimization](https://selfstorage.help/services/local-seo-gbp-optimization)\n- [independent facility owners](https://selfstorage.help/who-we-serve/independent-facility-owners)",
+  "word_count_actual": 1152,
+  "template_checklist": {
+    "tldr_at_top": true,
+    "keyword_in_title": true,
+    "five_or_more_h2_sections": true,
+    "faq_present": true,
+    "cta_present": true,
+    "verified_internal_links": 3,
+    "media_ready": false
+  },
+  "notes": "Generated with the MAAI blog template. Human fact review, media approval and publish approval remain required before the post can go live."
+}

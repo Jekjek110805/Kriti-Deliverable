@@ -1702,6 +1702,10 @@ async def approve_keyword(keyword: str, request: Request = None):
     state[keyword] = "approved"
     save_queue_state(state)
     record_approval_action(keyword, "approved", notes)
+    dispatch_notification(
+        f"'{keyword}' was approved for optimization." + (f" Notes: {notes}" if notes else ""),
+        subject="MAAI: content approved",
+    )
 
     # Auto-add to calendar if approved
     entry = {
@@ -2401,7 +2405,7 @@ async def should_optimize(request: Request):
 class BlogAutomationRequest(BaseModel):
     keyword: str
     title: str = ""
-    audience: str = "Independent self-storage operators in the USA"
+    audience: str = ""  # blank → the model infers the audience for the keyword
     tone: str = "direct, practical and evidence-led"
     word_count: int = 1500
     site_url: str = "https://www.selfstorage.help"
@@ -2414,6 +2418,175 @@ class BlogAutomationRequest(BaseModel):
 def _content_artifact_key(keyword: str) -> str:
     value = re.sub(r"[^A-Za-z0-9_-]+", "_", (keyword or "").strip()).strip("_")
     return value or "article"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PLANS & MONTHLY USAGE ALLOWANCES (freemium)
+# ═══════════════════════════════════════════════════════════════════════════════
+# Free users get a small monthly allowance of full results; beyond that,
+# opportunities appear as score-only locked previews and expensive AI generation
+# is not run. Usage resets on the first day of each calendar month.
+
+UNLIMITED = 10 ** 9
+
+PLANS = {
+    "free":    {"landing_page": 3,   "blog_generation": 3,  "existing_blog": 0,  "websites": 1, "export": False, "tina": "none",     "team": 1, "api": False},
+    "premium": {"landing_page": 30,  "blog_generation": 10, "existing_blog": 10, "websites": 1, "export": True,  "tina": "draft",    "team": 2, "api": False},
+    "pro":     {"landing_page": 150, "blog_generation": 50, "existing_blog": 50, "websites": 5, "export": True,  "tina": "advanced", "team": 5, "api": True},
+    # Admins get unrestricted access — no monthly caps, every feature on.
+    "admin":   {"landing_page": UNLIMITED, "blog_generation": UNLIMITED, "existing_blog": UNLIMITED, "websites": UNLIMITED, "export": True, "tina": "advanced", "team": UNLIMITED, "api": True},
+}
+
+USAGE_FILE = os.path.join(OUTPUTS_DIR, "usage_state.json")
+USER_PLANS_FILE = os.path.join(DATA_DIR, "user_plans.json")
+
+
+def _current_month() -> str:
+    return datetime.utcnow().strftime("%Y-%m")
+
+
+def _next_reset_date() -> str:
+    now = datetime.utcnow()
+    year = now.year + (1 if now.month == 12 else 0)
+    month = 1 if now.month == 12 else now.month + 1
+    return f"{year:04d}-{month:02d}-01"
+
+
+def _request_user(request: Request) -> str:
+    """Identify the caller for usage tracking (internal tool — header-based)."""
+    user = (request.headers.get("x-user") or "").strip().lower()
+    return user or "guest"
+
+
+def _request_is_admin(request: Request) -> bool:
+    return (request.headers.get("x-role") or "").strip().lower() == "admin"
+
+
+def resolve_plan(user: str, request: Optional[Request] = None) -> str:
+    """The plan a user runs on. Admins (by role header) always get full access."""
+    if request is not None and _request_is_admin(request):
+        return "admin"
+    return get_user_plan(user)
+
+
+def get_user_plan(user: str) -> str:
+    if os.path.exists(USER_PLANS_FILE):
+        try:
+            with open(USER_PLANS_FILE, encoding="utf-8") as f:
+                plan = json.load(f).get(user, "free")
+            return plan if plan in PLANS else "free"
+        except (OSError, json.JSONDecodeError):
+            pass
+    return "free"
+
+
+def _load_usage() -> Dict[str, Any]:
+    if os.path.exists(USAGE_FILE):
+        try:
+            with open(USAGE_FILE, encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return {}
+    return {}
+
+
+def _save_usage(state: Dict[str, Any]) -> None:
+    os.makedirs(OUTPUTS_DIR, exist_ok=True)
+    with open(USAGE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2)
+
+
+def _get_usage_record(user: str) -> Dict[str, Any]:
+    """Return this month's usage counters for a user, auto-resetting on month change."""
+    state = _load_usage()
+    month = _current_month()
+    rec = state.get(user)
+    if not rec or rec.get("month") != month:
+        rec = {"month": month, "landing_page": 0, "blog_generation": 0, "existing_blog": 0}
+        state[user] = rec
+        _save_usage(state)
+    return rec
+
+
+def usage_snapshot(user: str, plan: Optional[str] = None) -> Dict[str, Any]:
+    plan = plan or get_user_plan(user)
+    limits = PLANS.get(plan, PLANS["free"])
+    rec = _get_usage_record(user)
+    kinds = ("landing_page", "blog_generation", "existing_blog")
+    used = {k: rec.get(k, 0) for k in kinds}
+    remaining = {k: max(0, int(limits.get(k, 0)) - used[k]) for k in kinds}
+    return {
+        "user": user,
+        "plan": plan,
+        "limits": {k: limits.get(k, 0) for k in kinds},
+        "used": used,
+        "remaining": remaining,
+        "features": {"export": limits.get("export"), "tina": limits.get("tina"),
+                     "websites": limits.get("websites"), "team": limits.get("team"), "api": limits.get("api")},
+        "next_reset": _next_reset_date(),
+    }
+
+
+def has_allowance(user: str, kind: str, plan: Optional[str] = None) -> bool:
+    plan = plan or get_user_plan(user)
+    limit = int(PLANS.get(plan, PLANS["free"]).get(kind, 0))
+    used = _get_usage_record(user).get(kind, 0)
+    return used < limit
+
+
+def consume_usage(user: str, kind: str, count: int = 1) -> Dict[str, Any]:
+    state = _load_usage()
+    month = _current_month()
+    rec = state.get(user)
+    if not rec or rec.get("month") != month:
+        rec = {"month": month, "landing_page": 0, "blog_generation": 0, "existing_blog": 0}
+    rec[kind] = rec.get(kind, 0) + max(0, int(count))
+    state[user] = rec
+    _save_usage(state)
+    return rec
+
+
+def build_blog_preview(keyword: str) -> Dict[str, Any]:
+    """Cheap, deterministic teaser for a locked blog generation (no AI call)."""
+    intent = classify_intent(keyword)
+    commercial = rate_commercial_potential(keyword, intent, 0)
+    score = {"BOFU": 78, "MOFU": 66, "TOFU": 54}.get(intent, 60)
+    return {
+        "keyword": keyword,
+        "score": score,
+        "funnel_stage": intent,
+        "estimated_potential": commercial,
+        "content_type": "Landing Page" if intent == "BOFU" else "Blog",
+    }
+
+
+@app.get("/api/usage")
+async def get_usage(request: Request):
+    """Current user's plan, monthly allowance, usage, and next reset date."""
+    user = _request_user(request)
+    return usage_snapshot(user, resolve_plan(user, request))
+
+
+class ConsumeRequest(BaseModel):
+    kind: str
+    count: int = 1
+
+
+@app.post("/api/usage/consume")
+async def post_consume_usage(payload: ConsumeRequest, request: Request):
+    """Record consumption of a metered result (e.g. landing-page reveals)."""
+    kind = payload.kind if payload.kind in ("landing_page", "blog_generation", "existing_blog") else None
+    if not kind:
+        return JSONResponse({"error": "Unknown usage kind."}, status_code=400)
+    user = _request_user(request)
+    consume_usage(user, kind, payload.count)
+    return usage_snapshot(user, resolve_plan(user, request))
+
+
+@app.get("/api/plans")
+async def get_plans():
+    """Expose the plan matrix for the pricing/upgrade UI."""
+    return {"plans": PLANS}
 
 
 @app.get("/api/automation/blogs/status")
@@ -2454,9 +2627,28 @@ async def existing_blog_suggestions(site_url: str = "https://www.selfstorage.hel
 
 
 @app.post("/api/automation/blogs/run")
-async def run_blog_automation(request: BlogAutomationRequest):
+async def run_blog_automation(request: BlogAutomationRequest, http_request: Request):
     """Inventory -> template draft -> validation -> optional CMS draft/live post."""
     from agents.blog_automation import BlogGenerationError, generate_blog_draft
+
+    # Freemium gate: once the monthly blog allowance is used up, return a
+    # score-only locked preview WITHOUT running the expensive AI generation.
+    # Admins bypass the cap entirely.
+    user = _request_user(http_request)
+    plan = resolve_plan(user, http_request)
+    if not has_allowance(user, "blog_generation", plan):
+        snap = usage_snapshot(user, plan)
+        limit = snap["limits"]["blog_generation"]
+        return JSONResponse({
+            "locked": True,
+            "reason": "monthly_blog_limit",
+            "message": (
+                f"You have used your {limit} free blog generations for this month. "
+                "Upgrade to Premium for more monthly generations and full publishing features."
+            ),
+            "preview": build_blog_preview(request.keyword),
+            "usage": snap,
+        })
 
     steps: List[Dict[str, Any]] = []
     existing_pages = []
@@ -2615,6 +2807,9 @@ async def run_blog_automation(request: BlogAutomationRequest):
             "message": "Review facts, media and final copy, then approve before publishing.",
         })
 
+    # A full generation ran — count it against the monthly blog allowance.
+    consume_usage(user, "blog_generation")
+
     return {
         "status": "published" if publish_record and request.publish_now else "ready_for_review",
         "draft": draft,
@@ -2622,6 +2817,7 @@ async def run_blog_automation(request: BlogAutomationRequest):
         "publish_record": publish_record,
         "existing_page_count": len(existing_pages),
         "steps": steps,
+        "usage": usage_snapshot(user, plan),
         "next_action": (
             "Monitor the live URL in GSC."
             if publish_record and request.publish_now
@@ -2639,6 +2835,236 @@ class BriefRequest(BaseModel):
     word_count_target: int = 1500
     include_faq: bool = True
     include_competitors: bool = True
+
+
+# ── KEYWORD EXPLORER (AnswerThePublic-style discovery) ─────────────────────────
+# Deterministic modifier expansion: turn one keyword into the search phrases
+# people actually type, grouped by category, with intent + content ideas. This
+# is the same mechanic AnswerThePublic uses (question/preposition/comparison
+# modifiers) — pure Python, instant, no external API or LLM latency.
+
+# Each template is paired with its OWN intent — the phrase a template produces
+# always embeds the raw seed keyword verbatim, so classifying the *rendered*
+# phrase by substring (e.g. checking for "best") misfires whenever the seed
+# itself already contains that word (a seed like "best coffee grinder" would
+# then tag every single generated phrase as MOFU). Tagging intent on the
+# template instead of the rendered text sidesteps that entirely.
+_QUESTION_TEMPLATES = [
+    ("what is {k}", "TOFU"), ("how does {k} work", "TOFU"), ("why is {k} important", "TOFU"),
+    ("how to do {k}", "TOFU"), ("how much does {k} cost", "BOFU"), ("who needs {k}", "TOFU"),
+    ("when to use {k}", "TOFU"), ("which {k} is best", "MOFU"), ("are {k} worth it", "MOFU"),
+    ("can {k} help my business", "TOFU"), ("how to improve {k}", "TOFU"),
+    ("what are the benefits of {k}", "TOFU"),
+]
+_PREPOSITION_TEMPLATES = [
+    ("{k} for beginners", "TOFU"), ("{k} for small business", "TOFU"), ("{k} for startups", "TOFU"),
+    ("{k} with examples", "TOFU"), ("{k} without an agency", "BOFU"), ("{k} near me", "BOFU"),
+    ("{k} to grow traffic", "MOFU"), ("{k} on a budget", "MOFU"),
+]
+_COMPARISON_TEMPLATES = [
+    ("{k} vs competitors", "MOFU"), ("{k} vs doing it yourself", "MOFU"), ("{k} or paid ads", "MOFU"),
+    ("best {k} compared", "MOFU"), ("{k} alternatives", "MOFU"),
+]
+_RELATED_TEMPLATES = [
+    ("best {k}", "MOFU"), ("{k} tips", "TOFU"), ("{k} guide", "TOFU"), ("{k} examples", "TOFU"),
+    ("{k} services", "BOFU"), ("{k} tools", "MOFU"), ("{k} checklist", "TOFU"), ("{k} strategy", "TOFU"),
+    ("{k} mistakes to avoid", "TOFU"), ("{k} best practices", "TOFU"),
+]
+
+
+def _dedupe_repeated_words(phrase: str) -> str:
+    """Collapse accidental word repeats from stacking a modifier onto a seed
+    keyword that already contains that word (e.g. "best" + "best coffee..." )."""
+    return re.sub(r"\b(\w+)(\s+\1\b)+", r"\1", phrase, flags=re.IGNORECASE)
+
+
+def _phrase_intent(phrase: str) -> str:
+    """Map a raw (non-templated) search phrase to a funnel stage — used for
+    bare seed keywords, e.g. a GSC/SEMrush query, not template-composed phrases."""
+    p = phrase.lower()
+    if any(s in p for s in ("best", "vs", "compared", "alternatives", "review", "or paid")):
+        return "MOFU"
+    if any(s in p for s in ("cost", "price", "buy", "near me", "services", "hire", "agency")):
+        return "BOFU"
+    if p.startswith(("what", "how", "why", "who", "when", "which", "are", "can")):
+        return "TOFU"
+    return classify_intent(phrase)
+
+
+_GROUP_MODIFIERS = [
+    ("{g}", None), ("{g} tool", "MOFU"), ("{g} template", "TOFU"),
+    ("{g} guide", "TOFU"), ("best {g}", "MOFU"),
+]
+
+
+def _opportunity_for(intent: str, commercial: str) -> str:
+    if intent == "BOFU" or commercial == "High":
+        return "High"
+    if intent == "MOFU" or commercial == "Medium":
+        return "Medium"
+    return "Low"
+
+
+def _volume_bucket(phrase: str) -> str:
+    """Qualitative search-volume estimate (no live volume API available)."""
+    words = len(phrase.split())
+    if words <= 2:
+        return "Popular"
+    if words <= 4:
+        return "Growing"
+    return "Niche"
+
+
+def _title_case(phrase: str) -> str:
+    return phrase[:1].upper() + phrase[1:]
+
+
+def _brand_from_url(url: str) -> str:
+    from urllib.parse import urlparse
+    host = urlparse(url if "://" in url else "https://" + url).netloc or url
+    host = host.replace("www.", "").split(".")[0].replace("-", " ").strip()
+    return host.title() if host else "your website"
+
+
+def build_keyword_insights(keyword: str, brand: str = "", mode: str = "keywords",
+                           topic_seeds: Optional[List[str]] = None) -> Dict[str, Any]:
+    """Expand one keyword (or a crawled website's topics) into AnswerThePublic-style
+    content ideas, grouped keyword suggestions, intent split and a keyword wheel."""
+    k = " ".join(keyword.strip().split())
+    kl = k.lower()
+    brand = brand or "your business"
+
+    def _expand(templates, seed=None):
+        base = (seed or kl)
+        seen, out = set(), []
+        for template, intent in templates:
+            phrase = _dedupe_repeated_words(" ".join(template.format(k=base).strip().split()))
+            if phrase and phrase not in seen:
+                seen.add(phrase)
+                out.append({"phrase": phrase, "intent": intent or _phrase_intent(phrase)})
+        return out
+
+    questions = _expand(_QUESTION_TEMPLATES)
+    prepositions = _expand(_PREPOSITION_TEMPLATES)
+    comparisons = _expand(_COMPARISON_TEMPLATES)
+    related = _expand(_RELATED_TEMPLATES)
+
+    all_phrases = questions + prepositions + comparisons + related
+    intent_counts = {"TOFU": 0, "MOFU": 0, "BOFU": 0}
+    for item in all_phrases:
+        intent_counts[item["intent"]] = intent_counts.get(item["intent"], 0) + 1
+
+    # Rich content ideas (matches the AI-Suggested Content Ideas cards).
+    def _idea(phrase, intent, tag):
+        commercial = rate_commercial_potential(phrase, intent, 0)
+        return {
+            "keyword": phrase,
+            "title": _title_case(phrase) + ("?" if phrase.split()[0] in ("what", "how", "why", "who", "when", "which") else ""),
+            "intent": intent,
+            "opportunity": _opportunity_for(intent, commercial),
+            "tag": tag,
+            "why_relevant": f"This keyword aligns with {brand}'s content strategy and has strong search potential in this topic area.",
+            "content_idea": f"A comprehensive guide to '{phrase}' — covering key insights, best practices, and actionable tips for your audience.",
+        }
+
+    ideas = []
+    if related:
+        ideas.append(_idea(related[0]["phrase"], related[0]["intent"], "Best for AI visibility"))
+    for r in related[1:4]:
+        ideas.append(_idea(r["phrase"], r["intent"], "Short-tail opportunity"))
+    for q in questions[:3]:
+        ideas.append(_idea(q["phrase"], q["intent"], "Long-tail opportunity"))
+    for c in comparisons[:2]:
+        ideas.append(_idea(c["phrase"], c["intent"], "Short-tail opportunity"))
+
+    # Grouped keyword suggestions (the clustered table + "Your Best Keywords" wheel).
+    group_seeds = topic_seeds or [p["phrase"] for p in (related[:4] + comparisons[:2] + questions[:4])]
+    seen_groups, keyword_groups, wheel = set(), [], []
+    for g in group_seeds:
+        gl = " ".join(g.lower().split())
+        if not gl or gl in seen_groups:
+            continue
+        seen_groups.add(gl)
+        rows, seen_rows = [], set()
+        for mod, mod_intent in _GROUP_MODIFIERS:
+            phrase = _dedupe_repeated_words(" ".join(mod.format(g=gl).split()))
+            if phrase in seen_rows:
+                continue
+            seen_rows.add(phrase)
+            intent = mod_intent or _phrase_intent(phrase)
+            rows.append({
+                "keyword": phrase,
+                "intent": intent,
+                "opportunity": _opportunity_for(intent, rate_commercial_potential(phrase, intent, 0)),
+                "volume": _volume_bucket(phrase),
+            })
+        keyword_groups.append({"name": gl, "keywords": rows})
+        wheel.append({"keyword": gl, "intent": _phrase_intent(gl)})
+        if len(keyword_groups) >= 10:
+            break
+
+    return {
+        "mode": mode,
+        "keyword": k,
+        "brand": brand,
+        "summary": {
+            "total_phrases": len(all_phrases),
+            "questions": len(questions),
+            "comparisons": len(comparisons),
+            "content_ideas": len(ideas),
+            "keyword_groups": len(keyword_groups),
+            "intent_split": intent_counts,
+        },
+        "content_ideas": ideas,
+        "keyword_groups": keyword_groups,
+        "wheel": wheel,
+        "categories": [
+            {"key": "questions", "label": "Questions", "phrases": questions},
+            {"key": "prepositions", "label": "Prepositions", "phrases": prepositions},
+            {"key": "comparisons", "label": "Comparisons", "phrases": comparisons},
+            {"key": "related", "label": "Related", "phrases": related},
+        ],
+    }
+
+
+class KeywordInsightsRequest(BaseModel):
+    keyword: str = ""
+    mode: str = "keywords"   # "keywords" | "website"
+    url: str = ""
+
+
+@app.post("/api/insights/keyword")
+async def keyword_insights(request: KeywordInsightsRequest):
+    """AnswerThePublic-style explorer. Two modes:
+      * keywords — expand a seed keyword.
+      * website  — crawl the site's sitemap, derive its core topics, and explore those.
+    """
+    mode = (request.mode or "keywords").strip().lower()
+
+    if mode == "website":
+        url = (request.url or "").strip()
+        if not url:
+            return JSONResponse({"error": "Enter a website URL to analyze."}, status_code=400)
+        brand = _brand_from_url(url)
+        topic_seeds: List[str] = []
+        try:
+            from integrations.site_inventory import inventory_existing_pages
+            for page in inventory_existing_pages(url)[:12]:
+                title = str(page.get("title") or page.get("slug") or "").strip().lower()
+                title = re.sub(r"[^a-z0-9 ]+", " ", title)
+                title = " ".join(title.split())
+                if 2 <= len(title.split()) <= 6 and title not in topic_seeds:
+                    topic_seeds.append(title)
+        except Exception:
+            topic_seeds = []
+        seed = topic_seeds[0] if topic_seeds else brand.lower()
+        return build_keyword_insights(seed, brand=brand, mode="website",
+                                      topic_seeds=topic_seeds or None)
+
+    keyword = (request.keyword or "").strip()
+    if not keyword:
+        return JSONResponse({"error": "Enter a keyword to explore."}, status_code=400)
+    return build_keyword_insights(keyword, mode="keywords")
 
 
 def generate_content_brief(keyword: str, intent: str, audience: str, word_count: int, include_faq: bool, include_comp: bool) -> Dict:
@@ -3302,6 +3728,13 @@ async def validate_content(request: ValidationRequest):
     with open(val_file, "w") as f:
         json.dump(validation, f, indent=2)
 
+    if validation["overall_status"] == "fail":
+        dispatch_notification(
+            f"Validation failed for '{request.keyword}' — {validation['summary']['total_issues']} issue(s) "
+            f"across SEO/fact/brand checks. Review before publishing.",
+            subject="MAAI: validation failed",
+        )
+
     return validation
 
 
@@ -3460,6 +3893,8 @@ async def publish_content(request: PublishRequest):
     else:
         message = f"A remote CMS draft for '{request.keyword}' was created."
         next_steps = ["Review the remote CMS draft", "Approve media and facts", "Publish after final approval"]
+
+    dispatch_notification(message, subject="MAAI: content published")
 
     return {
         "status": "published" if went_live else "cms_draft",
@@ -4096,19 +4531,46 @@ async def configure_semrush(config: SemrushConfig):
     return {"status": "configured", "message": "Semrush API key saved."}
 
 
+@app.post("/api/integrations/semrush/test")
+async def test_semrush_connection():
+    """Verify the saved SEMrush key can actually reach the live API."""
+    config = _load_semrush_config()
+    from integrations.semrush_client import SemrushClient, SemrushError
+    client = SemrushClient(api_key=config.get("api_key"), database=config.get("database"))
+    if not client.has_credentials():
+        return JSONResponse({"error": "SEMrush is not configured. Paste an API key first."}, status_code=400)
+    try:
+        data = client.get_keyword_metrics_parsed("seo")
+    except SemrushError as e:
+        return JSONResponse({"error": str(e)}, status_code=502)
+    return {"status": "connected", "message": "SEMrush API key is valid.", "sample": data}
+
+
+def _load_semrush_config() -> Dict[str, Any]:
+    config_path = os.path.join(DATA_DIR, "semrush_config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return {}
+    return {}
+
+
 @app.post("/api/integrations/semrush/keyword")
 async def semrush_keyword_lookup(request: Request):
-    """Look up keyword metrics from Semrush."""
+    """Look up live keyword metrics from the real SEMrush API."""
     body = await request.json()
     keyword = body.get("keyword", "")
 
     if not keyword:
         return JSONResponse({"error": "keyword required"}, status_code=400)
 
-    # Check for API credentials
-    config_path = os.path.join(DATA_DIR, "semrush_config.json")
-    if not os.path.exists(config_path):
-        # Return mock data
+    config = _load_semrush_config()
+    from integrations.semrush_client import SemrushClient, SemrushError
+    client = SemrushClient(api_key=config.get("api_key"), database=config.get("database"))
+
+    if not client.has_credentials():
         return {
             "keyword": keyword,
             "source": "mock",
@@ -4116,11 +4578,15 @@ async def semrush_keyword_lookup(request: Request):
             "keyword_difficulty": 0,
             "cpc": 0,
             "competition": 0,
-            "note": "Configure Semrush API for live data.",
+            "note": "Configure the SEMrush API key in Integrations for live data.",
         }
 
-    # In production: call Semrush API
-    return {"keyword": keyword, "source": "api", "data": {}}
+    try:
+        data = client.get_keyword_metrics_parsed(keyword)
+    except SemrushError as e:
+        return JSONResponse({"error": str(e), "keyword": keyword, "source": "api"}, status_code=502)
+
+    return {**data, "source": "api"}
 
 
 # ── 3. SITE CRAWLER ─────────────────────────────────────────────────────────
@@ -4358,17 +4824,20 @@ class NotificationRequest(BaseModel):
 @app.get("/api/integrations/notifications/status")
 async def notification_status():
     """Check notification integration status."""
-    config_path = os.path.join(DATA_DIR, "notification_config.json")
-    configured = os.path.exists(config_path)
+    config = _load_notification_config()
+    channels_configured = []
+    if config.get("slack_webhook_url"):
+        channels_configured.append("slack")
+    if config.get("email_smtp_host"):
+        channels_configured.append("email")
     return {
-        "status": "configured" if configured else "not_configured",
+        "status": "configured" if channels_configured else "not_configured",
         "channels": ["slack", "email"],
+        "channels_configured": channels_configured,
         "events": [
-            "opportunity_discovered",
             "content_approved",
             "content_published",
             "validation_failed",
-            "indexing_requested",
         ],
     }
 
@@ -4382,26 +4851,73 @@ async def configure_notifications(config: NotificationConfig):
     return {"status": "configured", "message": "Notification settings saved."}
 
 
+def _load_notification_config() -> Dict[str, Any]:
+    config_path = os.path.join(DATA_DIR, "notification_config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return {}
+    return {}
+
+
+def _send_slack(webhook_url: str, message: str) -> Dict[str, Any]:
+    import requests
+    try:
+        resp = requests.post(webhook_url, json={"text": message}, timeout=8)
+        if resp.status_code == 200:
+            return {"channel": "slack", "status": "sent"}
+        return {"channel": "slack", "status": "failed", "error": f"HTTP {resp.status_code}: {resp.text[:200]}"}
+    except Exception as exc:
+        return {"channel": "slack", "status": "failed", "error": str(exc)}
+
+
+def _send_email(config: Dict[str, Any], subject: str, message: str) -> Dict[str, Any]:
+    import smtplib
+    from email.mime.text import MIMEText
+    host = config.get("email_smtp_host", "")
+    port = int(config.get("email_smtp_port") or 587)
+    username = config.get("email_username", "")
+    password = config.get("email_password", "")
+    to_addr = config.get("notify_email") or username
+    if not (host and username and password and to_addr):
+        return {"channel": "email", "status": "not_configured", "message": "SMTP host/username/password/recipient required."}
+    try:
+        msg = MIMEText(message)
+        msg["Subject"] = subject or "MAAI notification"
+        msg["From"] = username
+        msg["To"] = to_addr
+        with smtplib.SMTP(host, port, timeout=10) as server:
+            server.starttls()
+            server.login(username, password)
+            server.sendmail(username, [to_addr], msg.as_string())
+        return {"channel": "email", "status": "sent"}
+    except Exception as exc:
+        return {"channel": "email", "status": "failed", "error": str(exc)}
+
+
+def dispatch_notification(message: str, subject: str = "", channel: str = "") -> List[Dict[str, Any]]:
+    """Best-effort fan-out to every configured channel (real Slack webhook POST /
+    real SMTP email). Never raises — a broken webhook or mail server must not
+    break the approve/publish/validate flow that triggered it. channel="" fans
+    out to every configured channel (used by automatic event hooks); pass
+    "slack" or "email" to target just one (used by the manual test button)."""
+    config = _load_notification_config()
+    results = []
+    if (not channel or channel == "slack") and config.get("slack_webhook_url"):
+        results.append(_send_slack(config["slack_webhook_url"], message))
+    if (not channel or channel == "email") and config.get("email_smtp_host"):
+        results.append(_send_email(config, subject, message))
+    if not results:
+        results.append({"channel": channel or "none", "status": "not_configured", "message": "Configure notifications first."})
+    return results
+
+
 @app.post("/api/integrations/notifications/send")
 async def send_notification(request: NotificationRequest):
-    """Send a notification via configured channels."""
-    config_path = os.path.join(DATA_DIR, "notification_config.json")
-
-    results = []
-    if os.path.exists(config_path):
-        with open(config_path) as f:
-            config = json.load(f)
-
-        if request.channel == "slack" and config.get("slack_webhook_url"):
-            # In production: POST to Slack webhook
-            results.append({"channel": "slack", "status": "sent"})
-        elif request.channel == "email" and config.get("email_smtp_host"):
-            # In production: send email via SMTP
-            results.append({"channel": "email", "status": "sent"})
-
-    if not results:
-        results.append({"channel": request.channel, "status": "not_configured", "message": "Configure notifications first."})
-
+    """Send a notification via configured channel(s) — used by the manual test button."""
+    results = dispatch_notification(request.message, request.subject, request.channel)
     return {"results": results, "message": request.message}
 
 
@@ -4796,6 +5312,71 @@ async def auth_delete_user(username: str, request: Request):
     del users[username]
     save_users(users)
     return {"status": "deleted", "username": username}
+
+
+# ── "Continue with Google" via Supabase Auth ────────────────────────────────
+# Supabase handles the actual OAuth dance with Google (redirect, consent,
+# token exchange); this app only needs to (1) tell the frontend where to send
+# the user, and (2) verify the access token Supabase hands back before trusting
+# the email it claims. The project URL / anon key are meant to be public —
+# never put the Google Client Secret here, it lives only in the Supabase
+# dashboard (Authentication -> Providers -> Google).
+
+@app.get("/api/config/public")
+async def public_config():
+    """Non-secret config the frontend needs before login (e.g. Supabase project
+    details for the Google sign-in button). Empty values mean that feature is
+    simply not offered yet — the password login form always still works."""
+    return {
+        "supabase_url": os.getenv("SUPABASE_URL", "").strip(),
+        "supabase_anon_key": os.getenv("SUPABASE_ANON_KEY", "").strip(),
+    }
+
+
+@app.post("/api/auth/google")
+async def auth_google(request: Request):
+    """Exchange a Supabase-issued access token for a local MAAI session.
+
+    The frontend never gets to assert its own identity — we re-verify the
+    token against Supabase's own /auth/v1/user endpoint server-side, so a
+    tampered request can't claim to be someone else's email.
+    """
+    supabase_url = os.getenv("SUPABASE_URL", "").strip()
+    supabase_anon_key = os.getenv("SUPABASE_ANON_KEY", "").strip()
+    if not supabase_url or not supabase_anon_key:
+        return JSONResponse({"error": "Google sign-in is not configured."}, status_code=400)
+
+    body = await request.json()
+    access_token = str(body.get("access_token", "")).strip()
+    if not access_token:
+        return JSONResponse({"error": "Missing access token."}, status_code=400)
+
+    import requests
+    try:
+        resp = requests.get(
+            f"{supabase_url}/auth/v1/user",
+            headers={"Authorization": f"Bearer {access_token}", "apikey": supabase_anon_key},
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        return JSONResponse({"error": f"Could not reach Supabase: {exc}"}, status_code=502)
+
+    if resp.status_code != 200:
+        return JSONResponse({"error": "That Google session is invalid or expired. Please sign in again."}, status_code=401)
+
+    supa_user = resp.json()
+    email = str(supa_user.get("email", "")).strip().lower()
+    if not email:
+        return JSONResponse({"error": "Google did not return an email address."}, status_code=400)
+
+    # First sign-in with this email auto-creates a local account — same free
+    # plan/user role any brand-new account gets today (see get_user_plan()).
+    users = ensure_seed_users()
+    if email not in users:
+        users[email] = {"password_hash": None, "role": "user", "auth_provider": "google"}
+        save_users(users)
+
+    return {"username": email, "role": users[email].get("role", "user")}
 
 
 # ── APPROVAL GATES ──────────────────────────────────────────────────────────
